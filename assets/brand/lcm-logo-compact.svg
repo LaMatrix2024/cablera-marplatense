@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="140" viewBox="0 0 300 140" role="img" aria-label="LCM">
+  <defs>
+    <style>
+      .main { font-family: 'Syne', 'Arial Black', Arial, sans-serif; font-weight: 800; letter-spacing: -5px; }
+      .label { font-family: 'Syne', Arial, sans-serif; font-weight: 800; letter-spacing: 5px; }
+    </style>
+  </defs>
+  <rect width="300" height="140" fill="none"/>
+  <text class="main" x="20" y="78" font-size="86" fill="#f4f1ea">L</text>
+  <text class="main" x="92" y="78" font-size="86" fill="#ff6b35">C</text>
+  <text class="main" x="163" y="78" font-size="86" fill="#f4f1ea">M</text>
+  <rect x="110" y="98" width="70" height="7" rx="4" fill="#ff6b35"/>
+  <text class="label" x="83" y="130" font-size="18" fill="#f4f1ea">LCM</text>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="170" viewBox="0 0 760 170" role="img" aria-label="LCM La Cablera Marplatense">
+  <defs>
+    <style>
+      .main { font-family: 'Syne', 'Arial Black', Arial, sans-serif; font-weight: 800; letter-spacing: -6px; }
+      .name { font-family: 'Syne', Arial, sans-serif; font-weight: 800; letter-spacing: 8px; }
+      .sub { font-family: 'DM Sans', Arial, sans-serif; font-weight: 700; letter-spacing: 5px; }
+    </style>
+  </defs>
+  <rect width="760" height="170" fill="none"/>
+  <g transform="translate(20,22)">
+    <text class="main" x="0" y="83" font-size="92" fill="#f4f1ea">L</text>
+    <text class="main" x="78" y="83" font-size="92" fill="#ff6b35">C</text>
+    <text class="main" x="153" y="83" font-size="92" fill="#f4f1ea">M</text>
+    <rect x="103" y="105" width="70" height="8" rx="4" fill="#ff6b35"/>
+    <rect x="119" y="119" width="38" height="5" rx="3" fill="#ff6b35" opacity=".95"/>
+  </g>
+  <line x1="300" y1="24" x2="300" y2="142" stroke="#b9b0a8" stroke-width="2" opacity=".65"/>
+  <g transform="translate(330,35)">
+    <text class="name" x="0" y="34" font-size="30" fill="#f4f1ea">LA CABLERA</text>
+    <text class="name" x="0" y="76" font-size="30" fill="#f4f1ea">MARPLATENSE</text>
+    <text class="sub" x="0" y="115" font-size="15" fill="#b9b0a8">PLATAFORMA DE GESTIÓN</text>
+    <text class="sub" x="0" y="142" font-size="15" fill="#ff6b35">GRUPO PLANTEL</text>
+  </g>
+</svg>

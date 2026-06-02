@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="84" viewBox="0 0 360 84" role="img" aria-label="LCM La Cablera Marplatense">
+  <defs>
+    <style>
+      .main { font-family: 'Syne', 'Arial Black', Arial, sans-serif; font-weight: 800; letter-spacing: -4px; }
+      .name { font-family: 'Syne', Arial, sans-serif; font-weight: 800; letter-spacing: 3px; }
+    </style>
+  </defs>
+  <rect width="360" height="84" fill="none"/>
+  <text class="main" x="8" y="56" font-size="58" fill="#f4f1ea">L</text>
+  <text class="main" x="57" y="56" font-size="58" fill="#ff6b35">C</text>
+  <text class="main" x="105" y="56" font-size="58" fill="#f4f1ea">M</text>
+  <rect x="71" y="67" width="52" height="5" rx="3" fill="#ff6b35"/>
+  <line x1="172" y1="14" x2="172" y2="70" stroke="#b9b0a8" stroke-width="1.5" opacity=".55"/>
+  <text class="name" x="192" y="35" font-size="15" fill="#f4f1ea">LA CABLERA</text>
+  <text class="name" x="192" y="58" font-size="15" fill="#f4f1ea">MARPLATENSE</text>
+</svg>
