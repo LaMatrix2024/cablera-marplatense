@@ -2,7 +2,7 @@
 
 ## Proyecto
 
-**La Cablera** es una plataforma modular de gestión para el Grupo Plantel.
+**La Cablera Marplatense (LCM)** es una plataforma modular de gestión para el Grupo Plantel.
 
 Aunque el desarrollo comenzó por necesidades del área de Telefonía, el objetivo es construir una plataforma corporativa que pueda crecer e incorporar funcionalidades para todas las empresas y áreas del grupo.
 
@@ -31,7 +31,7 @@ Cada módulo puede contener sus propios reportes, procesos, APIs y pantallas.
 # Estructura actual
 
 ```text
-C:\plantel\lacablera-marplatense
+C:\plantel\cablera-marplatense
 
 ├── api
 ├── assets
@@ -46,6 +46,77 @@ C:\plantel\lacablera-marplatense
 ├── contable
 ├── mantenimiento
 └── licitaciones
+```
+
+---
+
+# Deploy oficial
+
+Repositorio GitHub:
+
+```text
+https://github.com/LaMatrix2024/cablera-marplatense
+```
+
+Entorno local:
+
+```text
+C:\plantel\cablera-marplatense
+```
+
+Producción:
+
+```text
+https://lacablera.com
+```
+
+Hostinger:
+
+```text
+/domains/lacablera.com/public_html
+```
+
+Flujo oficial:
+
+```text
+Desarrollo Local
+        ↓
+Git Commit
+        ↓
+GitHub
+        ↓
+Hostinger Deploy
+        ↓
+Producción
+```
+
+No utilizar FileZilla como mecanismo principal de despliegue.
+
+Utilizar Git + Deploy Hostinger.
+
+---
+
+# Configuración local
+
+El archivo:
+
+```text
+/config/env.php
+```
+
+contiene credenciales.
+
+Nunca debe subirse a GitHub.
+
+Debe existir únicamente en:
+
+* Entorno local
+* Hostinger
+
+Debe estar incluido en:
+
+```text
+.gitignore
 ```
 
 ---
@@ -74,27 +145,9 @@ Correcto:
 
 Cada área contendrá sus propios módulos.
 
-Licitaciones se considera un área de negocio transversal, responsable de procesos de licitación que pueden aplicar a distintas unidades del grupo.
-
-Ejemplo:
-
-```text
-telefonia/
-
-├── produccion_planta
-├── produccion_altas
-├── certificacion
-├── precios
-├── cuadrillas
-├── control_logicas
-└── auditoria
-```
-
 ---
 
 # Bases de datos
-
-Existen dos bases de datos conceptualmente distintas.
 
 ## laboratorio
 
@@ -102,11 +155,11 @@ Contiene datos RAW.
 
 Características:
 
-* Bajadas originales.
-* Datos crudos.
-* Grandes volúmenes.
-* Históricos completos.
-* No optimizada para reportes.
+* Bajadas originales
+* Datos crudos
+* Grandes volúmenes
+* Históricos completos
+* No optimizada para reportes
 
 Debe considerarse un repositorio de origen.
 
@@ -118,75 +171,55 @@ Contiene datos procesados y optimizados para gestión.
 
 Características:
 
-* Datos limpios.
-* Datos resumidos.
-* Información de negocio.
-* Consumo por APIs.
-* Consumo por dashboards.
+* Datos limpios
+* Datos resumidos
+* Información de negocio
+* Consumo por APIs
+* Consumo por dashboards
 
 Los reportes deben consultar preferentemente esta base.
 
 ---
 
-# Flujo de datos
+# Flujo de datos objetivo
 
 ```text
 Fuentes externas
-
         ↓
-
 Python ETL
-
         ↓
-
 DB laboratorio (RAW)
-
         ↓
-
 Python ETL
-
         ↓
-
 DB lacablera (procesada)
-
         ↓
-
 APIs
-
         ↓
-
-Dashboards y aplicaciones
+Dashboards
 ```
 
 ---
 
-# Regla de arquitectura
+# Regla RAW
 
-Las aplicaciones visuales NO deben consultar tablas RAW.
+Durante la etapa inicial se permite consultar laboratorio directamente desde APIs.
 
-Correcto:
+Sin embargo la arquitectura objetivo es:
 
 ```text
-Dashboard
-
-    ↓
-
+RAW laboratorio
+        ↓
+ETL
+        ↓
+lacablera
+        ↓
 API
-
-    ↓
-
-DB lacablera
-```
-
-Incorrecto:
-
-```text
+        ↓
 Dashboard
-
-    ↓
-
-RAW gigantes
 ```
+
+Todo desarrollo nuevo debe contemplar esta migración futura.
 
 ---
 
@@ -200,7 +233,7 @@ Ubicación:
 /api
 ```
 
-Ejemplo:
+Ejemplos:
 
 ```text
 /api/telefonia
@@ -208,330 +241,53 @@ Ejemplo:
 /api/rrhh
 /api/contable
 /api/mantenimiento
-/api/licitaciones
+/api/lictaciones
 /api/direccion
 ```
 
-Las APIs pueden consultar:
-
-* DB lacablera
-* Servicios externos
-* Otras APIs internas
-
 ---
 
-# Python
+# Patrón de desarrollo
 
-Los procesos Python de carga pueden conectarse directamente a las bases de datos.
-
-Esto incluye:
-
-* ETL
-* Importaciones
-* Actualizaciones masivas
-* Procesamiento de archivos
-
-Las aplicaciones Python orientadas a consulta deben priorizar el uso de APIs.
-
----
-
-# Seguridad
-
-Las credenciales deben almacenarse en:
-
-```text
-/config
-```
-
-Nunca duplicar credenciales en múltiples archivos.
-
----
-
-# Empresas del grupo
-
-El sistema NO debe organizarse por empresa.
-
-Incorrecto:
-
-```text
-/plantel
-/caisa
-/empresa_x
-```
+Toda pantalla nueva debe construirse mediante APIs.
 
 Correcto:
 
 ```text
-/telefonia
-/rrhh
-/obras
+Pantalla
+        ↓
+API
+        ↓
+Base de datos
 ```
 
-La relación con cada empresa debe almacenarse en la base de datos mediante identificadores.
+Evitar consultas SQL embebidas dentro de las vistas.
 
-Ejemplo:
-
-```text
-empresa_id
-```
-
-Un empleado de CAISA puede trabajar en Telefonía u Obras.
+Las vistas deben consumir JSON.
 
 ---
 
-# Objetivo final
+# Módulo patrón
 
-Construir una plataforma corporativa escalable para el Grupo Plantel, con módulos independientes, APIs reutilizables y separación clara entre datos RAW y datos de gestión.
-
-
-# Contrato de Marca y Estética LCM
-
-## Identidad oficial
-
-Nombre de la plataforma:
+El módulo:
 
 ```text
-LCM
-La Cablera Marplatense
+telefonia/produccion_planta
 ```
 
-Descripción institucional:
-
-```text
-Plataforma de Gestión Grupo Plantel
-```
-
-Esta identidad visual debe utilizarse en todos los módulos del sistema.
-
----
-
-# Logo oficial
-
-Versión aprobada:
-
-```text
-LCM
-La Cablera Marplatense
-```
-
-Estilo:
-
-* Industrial moderno
-* Fondo oscuro
-* Acentos naranja
-* Estética tecnológica y corporativa
-* No asociada exclusivamente a Telefonía
-
-El logo representa la plataforma completa y no un área específica.
-
----
-
-# Ubicación de archivos de marca
-
-```text
-assets/
-└── brand/
-    ├── lcm-logo-horizontal.svg
-    ├── lcm-logo-nav.svg
-    ├── lcm-logo-compact.svg
-    ├── lcm-icon.svg
-    └── favicon.svg
-```
-
-No crear logos alternativos en módulos individuales.
-
-No duplicar archivos de marca.
-
----
-
-# Tipografías oficiales
-
-## Títulos
-
-```text
-Syne
-```
-
-Utilizar en:
-
-* Logo
-* Encabezados
-* Títulos de páginas
-* KPIs
-* Tarjetas principales
-
----
-
-## Texto general
-
-```text
-DM Sans
-```
-
-Utilizar en:
-
-* Menús
-* Tablas
-* Formularios
-* Botones
-* Filtros
-* Textos descriptivos
-
----
-
-# Paleta oficial
-
-```css
---lcm-bg: #111111;
---lcm-panel: #202020;
---lcm-panel-soft: #262626;
-
---lcm-orange: #ff6b35;
-
---lcm-text: #f4f1ea;
---lcm-muted: #b9b0a8;
-
---lcm-border: rgba(255,255,255,.10);
-```
-
-No utilizar nuevos colores principales sin aprobación explícita.
-
----
-
-# CSS oficial de marca
-
-Ubicación:
-
-```text
-/assets/css/brand.css
-```
-
-Toda página nueva debe incluir:
-
-```html
-<link rel="icon"
-      href="/assets/brand/favicon.svg"
-      type="image/svg+xml">
-
-<link rel="stylesheet"
-      href="/assets/css/brand.css">
-```
-
----
-
-# Componente PHP oficial
-
-Ubicación:
-
-```text
-/shared/brand.php
-```
-
-Uso:
-
-```php
-require_once __DIR__ . '/shared/brand.php';
-```
-
-o ajustando la ruta relativa según la ubicación del archivo.
-
----
-
-# Renderizado del logo
-
-Navbar:
-
-```php
-<?= lcm_logo('nav') ?>
-```
-
-Logo horizontal:
-
-```php
-<?= lcm_logo('horizontal') ?>
-```
-
-Versión compacta:
-
-```php
-<?= lcm_logo('compact') ?>
-```
-
-Ícono / App:
-
-```php
-<?= lcm_logo('icon') ?>
-```
-
----
-
-# Organización obligatoria
-
-Todo elemento reutilizable debe ubicarse en:
-
-## Componentes PHP
-
-```text
-/shared
-```
-
-Ejemplos:
-
-```text
-/shared/brand.php
-/shared/header.php
-/shared/footer.php
-/shared/auth.php
-/shared/helpers.php
-```
-
----
-
-## CSS común
-
-```text
-/assets/css
-```
-
-Ejemplos:
-
-```text
-/assets/css/brand.css
-/assets/css/layout.css
-/assets/css/forms.css
-/assets/css/tables.css
-```
-
----
-
-## Imágenes y marca
-
-```text
-/assets/brand
-```
-
----
-
-# Regla de reutilización
-
-Antes de crear:
-
-* un logo
-* un botón
-* un navbar
-* un footer
-* una tarjeta KPI
-* un componente visual
-
-CODEX debe verificar si ya existe una versión reutilizable en:
-
-```text
-/shared
-/assets/css
-/assets/brand
-```
-
-No crear duplicados innecesarios.
+se considera el primer módulo de referencia oficial.
+
+Características:
+
+* APIs REST
+* Datos reales
+* Filtros dinámicos
+* Navegación Resumen → Detalle
+* Exportación Excel
+* Estética LCM
+* Consumo desde laboratorio
+
+Los futuros módulos deben seguir esta arquitectura.
 
 ---
 
@@ -568,27 +324,140 @@ Evitar páginas largas donde se mezclen:
 
 en un único scroll continuo.
 
+Las fichas KPI deben actuar como disparadores de navegación o filtrado.
+
 ---
 
-# Objetivo visual
+# Automatizaciones
 
-Mantener una experiencia uniforme en:
+Toda carga automática debe registrar estado en:
 
 ```text
-Dirección
-Telefonía
-Obras
-RRHH
-Contable
-Mantenimiento
+automatizaciones_estado
 ```
 
-La experiencia visual debe transmitir:
+Campos relevantes:
 
-* Gestión
-* Tecnología
-* Simplicidad
-* Profesionalismo
-* Escalabilidad
+* nombre_automatizacion
+* resultado_actualizacion
+* ultima_fecha_hora_actualizacion
+* registros_leidos
+* registros_insertados
+* registros_actualizados
+* ultimo_error
 
-Toda la plataforma debe verse como un único producto corporativo.
+Los dashboards deben obtener la fecha de actualización desde esta tabla.
+
+---
+
+# Seguridad
+
+Las credenciales deben almacenarse en:
+
+```text
+/config
+```
+
+Nunca duplicar credenciales en múltiples archivos.
+
+---
+
+# Contrato de Marca y Estética LCM
+
+## Identidad oficial
+
+```text
+LCM
+La Cablera Marplatense
+```
+
+Descripción institucional:
+
+```text
+Plataforma de Gestión Grupo Plantel
+```
+
+---
+
+# Logo oficial
+
+Ubicación:
+
+```text
+assets/brand/
+```
+
+Archivos:
+
+```text
+lcm-logo-horizontal.svg
+lcm-logo-nav.svg
+lcm-logo-compact.svg
+lcm-icon.svg
+favicon.svg
+```
+
+No crear logos alternativos.
+
+No duplicar activos de marca.
+
+---
+
+# Tipografías oficiales
+
+## Títulos
+
+```text
+Syne
+```
+
+## Texto general
+
+```text
+DM Sans
+```
+
+---
+
+# Paleta oficial
+
+```css
+--lcm-bg: #111111;
+--lcm-panel: #202020;
+--lcm-panel-soft: #262626;
+
+--lcm-orange: #ff6b35;
+
+--lcm-text: #f4f1ea;
+--lcm-muted: #b9b0a8;
+
+--lcm-border: rgba(255,255,255,.10);
+```
+
+No utilizar nuevos colores principales sin aprobación explícita.
+
+---
+
+# Componentes reutilizables
+
+PHP:
+
+```text
+/shared
+```
+
+CSS:
+
+```text
+/assets/css
+```
+
+Marca:
+
+```text
+/assets/brand
+```
+
+Antes de crear un componente nuevo, verificar si ya existe una versión reutilizable.
+
+No duplicar componentes.

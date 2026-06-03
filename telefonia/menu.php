@@ -12,7 +12,7 @@ require_once __DIR__ . '/../shared/layout.php';
 <main class="lcm-shell">
     <section class="lcm-page-head">
         <div>
-            <span class="lcm-eyebrow">Telefonia</span>
+            <!--<span class="lcm-eyebrow">Telefonia</span>-->
             <h1>Resumen del area</h1>
             <p class="lcm-muted">Modulos operativos, reportes y validaciones internas.</p>
         </div>
@@ -22,12 +22,9 @@ require_once __DIR__ . '/../shared/layout.php';
     <section class="lcm-grid lcm-module-grid" aria-label="Modulos de Telefonia">
         <a class="lcm-card" href="/telefonia/produccion_planta">
             <strong>Produccion Planta</strong>
-            <small>Resumen y detalle operativo de planta externa.</small>
+            <small>Resumen y detalle de produccioó OCRAS y PTRs.</small>
         </a>
-        <a class="lcm-card" href="/telefonia/produccion_planta_externa">
-            <strong>Produccion Planta Externa</strong>
-            <small>Dashboard vision contratos.</small>
-        </a>
+        
         <a class="lcm-card" href="/telefonia/produccion_b2b">
             <strong>Produccion B2B</strong>
             <small>Dashboard vision OT.</small>

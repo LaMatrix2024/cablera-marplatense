@@ -10,7 +10,7 @@ require_once __DIR__ . '/../../shared/layout.php';
         .prod-page {
             display: grid;
             gap: 18px;
-            padding-top: 34px;
+            padding-top: 64px;
         }
 
         .prod-head {
@@ -64,17 +64,23 @@ require_once __DIR__ . '/../../shared/layout.php';
         .periodo-button {
             width: 100%;
             background: #f4f1ea;
-            color: #111;
+            color: #d90000;
             border: 0;
             border-radius: 10px;
             padding: 11px 12px;
+            font-size: 22px;
             font-weight: 900;
-            text-align: left;
+            text-align: center;
             cursor: pointer;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
+            gap: 14px;
             font-family: var(--lcm-font-base);
+        }
+
+        .periodo-button span {
+            flex: 0 0 auto;
         }
 
         .periodo-menu {
@@ -101,11 +107,13 @@ require_once __DIR__ . '/../../shared/layout.php';
         .periodo-option {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 10px;
             padding: 8px 9px;
             border-radius: 8px;
             cursor: pointer;
-            font-weight: 800;
+            font-size: 18px;
+            font-weight: 900;
         }
 
         .periodo-option:hover {
@@ -113,8 +121,8 @@ require_once __DIR__ . '/../../shared/layout.php';
         }
 
         .periodo-option input {
-            width: 16px;
-            height: 16px;
+            width: 17px;
+            height: 17px;
             accent-color: var(--lcm-orange);
         }
 
@@ -191,44 +199,68 @@ require_once __DIR__ . '/../../shared/layout.php';
             gap: 14px;
         }
 
-        .prod-panel-head h2 {
+        .prod-panel-head h2,
+        .prod-panel-title h2 {
             margin: 0;
             font-size: 18px;
         }
 
-        .prod-panel-head span {
+        .prod-panel-head span,
+        .prod-panel-title span {
             color: var(--lcm-muted);
             font-size: 12px;
         }
 
-        .prod-table-tools {
+        .prod-panel-titlebar {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--lcm-border);
             display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .prod-panel-title {
+            display: grid;
+            gap: 4px;
+        }
+
+        .prod-filter-bar {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--lcm-border);
+            background: rgba(255,255,255,.025);
+        }
+
+        .prod-filter-group {
+            display: grid;
+            grid-template-columns: 170px 160px minmax(260px, 420px);
+            gap: 16px;
             align-items: end;
-            gap: 14px;
-            flex-wrap: wrap;
+            justify-content: start;
         }
 
-        .prod-table-tools .prod-label {
-            min-width: 155px;
-        }
-
-        .prod-table-tools .prod-label--search {
-            min-width: 250px;
+        .prod-excel-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-left: 28px;
+            min-width: 180px;
         }
 
         .prod-excel {
-            height: 40px;
+            height: 42px;
             border: 1px solid rgba(255,255,255,.14);
             border-radius: 10px;
             background: #1f7a3a;
             color: #fff;
             font-weight: 900;
-            padding: 0 16px;
+            padding: 0 18px;
             cursor: pointer;
             font-family: var(--lcm-font-base);
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            box-shadow: 0 8px 22px rgba(0,0,0,.22);
         }
 
         .prod-excel:hover {
@@ -382,15 +414,70 @@ require_once __DIR__ . '/../../shared/layout.php';
             .prod-zone-strip {
                 grid-template-columns: repeat(2, minmax(180px, 1fr));
             }
+
+            .prod-filter-group {
+                grid-template-columns: repeat(2, minmax(180px, 1fr));
+            }
+        }
+
+        @media(max-width:760px) {
+            .prod-page {
+                padding-top: 58px;
+            }
+
+            .prod-title h1 {
+                font-size: 44px;
+                margin-top: 22px;
+            }
+
+            .prod-panel-head {
+                display: grid;
+                grid-template-columns: 1fr;
+                align-items: start;
+            }
+
+            .prod-panel-titlebar {
+                display: grid;
+                grid-template-columns: 1fr;
+                align-items: start;
+            }
+
+            .prod-excel-wrap {
+                justify-content: flex-start;
+                padding-left: 0;
+                min-width: 0;
+            }
+
+            .prod-filter-group {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .prod-excel {
+                width: auto;
+                min-width: 160px;
+                justify-content: center;
+            }
+
+            .periodo-button {
+                font-size: 30px;
+                font-weight: 900;
+                justify-content: center;
+                gap: 16px;
+                color: #d90000;
+                text-align: center;
+            }
+
+            .periodo-option {
+                font-size: 22px;
+                justify-content: center;
+                font-weight: 900;
+            }
         }
 
         @media(max-width:650px) {
             .prod-zone-strip {
                 grid-template-columns: 1fr;
-            }
-
-            .prod-table-tools {
-                display: grid;
             }
         }
     </style>
@@ -405,7 +492,7 @@ require_once __DIR__ . '/../../shared/layout.php';
         <div class="prod-title">
             <h1>Producción Planta Externa</h1>
             <p class="lcm-muted">
-                Resumen operativo por zona contrato, sucursales, contratistas, horas base y venta.
+                Resumen venta devengada, período, zona contrato, sucursales, contratistas y HB ejecutadas.
             </p>
         </div>
 
@@ -470,13 +557,21 @@ require_once __DIR__ . '/../../shared/layout.php';
     </section>
 
     <section class="prod-panel">
-        <div class="prod-panel-head">
-            <div>
+        <div class="prod-panel-titlebar">
+            <div class="prod-panel-title">
                 <span id="zonaSeleccionada">Todas las zonas</span>
                 <h2>Contratistas</h2>
             </div>
 
-            <div class="prod-table-tools">
+            <div class="prod-excel-wrap">
+                <button class="prod-excel" type="button" onclick="exportarExcel()">
+                    <span>📗</span> Exportar Excel
+                </button>
+            </div>
+        </div>
+
+        <div class="prod-filter-bar">
+            <div class="prod-filter-group">
                 <label class="prod-label">
                     Tipo contratista
                     <select id="tipoContratista" class="prod-select">
@@ -496,14 +591,10 @@ require_once __DIR__ . '/../../shared/layout.php';
                     </select>
                 </label>
 
-                <label class="prod-label prod-label--search">
+                <label class="prod-label">
                     Contratista
                     <input id="contratista" class="prod-input" type="text" placeholder="Buscar...">
                 </label>
-
-                <button class="prod-excel" type="button" onclick="exportarExcel()">
-                    <span>📗</span> Exportar
-                </button>
             </div>
         </div>
 
@@ -547,7 +638,6 @@ const distribucionTitulo = document.getElementById('distribucionTitulo');
 const distribucionSubtitulo = document.getElementById('distribucionSubtitulo');
 const thDistribucion = document.getElementById('thDistribucion');
 
-const sucursalFilter = document.getElementById('sucursalFilter');
 const sucursalOptions = document.getElementById('sucursalOptions');
 
 const contratistasBody = document.getElementById('contratistasBody');

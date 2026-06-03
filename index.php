@@ -10,6 +10,7 @@ require_once __DIR__ . '/shared/layout.php';
 <?php lcm_topbar(''); ?>
 
 <main class="lcm-shell">
+    <!--
     <section class="lcm-page-head">
         <div>
             <span class="lcm-eyebrow">Plataforma corporativa</span>
@@ -18,7 +19,8 @@ require_once __DIR__ . '/shared/layout.php';
         </div>
         <a class="lcm-action" href="/telefonia/menu.php">Ingresar</a>
     </section>
-
+    -->
+<a class="lcm-action" href="/telefonia/menu.php">Ingresar</a>
     <section class="lcm-grid lcm-module-grid" aria-label="Areas de negocio">
         <a class="lcm-card" href="/direccion/">
             <strong>Direccion</strong>
