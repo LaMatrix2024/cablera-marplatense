@@ -490,7 +490,7 @@ require_once __DIR__ . '/../../shared/layout.php';
 
     <section class="prod-head">
         <div class="prod-title">
-            <h1>Producción Planta Externa</h1>
+            <h1>Producción Planta Externa-Ocras y PTRs</h1>
             <p class="lcm-muted">
                 Resumen venta devengada, período, zona contrato, sucursales, contratistas y HB ejecutadas.
             </p>
