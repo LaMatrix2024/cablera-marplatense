@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Calculadora de créditos hipotecarios para analizar propiedades, gastos y cuotas."
+    />
+    <meta name="theme-color" content="#f8f5ed" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Mi Hogar" />
+    <title>Mi Hogar | Calculadora hipotecaria</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#inicio" aria-label="Mi Hogar, inicio">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 36 36" role="img">
+            <path d="M5 17.5 18 6l13 11.5V31H21v-8h-6v8H5Z" />
+            <path d="M11 13.2V8h5v.8" />
+          </svg>
+        </span>
+        <span>Mi Hogar</span>
+      </a>
+      <button
+        class="settings-shortcut"
+        type="button"
+        data-scroll-settings
+        aria-label="Abrir parámetros de cálculo"
+      >
+        <span class="settings-icon" aria-hidden="true">⚙</span>
+        <span class="settings-label">Parámetros</span>
+      </button>
+    </header>
+
+    <main id="inicio">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Decisiones con números claros</p>
+          <h1>Tu próximo hogar,<br /><span>mejor calculado.</span></h1>
+          <p class="hero-description">
+            Estimá el crédito, los gastos y la cuota de una operación
+            hipotecaria antes de tomar una decisión.
+          </p>
+          <div class="trust-row" aria-label="Características">
+            <span>✓ Sin registro</span>
+            <span>✓ Datos en tu dispositivo</span>
+            <span>✓ Parámetros editables</span>
+          </div>
+        </div>
+        <div class="hero-visual" aria-hidden="true">
+          <div class="sun"></div>
+          <div class="cloud cloud-one"></div>
+          <div class="cloud cloud-two"></div>
+          <div class="house">
+            <div class="roof"></div>
+            <div class="house-body">
+              <div class="window"><span></span><span></span></div>
+              <div class="door"></div>
+            </div>
+          </div>
+          <div class="tree"><span></span></div>
+          <div class="ground"></div>
+          <div class="visual-card">
+            <span class="visual-icon">⌂</span>
+            <div><small>Planificá hoy</small><strong>Comprá con claridad</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="calculator-shell" aria-labelledby="calculator-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Calculadora hipotecaria</p>
+            <h2 id="calculator-title">¿Qué querés calcular?</h2>
+          </div>
+          <p>Elegí el punto de partida. Podés cambiar los parámetros cuando quieras.</p>
+        </div>
+
+        <div class="scenario-tabs" role="tablist" aria-label="Escenarios">
+          <button
+            class="scenario-tab active"
+            id="tab-property"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="panel-property"
+            data-scenario="property"
+          >
+            <span class="tab-number">1</span>
+            <span><strong>Tengo una propiedad</strong><small>Ya conozco el precio</small></span>
+          </button>
+          <button
+            class="scenario-tab"
+            id="tab-credit"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="panel-credit"
+            data-scenario="credit"
+          >
+            <span class="tab-number">2</span>
+            <span><strong>Tengo un crédito</strong><small>Ya tengo un monto aprobado</small></span>
+          </button>
+          <button
+            class="scenario-tab"
+            id="tab-compare"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="panel-compare"
+            data-scenario="compare"
+          >
+            <span class="tab-number">3</span>
+            <span><strong>Comparar propiedades</strong><small>Quiero evaluar dos opciones</small></span>
+          </button>
+        </div>
+
+        <div class="workspace">
+          <section class="input-card">
+            <form id="calculator-form" novalidate>
+              <div
+                class="scenario-panel active"
+                id="panel-property"
+                role="tabpanel"
+                aria-labelledby="tab-property"
+                data-panel="property"
+              >
+                <div class="card-heading">
+                  <span class="card-icon" aria-hidden="true">⌂</span>
+                  <div><h3>Propiedad vista</h3><p>Ingresá el precio publicado.</p></div>
+                </div>
+                <label class="field">
+                  <span>Valor de la propiedad</span>
+                  <span class="input-wrap">
+                    <span class="prefix">USD</span>
+                    <input id="property-usd" type="number" min="0" step="100" inputmode="decimal" placeholder="120.000" />
+                  </span>
+                </label>
+              </div>
+
+              <div
+                class="scenario-panel"
+                id="panel-credit"
+                role="tabpanel"
+                aria-labelledby="tab-credit"
+                data-panel="credit"
+                hidden
+              >
+                <div class="card-heading">
+                  <span class="card-icon" aria-hidden="true">$</span>
+                  <div><h3>Crédito aprobado</h3><p>Ingresá el capital disponible.</p></div>
+                </div>
+                <label class="field">
+                  <span>Monto del crédito</span>
+                  <span class="input-wrap">
+                    <span class="prefix">ARS</span>
+                    <input id="credit-ars" type="number" min="0" step="1000" inputmode="decimal" placeholder="180.000.000" />
+                  </span>
+                </label>
+              </div>
+
+              <div
+                class="scenario-panel"
+                id="panel-compare"
+                role="tabpanel"
+                aria-labelledby="tab-compare"
+                data-panel="compare"
+                hidden
+              >
+                <div class="card-heading">
+                  <span class="card-icon" aria-hidden="true">⇄</span>
+                  <div><h3>Comparar propiedades</h3><p>Ingresá los dos precios publicados.</p></div>
+                </div>
+                <div class="compare-inputs">
+                  <label class="field">
+                    <span>Propiedad A</span>
+                    <span class="input-wrap">
+                      <span class="prefix">USD</span>
+                      <input id="property-a-usd" type="number" min="0" step="100" inputmode="decimal" placeholder="120.000" />
+                    </span>
+                  </label>
+                  <label class="field">
+                    <span>Propiedad B</span>
+                    <span class="input-wrap">
+                      <span class="prefix">USD</span>
+                      <input id="property-b-usd" type="number" min="0" step="100" inputmode="decimal" placeholder="135.000" />
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <button class="calculate-button" type="submit">
+                Calcular escenario
+                <span aria-hidden="true">→</span>
+              </button>
+              <p class="form-error" id="form-error" role="alert"></p>
+            </form>
+          </section>
+
+          <section class="results-card" aria-live="polite">
+            <div class="results-empty" id="results-empty">
+              <span class="empty-icon" aria-hidden="true">⌁</span>
+              <h3>Tus resultados aparecerán acá</h3>
+              <p>Completá los datos y calculá para ver el detalle de la operación.</p>
+            </div>
+            <div class="results-content" id="results-content" hidden></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="settings-section" id="parametros" aria-labelledby="settings-title">
+        <div class="settings-intro">
+          <p class="eyebrow">Ajustá el análisis</p>
+          <h2 id="settings-title">Parámetros de cálculo</h2>
+          <p>
+            Todos los valores son editables. La cotización queda vacía para que
+            uses la referencia adecuada a tu operación.
+          </p>
+        </div>
+        <div class="settings-card">
+          <div class="settings-grid">
+            <label class="field">
+              <span>Cotización USD</span>
+              <span class="input-wrap compact">
+                <span class="prefix">ARS</span>
+                <input id="exchange-rate" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Ingresar" />
+              </span>
+            </label>
+            <label class="field">
+              <span>Financiación banco</span>
+              <span class="input-wrap compact">
+                <input id="financing-percent" type="number" min="0.01" max="100" step="0.01" inputmode="decimal" />
+                <span class="suffix">%</span>
+              </span>
+            </label>
+            <label class="field">
+              <span>Escribanía</span>
+              <span class="input-wrap compact">
+                <input id="notary-percent" type="number" min="0" step="0.01" inputmode="decimal" />
+                <span class="suffix">%</span>
+              </span>
+            </label>
+            <label class="field">
+              <span>Inmobiliaria</span>
+              <span class="input-wrap compact">
+                <input id="real-estate-percent" type="number" min="0" step="0.01" inputmode="decimal" />
+                <span class="suffix">%</span>
+              </span>
+            </label>
+            <label class="field">
+              <span>Tasa anual</span>
+              <span class="input-wrap compact">
+                <input id="annual-rate-percent" type="number" min="0" step="0.01" inputmode="decimal" />
+                <span class="suffix">%</span>
+              </span>
+            </label>
+            <label class="field">
+              <span>Plazo</span>
+              <span class="input-wrap compact">
+                <input id="years" type="number" min="1" step="1" inputmode="numeric" />
+                <span class="suffix">años</span>
+              </span>
+            </label>
+          </div>
+          <div class="settings-footer">
+            <p><span aria-hidden="true">i</span> Los gastos se calculan sobre el valor reconocido por el banco.</p>
+            <button id="reset-settings" type="button">Restaurar valores</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="disclaimer">
+        <strong>Importante</strong>
+        <p>
+          Esta herramienta brinda una estimación orientativa. No contempla UVA,
+          CER, seguros, impuestos ni otros cargos que puedan aplicar.
+        </p>
+      </section>
+
+      <section class="install-card" id="instalar">
+        <span class="install-icon" aria-hidden="true">⌂</span>
+        <div>
+          <strong>Instalá Mi Hogar</strong>
+          <p id="install-help">
+            En iPhone: abrí esta página en Safari, tocá Compartir y elegí
+            “Añadir a pantalla de inicio”.
+          </p>
+        </div>
+        <button id="install-app" type="button" hidden>Instalar</button>
+      </section>
+    </main>
+
+    <footer>
+      <a class="brand footer-brand" href="#inicio">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 36 36"><path d="M5 17.5 18 6l13 11.5V31H21v-8h-6v8H5Z" /></svg>
+        </span>
+        <span>Mi Hogar</span>
+      </a>
+      <div class="footer-copy">
+        <p>Calculá con claridad. Decidí con confianza. Papá está detrás para apoyarte... </p>
+        <p class="creator-credit">
+          Diseñado y desarrollado por
+          <strong>Claudio Aguilera Solutions</strong>
+        </p>
+      </div>
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/pwa.js"></script>
+  </body>
+</html>

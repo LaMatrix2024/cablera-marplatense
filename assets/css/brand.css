@@ -279,14 +279,20 @@ a {
     font-weight: 900;
 }
 
-.lcm-footer {
-    width: min(1180px, calc(100% - 32px));
-    margin: 0 auto;
-    padding: 18px 0 24px;
-    color: var(--lcm-muted);
-    font-size: 13px;
-}
 
+    .lcm-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    max-width: none;
+    z-index: 9999;
+    background: #111111;
+    border-top: 1px solid #2f2f2f;
+    box-shadow: 0 -8px 22px rgba(0,0,0,.45);
+    padding: 12px 24px;
+}
 .lcm-empty-state {
     min-height: calc(100vh - 76px);
     display: grid;

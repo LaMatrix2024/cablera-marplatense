@@ -11,6 +11,7 @@ require_once __DIR__ . '/../../shared/layout.php';
             display: grid;
             gap: 18px;
             padding-top: 64px;
+            padding-bottom: 120px;
         }
 
         .prod-head {
@@ -22,7 +23,7 @@ require_once __DIR__ . '/../../shared/layout.php';
 
         .prod-title h1 {
             margin: 0 0 10px;
-            font-size: clamp(42px, 5vw, 66px);
+            font-size: clamp(32px, 5vw, 52px);
             line-height: .95;
         }
 
@@ -68,15 +69,17 @@ require_once __DIR__ . '/../../shared/layout.php';
             border: 0;
             border-radius: 10px;
             padding: 11px 12px;
-            font-size: 22px;
-            font-weight: 900;
+            font-size: 18px;
+            font-weight: bold;
             text-align: center;
+             text-shadow: 0 0 1px #d90000;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 14px;
             font-family: var(--lcm-font-base);
+             
         }
 
         .periodo-button span {
@@ -333,6 +336,13 @@ require_once __DIR__ . '/../../shared/layout.php';
             z-index: 2;
         }
 
+        .prod-table tfoot td {
+            position: static;
+            background: #2a1d16;
+            font-weight: 900;
+            border-top: 2px solid var(--lcm-orange);
+        }
+
         .prod-num {
             text-align: right !important;
             font-variant-numeric: tabular-nums;
@@ -341,6 +351,7 @@ require_once __DIR__ . '/../../shared/layout.php';
         .prod-total-row td {
             background: rgba(255,107,53,.10);
             font-weight: 900;
+            color: #fff;
         }
 
         .prod-empty {
@@ -406,20 +417,18 @@ require_once __DIR__ . '/../../shared/layout.php';
             accent-color: var(--lcm-orange);
         }
 
-        @media(max-width:1100px) {
-            .prod-head {
-                grid-template-columns: 1fr;
-            }
 
-            .prod-zone-strip {
-                grid-template-columns: repeat(2, minmax(180px, 1fr));
-            }
+       
 
-            .prod-filter-group {
-                grid-template-columns: repeat(2, minmax(180px, 1fr));
-            }
-        }
-
+@media(max-width:760px) {
+    .prod-summary-fixed {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px 14px;
+        justify-content: start;
+        font-size: 12px;
+    }
+}
         @media(max-width:760px) {
             .prod-page {
                 padding-top: 58px;
@@ -475,6 +484,16 @@ require_once __DIR__ . '/../../shared/layout.php';
             }
         }
 
+
+            .prod-summary-fixed {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 6px 14px;
+                font-size: 12px;
+                padding: 8px 14px;
+                bottom: 43px;
+            }
+
         @media(max-width:650px) {
             .prod-zone-strip {
                 grid-template-columns: 1fr;
@@ -490,7 +509,7 @@ require_once __DIR__ . '/../../shared/layout.php';
 
     <section class="prod-head">
         <div class="prod-title">
-            <h1>Producción Planta Externa-Ocras y PTRs</h1>
+            <h1>Producción Planta Externa</h1>
             <p class="lcm-muted">
                 Resumen venta devengada, período, zona contrato, sucursales, contratistas y HB ejecutadas.
             </p>
@@ -498,7 +517,7 @@ require_once __DIR__ . '/../../shared/layout.php';
 
         <aside class="prod-controls">
             <div class="prod-label">
-                Periodos
+                Periodo
                 <div class="periodo-dropdown">
                     <button id="periodoBtn" class="periodo-button" type="button">
                         <span>Seleccionar</span>
@@ -554,6 +573,8 @@ require_once __DIR__ . '/../../shared/layout.php';
             </div>
             <div class="sucursal-options" id="sucursalOptions"></div>
         </div>
+
+        
     </section>
 
     <section class="prod-panel">
@@ -599,6 +620,7 @@ require_once __DIR__ . '/../../shared/layout.php';
         </div>
 
         <div class="prod-table-wrap">
+            
             <table class="prod-table" id="tablaContratistas">
                 <thead>
                     <tr>
@@ -619,6 +641,8 @@ require_once __DIR__ . '/../../shared/layout.php';
 </main>
 
 <?php lcm_footer(); ?>
+
+
 
 <script>
 const API_BASE = '/api/telefonia/produccion_planta';
@@ -678,6 +702,7 @@ function fmtPct(valor) {
         maximumFractionDigits: 2
     }) + '%';
 }
+
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -981,6 +1006,7 @@ async function cargarContratistas() {
 
     if (!periodos) {
         contratistasBody.innerHTML = `<tr><td colspan="6">Seleccioná al menos un período.</td></tr>`;
+        actualizarResumenFijo();
         return;
     }
 
@@ -1027,6 +1053,7 @@ async function cargarContratistas() {
     if (!rows.length) {
         contratistasBody.innerHTML = `<tr><td colspan="6">Sin datos para los filtros seleccionados.</td></tr>`;
         contratistasTotal.innerHTML = '';
+        actualizarResumenFijo();
         return;
     }
 
@@ -1047,6 +1074,8 @@ async function cargarContratistas() {
             </tr>
         `;
     }).join('');
+
+    actualizarResumenFijo(totalPtr, totalOcra, totalHb, totalVenta);
 
     contratistasTotal.innerHTML = `
         <tr class="prod-total-row">
