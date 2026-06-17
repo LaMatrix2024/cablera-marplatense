@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Índices BCRA</title>
+
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --warning: #f59e0b;
+      --success: #16a34a;
+      --danger: #dc2626;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      background: linear-gradient(135deg, #2563eb, #0f172a);
+      color: white;
+      padding: 28px 18px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 30px;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      color: #dbeafe;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 24px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      margin-bottom: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      font-size: 15px;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    button {
+      border: none;
+      background: var(--primary);
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: var(--primary-dark);
+    }
+
+    .info {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .mini-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: #f9fafb;
+    }
+
+    .mini-card span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .mini-card strong {
+      font-size: 16px;
+    }
+
+    .estado {
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin-top: 14px;
+      font-weight: bold;
+      background: #fff7ed;
+      color: #9a3412;
+      border: 1px solid #fed7aa;
+    }
+
+    .estado.ok {
+      background: #ecfdf5;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+
+    .estado.error {
+      background: #fef2f2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    th {
+      background: #f9fafb;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    td.valor {
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .loader {
+      display: none;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 20px;
+    }
+
+    @media (max-width: 800px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .info {
+        grid-template-columns: 1fr;
+      }
+
+      header h1 {
+        font-size: 24px;
+      }
+
+      table {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Índices BCRA</h1>
+  <p>Consulta de variables monetarias del Banco Central</p>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <div class="grid">
+      <div>
+        <label>Buscar variable</label>
+        <input 
+          type="text" 
+          id="buscar" 
+          placeholder="Ej: dólar, reservas, plazo fijo, descubierto..."
+        />
+      </div>
+
+      <div>
+        <label>Variable BCRA</label>
+        <select id="variableSelect">
+          <option>Cargando variables...</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Registros</label>
+        <input type="number" id="cantidad" value="20" min="1" max="500" />
+      </div>
+    </div>
+
+    <br />
+
+    <button onclick="consultarVariable()">Consultar índice</button>
+
+    <div class="loader" id="loader">Consultando BCRA...</div>
+  </div>
+
+  <div class="card" id="panelInfo" style="display:none;">
+    <h2 id="tituloVariable">Variable seleccionada</h2>
+
+    <div class="info">
+      <div class="mini-card">
+        <span>ID Variable</span>
+        <strong id="infoId">-</strong>
+      </div>
+
+      <div class="mini-card">
+        <span>Categoría</span>
+        <strong id="infoCategoria">-</strong>
+      </div>
+
+      <div class="mini-card">
+        <span>Unidad</span>
+        <strong id="infoUnidad">-</strong>
+      </div>
+
+      <div class="mini-card">
+        <span>Último valor</span>
+        <strong id="infoValor">-</strong>
+      </div>
+    </div>
+
+    <div id="estadoFecha" class="estado"></div>
+  </div>
+
+  <div class="card" id="panelTabla" style="display:none;">
+    <h2>Valores informados</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th style="text-align:right;">Valor</th>
+        </tr>
+      </thead>
+      <tbody id="tablaResultados"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<div class="footer">
+  Datos obtenidos desde API pública del BCRA
+</div>
+
+<script>
+  const API_BASE = "https://api.bcra.gob.ar/estadisticas/v4.0/monetarias";
+
+  let variables = [];
+  let variablesFiltradas = [];
+
+  const buscarInput = document.getElementById("buscar");
+  const variableSelect = document.getElementById("variableSelect");
+
+  buscarInput.addEventListener("input", filtrarVariables);
+  variableSelect.addEventListener("change", mostrarInfoVariable);
+
+  async function cargarVariables() {
+    try {
+      const response = await fetch(API_BASE);
+
+      if (!response.ok) {
+        throw new Error("Error API: " + response.status);
+      }
+
+      const data = await response.json();
+
+      variables = data.results || [];
+      variablesFiltradas = variables;
+
+      cargarSelect(variablesFiltradas);
+      mostrarInfoVariable();
+
+    } catch (error) {
+      alert("No se pudieron cargar las variables BCRA: " + error.message);
+    }
+  }
+
+  function cargarSelect(lista) {
+    variableSelect.innerHTML = "";
+
+    if (lista.length === 0) {
+      const option = document.createElement("option");
+      option.textContent = "Sin resultados";
+      option.value = "";
+      variableSelect.appendChild(option);
+      return;
+    }
+
+    lista.forEach(variable => {
+      const option = document.createElement("option");
+      option.value = variable.idVariable;
+      option.textContent = `${variable.idVariable} - ${variable.descripcion}`;
+      variableSelect.appendChild(option);
+    });
+  }
+
+  function filtrarVariables() {
+    const texto = buscarInput.value.trim().toLowerCase();
+
+    variablesFiltradas = variables.filter(v => {
+      return (
+        String(v.idVariable).includes(texto) ||
+        String(v.descripcion || "").toLowerCase().includes(texto) ||
+        String(v.categoria || "").toLowerCase().includes(texto) ||
+        String(v.unidadExpresion || "").toLowerCase().includes(texto)
+      );
+    });
+
+    cargarSelect(variablesFiltradas);
+    mostrarInfoVariable();
+  }
+
+  function obtenerVariableSeleccionada() {
+    const id = Number(variableSelect.value);
+    return variables.find(v => v.idVariable === id);
+  }
+
+  function mostrarInfoVariable() {
+    const variable = obtenerVariableSeleccionada();
+
+    if (!variable) return;
+
+    document.getElementById("panelInfo").style.display = "block";
+
+    document.getElementById("tituloVariable").textContent = variable.descripcion;
+    document.getElementById("infoId").textContent = variable.idVariable;
+    document.getElementById("infoCategoria").textContent = variable.categoria || "-";
+    document.getElementById("infoUnidad").textContent = variable.unidadExpresion || "-";
+    document.getElementById("infoValor").textContent = variable.ultValorInformado ?? "-";
+
+    evaluarFecha(variable.ultFechaInformada);
+  }
+
+  function evaluarFecha(fechaTexto) {
+    const estado = document.getElementById("estadoFecha");
+
+    if (!fechaTexto) {
+      estado.className = "estado error";
+      estado.textContent = "⚠️ Esta variable no tiene última fecha informada.";
+      return;
+    }
+
+    const fecha = new Date(fechaTexto + "T00:00:00");
+    const hoy = new Date();
+
+    fecha.setHours(0, 0, 0, 0);
+    hoy.setHours(0, 0, 0, 0);
+
+    const diferenciaMs = hoy - fecha;
+    const dias = Math.round(diferenciaMs / (1000 * 60 * 60 * 24));
+
+    if (dias === 0) {
+      estado.className = "estado ok";
+      estado.textContent = `✅ Serie actualizada al día de hoy. Última fecha: ${formatearFecha(fechaTexto)}`;
+    } else if (dias === 1) {
+      estado.className = "estado";
+      estado.textContent = `🟡 Último dato disponible: ayer. Fecha: ${formatearFecha(fechaTexto)}`;
+    } else {
+      estado.className = "estado";
+      estado.textContent = `⚠️ Último dato disponible hace ${dias} días. Fecha: ${formatearFecha(fechaTexto)}. Puede ser normal según la serie.`;
+    }
+  }
+
+  async function consultarVariable() {
+    const variable = obtenerVariableSeleccionada();
+
+    if (!variable) {
+      alert("Seleccione una variable válida.");
+      return;
+    }
+
+    const cantidad = Number(document.getElementById("cantidad").value) || 20;
+    const loader = document.getElementById("loader");
+
+    loader.style.display = "block";
+
+    try {
+      const response = await fetch(`${API_BASE}/${variable.idVariable}`);
+
+      if (!response.ok) {
+        throw new Error("Error API: " + response.status);
+      }
+
+      const data = await response.json();
+      const detalle = data.results?.[0]?.detalle || [];
+
+      renderTabla(detalle.slice(0, cantidad));
+
+    } catch (error) {
+      alert("No se pudo consultar la variable: " + error.message);
+    } finally {
+      loader.style.display = "none";
+    }
+  }
+
+  function renderTabla(datos) {
+    const tbody = document.getElementById("tablaResultados");
+    const panelTabla = document.getElementById("panelTabla");
+
+    tbody.innerHTML = "";
+
+    if (datos.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="2">No hay datos disponibles.</td>
+        </tr>
+      `;
+      panelTabla.style.display = "block";
+      return;
+    }
+
+    datos.forEach(item => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${formatearFecha(item.fecha)}</td>
+        <td class="valor">${formatearNumero(item.valor)}</td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+
+    panelTabla.style.display = "block";
+  }
+
+  function formatearFecha(fecha) {
+    if (!fecha) return "-";
+
+    const partes = fecha.split("-");
+    if (partes.length !== 3) return fecha;
+
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+  }
+
+  function formatearNumero(valor) {
+    if (valor === null || valor === undefined || valor === "") return "-";
+
+    return Number(valor).toLocaleString("es-AR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  cargarVariables();
+</script>
+
+</body>
+</html>
