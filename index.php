@@ -50,6 +50,10 @@ require_once __DIR__ . '/shared/layout.php';
             <strong>Licitaciones</strong>
             <small>Procesos transversales de licitacion del grupo.</small>
         </a>
+        <a class="lcm-card" href="/mi_info/bcoCentral/indicesBCRA.html">
+            <strong>Mis Datos</strong>
+            <small>Indices y mas </small>
+        </a>
     </section>
 </main>
 
