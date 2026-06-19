@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2563EB">
+  <meta name="description" content="Consulta de cotización del dólar oficial.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="icon" href="./favicon.ico">
+  <title>Cambio</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="app-header__top">
+        <div class="brand">
+          <img src="./icon-192.png" alt="Cambio" class="brand__icon" width="48" height="48">
+          <div class="brand__copy">
+            <h1>Cambio</h1>
+            <p>Dólar Oficial</p>
+          </div>
+        </div>
+        <div class="header-actions" aria-label="Acciones">
+          <button class="icon-button" id="share-button" type="button" aria-label="Compartir">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16a3 3 0 0 0-2.4 1.2L8.9 13.4a3.2 3.2 0 0 0 0-2.8l6.7-3.8A3 3 0 1 0 15 5a3 3 0 0 0 .1.8L8.4 9.6a3 3 0 1 0 0 4.8l6.7 3.8A3 3 0 1 0 18 16Z"/></svg>
+          </button>
+          <button class="icon-button" id="refresh-button" type="button" aria-label="Actualizar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.7 6.3A8 8 0 0 0 4 12H1l3.9 3.9L8.9 12H6a6 6 0 1 1 1.7 4.2l-1.4 1.4A8 8 0 1 0 17.7 6.3Z"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="app-header__subtitle">Consulta de cotización del dólar oficial</p>
+    </header>
+
+    <main class="content">
+      <section class="card card--status" aria-live="polite">
+        <div class="status-line">
+          <span class="status-dot" id="status-dot"></span>
+          <div>
+            <strong id="status-title">Cargando datos</strong>
+            <p id="status-text">Esperando respuesta de la API</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="metrics-grid" aria-label="Cotización">
+        <article class="card metric-card">
+          <span class="metric-card__label metric-card__label--success">Compra</span>
+          <strong class="metric-card__value" id="quote-buy">--</strong>
+        </article>
+        <article class="card metric-card">
+          <span class="metric-card__label metric-card__label--primary">Venta</span>
+          <strong class="metric-card__value metric-card__value--accent" id="quote-sell-small">--</strong>
+        </article>
+      </section>
+
+      
+
+      <section class="card info-card info-card--soft" id="share-card">
+        <div class="info-row">
+          <span class="info-row__label">Fuente</span>
+          <strong>dolarapi.com</strong>
+        </div>
+        <p class="info-card__text">Datos oficiales consumidos  desde la API pública.</p>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <div>2026 Cambio</div>
+      <div>Una App de Soluciones Móviles</div>
+      <div>📞 223 578-0917</div>
+      <div>Versión 1.0.0</div>
+  </footer>
+  </div>
+
+  <div class="install-modal" id="install-modal" hidden>
+    <div class="install-modal__backdrop"></div>
+    <div class="install-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="install-title">
+      <h2 id="install-title">Instalar Cambio</h2>
+      <p>¿Desea instalar Cambio en su dispositivo para acceder más rápido?</p>
+      <div class="install-modal__actions">
+        <button class="button button--primary" id="install-button" type="button">Instalar</button>
+        <button class="button button--secondary" id="dismiss-button" type="button">Ahora no</button>
+      </div>
+    </div>
+  </div>
+
+  <template id="offline-template">
+    <div class="offline-banner">
+      <strong>Sin conexión</strong>
+      <span>No se pudo actualizar la cotización. Se muestra el último valor disponible.</span>
+    </div>
+  </template>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
