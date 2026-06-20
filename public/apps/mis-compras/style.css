@@ -229,22 +229,6 @@ button {
   position: relative;
 }
 
-.debug-panel {
-  display: none;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-.debug-panel label {
-  color: var(--text-sub);
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-body[data-debug="1"] .debug-panel {
-  display: grid;
-}
-
 .suggestions {
   position: absolute;
   left: 0;
