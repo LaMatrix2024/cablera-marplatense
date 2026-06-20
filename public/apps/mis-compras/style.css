@@ -273,6 +273,12 @@ button {
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
+.rubro-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
 .field--product {
   margin-bottom: 5px;
 }
@@ -417,10 +423,22 @@ button {
 
 .item-card--comprado {
   background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.18);
+}
+
+.item-card--pendiente {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.18);
 }
 
 .item-card--cancelado {
   background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.16);
+}
+
+.item-card--excluido {
+  background: rgba(239, 68, 68, 0.04);
+  border-color: rgba(239, 68, 68, 0.1);
 }
 
 .item-card__main {
@@ -451,6 +469,26 @@ button {
   padding: 5px 9px;
   font-size: 0.72rem;
   font-weight: 800;
+}
+
+.state-pill--pendiente {
+  background: rgba(239, 68, 68, 0.14);
+  color: #b91c1c;
+}
+
+.state-pill--comprado {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+.state-pill--cancelado {
+  background: rgba(245, 158, 11, 0.14);
+  color: #92400e;
+}
+
+.state-pill--excluido {
+  background: rgba(239, 68, 68, 0.08);
+  color: #991b1b;
 }
 
 .item-card__actions {
@@ -596,6 +634,15 @@ button {
   margin: 0 0 18px;
   color: var(--text-sub);
   line-height: 1.45;
+}
+
+.modal-message {
+  border-radius: 14px;
+  padding: 9px 10px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .install-modal__actions,

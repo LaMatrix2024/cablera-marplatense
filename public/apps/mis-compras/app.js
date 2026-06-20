@@ -14,6 +14,7 @@ const state = {
   items: [],
   estado: 'PENDIENTE',
   rubroId: '',
+  pendingNewRubroId: null,
   productSuggestions: [],
   deferredPrompt: null,
   pendingExcludeId: null,
@@ -30,6 +31,7 @@ const els = {
   productSuggestions: document.getElementById('product-suggestions'),
   quantityInput: document.getElementById('quantity-input'),
   rubroSelect: document.getElementById('rubro-select'),
+  newRubroButton: document.getElementById('new-rubro-button'),
   rubroFilter: document.getElementById('rubro-filter'),
   userSelect: document.getElementById('user-select'),
   addButton: document.getElementById('add-button'),
@@ -53,6 +55,12 @@ const els = {
   excludeModal: document.getElementById('exclude-modal'),
   excludeConfirmButton: document.getElementById('exclude-confirm-button'),
   excludeCancelButton: document.getElementById('exclude-cancel-button'),
+  rubroModal: document.getElementById('rubro-modal'),
+  rubroForm: document.getElementById('rubro-form'),
+  rubroNameInput: document.getElementById('rubro-name-input'),
+  rubroMessage: document.getElementById('rubro-message'),
+  rubroCreateButton: document.getElementById('rubro-create-button'),
+  rubroCancelButton: document.getElementById('rubro-cancel-button'),
 };
 
 function setStatus(message, kind = 'neutral', detail = '') {
@@ -136,6 +144,12 @@ function normalizeProduct(value) {
     .toLocaleUpperCase('es-AR');
 }
 
+function normalizeRubroName(value) {
+  const clean = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!clean) return '';
+  return clean.charAt(0).toLocaleUpperCase('es-AR') + clean.slice(1);
+}
+
 function currentUser() {
   return els.userSelect.value || 'sin_identificar';
 }
@@ -151,11 +165,19 @@ function restoreUser() {
   }
 }
 
-function renderRubros() {
+function renderRubros(selectedId = null) {
+  const currentRubro = selectedId || state.pendingNewRubroId || els.rubroSelect.value;
+  const currentFilter = els.rubroFilter.value;
+  const currentEdit = els.editRubro.value;
   const options = state.rubros.map((rubro) => `<option value="${rubro.id}">${rubro.nombre}</option>`).join('');
   els.rubroSelect.innerHTML = `<option value="">Sin rubro</option>${options}`;
   els.editRubro.innerHTML = `<option value="">Sin rubro</option>${options}`;
   els.rubroFilter.innerHTML = `<option value="">Todos los rubros</option>${options}`;
+
+  if (currentRubro) els.rubroSelect.value = String(currentRubro);
+  if (currentFilter) els.rubroFilter.value = currentFilter;
+  if (currentEdit) els.editRubro.value = currentEdit;
+  state.pendingNewRubroId = null;
 }
 
 function mergeProductSuggestions(items) {
@@ -238,7 +260,7 @@ function renderItem(item) {
         <strong>${escapeHtml(normalizeProduct(item.producto))}</strong>
         <p>${escapeHtml(meta)}</p>
       </div>
-      <span class="state-pill">${estadoLabel(item.estado)}</span>
+      <span class="state-pill state-pill--${item.estado.toLowerCase()}">${estadoLabel(item.estado)}</span>
     </div>
     <div class="item-card__actions">${actions.join('')}</div>
   `;
@@ -292,10 +314,10 @@ async function loadList() {
   els.listName.textContent = data.lista.nombre;
 }
 
-async function loadRubros() {
+async function loadRubros(selectedId = null) {
   const data = await apiRequest(`rubros.php?${encodeQuery({ lista: state.lista })}`);
   state.rubros = data.rubros || [];
-  renderRubros();
+  renderRubros(selectedId);
 }
 
 async function loadItems() {
@@ -428,6 +450,64 @@ function openExcludeModal() {
 function closeExcludeModal() {
   els.excludeModal.hidden = true;
   state.pendingExcludeId = null;
+}
+
+function openRubroModal() {
+  els.rubroMessage.hidden = true;
+  els.rubroMessage.textContent = '';
+  els.rubroNameInput.value = '';
+  els.rubroModal.hidden = false;
+  els.rubroNameInput.focus();
+}
+
+function closeRubroModal() {
+  els.rubroModal.hidden = true;
+  els.rubroForm.reset();
+  els.rubroMessage.hidden = true;
+  els.rubroMessage.textContent = '';
+}
+
+async function createRubro(event) {
+  event.preventDefault();
+  const nombre = normalizeRubroName(els.rubroNameInput.value);
+
+  if (!nombre) {
+    els.rubroMessage.textContent = 'Ingresá un nombre de rubro.';
+    els.rubroMessage.hidden = false;
+    return;
+  }
+
+  const exists = state.rubros.find((rubro) => rubro.nombre.toLocaleLowerCase('es-AR') === nombre.toLocaleLowerCase('es-AR'));
+  if (exists) {
+    els.rubroMessage.textContent = 'Ese rubro ya existe.';
+    els.rubroMessage.hidden = false;
+    els.rubroSelect.value = String(exists.id);
+    return;
+  }
+
+  els.rubroCreateButton.disabled = true;
+  persistUser();
+
+  try {
+    const data = await apiRequest('rubros.php', {
+      method: 'POST',
+      body: JSON.stringify({
+        lista: state.lista,
+        nombre,
+        usuario: currentUser(),
+      }),
+    });
+    state.pendingNewRubroId = data.rubro.id;
+    await loadRubros(data.rubro.id);
+    closeRubroModal();
+    setStatus('Actualizada', 'ok', formatDateAR(new Date()));
+  } catch (error) {
+    console.warn(error);
+    els.rubroMessage.textContent = error.message || 'No se pudo crear el rubro.';
+    els.rubroMessage.hidden = false;
+  } finally {
+    els.rubroCreateButton.disabled = false;
+  }
 }
 
 function openEdit(item) {
@@ -602,6 +682,14 @@ function bindEvents() {
   });
   els.refreshButton.addEventListener('click', refreshAll);
   els.shareButton.addEventListener('click', shareList);
+  els.newRubroButton.addEventListener('click', openRubroModal);
+  els.rubroForm.addEventListener('submit', createRubro);
+  els.rubroCancelButton.addEventListener('click', closeRubroModal);
+  els.rubroModal.addEventListener('click', (event) => {
+    if (event.target === els.rubroModal || event.target.classList.contains('confirm-modal__backdrop')) {
+      closeRubroModal();
+    }
+  });
   els.viewListButton.addEventListener('click', openListMode);
   els.backListButton.addEventListener('click', closeListMode);
   els.userSelect.addEventListener('change', persistUser);
@@ -629,6 +717,9 @@ function bindEvents() {
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !els.excludeModal.hidden) {
       closeExcludeModal();
+    }
+    if (event.key === 'Escape' && !els.rubroModal.hidden) {
+      closeRubroModal();
     }
   });
   els.installButton.addEventListener('click', handleInstall);

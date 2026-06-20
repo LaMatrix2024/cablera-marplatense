@@ -51,7 +51,10 @@
             </div>
             <div class="field">
               <label for="rubro-select">Rubro</label>
-              <select id="rubro-select" name="rubro_id"></select>
+              <div class="rubro-control">
+                <select id="rubro-select" name="rubro_id"></select>
+                <button class="button button--secondary button--compact" id="new-rubro-button" type="button">+ Rubro</button>
+              </div>
             </div>
           </div>
           <div class="form-row form-row--actions">
@@ -153,6 +156,22 @@
         <button class="button button--secondary" id="exclude-cancel-button" type="button">Volver</button>
       </div>
     </div>
+  </div>
+
+  <div class="confirm-modal" id="rubro-modal" hidden>
+    <div class="confirm-modal__backdrop"></div>
+    <form class="confirm-modal__dialog" id="rubro-form" role="dialog" aria-modal="true" aria-labelledby="rubro-title">
+      <h2 id="rubro-title">Nuevo rubro</h2>
+      <div class="field">
+        <label for="rubro-name-input">Nombre del rubro</label>
+        <input id="rubro-name-input" type="text" maxlength="80" required>
+      </div>
+      <p class="modal-message" id="rubro-message" hidden></p>
+      <div class="confirm-modal__actions">
+        <button class="button button--primary" id="rubro-create-button" type="submit">Crear</button>
+        <button class="button button--secondary" id="rubro-cancel-button" type="button">Volver</button>
+      </div>
+    </form>
   </div>
 
   <template id="empty-template">
