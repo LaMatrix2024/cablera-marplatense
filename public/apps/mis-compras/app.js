@@ -145,6 +145,12 @@ function normalizeProduct(value) {
     .toLocaleUpperCase('es-AR');
 }
 
+function normalizeProductDraft(value) {
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .toLocaleUpperCase('es-AR');
+}
+
 function normalizeRubroName(value) {
   const clean = String(value || '').replace(/\s+/g, ' ').trim();
   if (!clean) return '';
@@ -191,7 +197,7 @@ function mergeProductSuggestions(items) {
 }
 
 function renderProductSuggestions() {
-  const query = normalizeProduct(els.productInput.value);
+  const query = normalizeProduct(els.productInput.value).trim();
   if (!query) {
     hideProductSuggestions();
     return;
@@ -218,7 +224,7 @@ function hideProductSuggestions() {
 }
 
 function normalizeProductInput(input) {
-  const normalized = normalizeProduct(input.value);
+  const normalized = normalizeProductDraft(input.value);
   if (input.value !== normalized) {
     input.value = normalized;
   }
@@ -679,6 +685,34 @@ function bindEvents() {
     renderProductSuggestions();
   });
   els.productInput.addEventListener('focus', renderProductSuggestions);
+  els.productInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      hideProductSuggestions();
+      return;
+    }
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter') {
+      const buttons = [...els.productSuggestions.querySelectorAll('button[data-product]')];
+      if (buttons.length === 0) return;
+
+      const activeIndex = buttons.findIndex((button) => button.classList.contains('is-active'));
+      if (event.key === 'Enter' && activeIndex >= 0) {
+        event.preventDefault();
+        buttons[activeIndex].click();
+        return;
+      }
+
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const direction = event.key === 'ArrowDown' ? 1 : -1;
+        const nextIndex = activeIndex < 0
+          ? 0
+          : (activeIndex + direction + buttons.length) % buttons.length;
+        buttons.forEach((button, index) => button.classList.toggle('is-active', index === nextIndex));
+        buttons[nextIndex].scrollIntoView({ block: 'nearest' });
+      }
+    }
+  });
   els.productSuggestions.addEventListener('click', (event) => {
     const button = event.target.closest('button[data-product]');
     if (!button) return;
