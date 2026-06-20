@@ -16,10 +16,8 @@ const state = {
   estado: 'PENDIENTE',
   rubroId: '',
   pendingNewRubroId: null,
-  productSuggestions: [],
   deferredPrompt: null,
   pendingExcludeId: null,
-  productIsComposing: false,
 };
 
 const els = {
@@ -182,42 +180,6 @@ function renderRubros(selectedId = null) {
   state.pendingNewRubroId = null;
 }
 
-function mergeProductSuggestions(items) {
-  const names = new Set(state.productSuggestions);
-  items.forEach((item) => {
-    const product = normalizeProduct(item.producto);
-    if (product) names.add(product);
-  });
-  state.productSuggestions = [...names].sort((a, b) => a.localeCompare(b, 'es-AR'));
-}
-
-function renderProductSuggestions() {
-  const query = String(els.productInput.value || '').toLocaleUpperCase('es-AR');
-  if (!query.trim()) {
-    hideProductSuggestions();
-    return;
-  }
-
-  const matches = state.productSuggestions
-    .filter((product) => product.includes(query) && product !== query)
-    .slice(0, 8);
-
-  if (matches.length === 0) {
-    hideProductSuggestions();
-    return;
-  }
-
-  els.productSuggestions.innerHTML = matches
-    .map((product) => `<button class="suggestion-button" type="button" data-product="${escapeHtml(product)}">${escapeHtml(product)}</button>`)
-    .join('');
-  els.productSuggestions.hidden = false;
-}
-
-function hideProductSuggestions() {
-  els.productSuggestions.hidden = true;
-  els.productSuggestions.innerHTML = '';
-}
-
 function renderSummary() {
   const pendientes = state.items.filter((item) => item.estado === 'PENDIENTE').length;
   const total = state.items.length;
@@ -324,7 +286,6 @@ async function loadItems() {
 
   const data = await apiRequest(`items.php?${encodeQuery(query)}`);
   state.items = data.items || [];
-  mergeProductSuggestions(state.items);
   renderItems();
 }
 
@@ -366,7 +327,6 @@ async function addItem(event) {
     });
     setVisiblePendingFilter();
     els.form.reset();
-    hideProductSuggestions();
     restoreUser();
     await loadItems();
     setStatus('Actualizada', 'ok', formatDateAR(new Date()));
@@ -668,61 +628,8 @@ function registerServiceWorker() {
 
 function bindEvents() {
   els.form.addEventListener('submit', addItem);
-  els.productInput.addEventListener('input', () => {
-    if (state.productIsComposing) return;
-    renderProductSuggestions();
-  });
-  els.productInput.addEventListener('focus', renderProductSuggestions);
-  els.productInput.addEventListener('compositionstart', () => {
-    state.productIsComposing = true;
-  });
-  els.productInput.addEventListener('compositionend', () => {
-    state.productIsComposing = false;
-    renderProductSuggestions();
-  });
-  els.productInput.addEventListener('keydown', (event) => {
-    if (state.productIsComposing) return;
-    if (event.key === 'Escape') {
-      hideProductSuggestions();
-      return;
-    }
-
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Enter') {
-      const buttons = [...els.productSuggestions.querySelectorAll('button[data-product]')];
-      if (buttons.length === 0) return;
-
-      const activeIndex = buttons.findIndex((button) => button.classList.contains('is-active'));
-      if (event.key === 'Enter' && activeIndex >= 0) {
-        event.preventDefault();
-        buttons[activeIndex].click();
-        return;
-      }
-
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault();
-        const direction = event.key === 'ArrowDown' ? 1 : -1;
-        const nextIndex = activeIndex < 0
-          ? 0
-          : (activeIndex + direction + buttons.length) % buttons.length;
-        buttons.forEach((button, index) => button.classList.toggle('is-active', index === nextIndex));
-        buttons[nextIndex].scrollIntoView({ block: 'nearest' });
-      }
-    }
-  });
-  els.productSuggestions.addEventListener('click', (event) => {
-    const button = event.target.closest('button[data-product]');
-    if (!button) return;
-    els.productInput.value = button.dataset.product;
-    hideProductSuggestions();
-    els.productInput.focus();
-  });
-  els.editProduct.addEventListener('input', () => {
-    els.editProduct.value = normalizeProduct(els.editProduct.value);
-  });
   document.addEventListener('click', (event) => {
-    if (!els.productInput.contains(event.target) && !els.productSuggestions.contains(event.target)) {
-      hideProductSuggestions();
-    }
+    if (!els.productInput.contains(event.target)) return;
   });
   els.refreshButton.addEventListener('click', refreshAll);
   els.shareButton.addEventListener('click', shareList);
