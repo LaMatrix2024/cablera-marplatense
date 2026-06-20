@@ -656,9 +656,19 @@ async function handleInstall() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register(`${APP_PUBLIC_PATH}sw.js`, { scope: APP_PUBLIC_PATH }).catch((error) => {
-      console.warn('No se pudo registrar el service worker', error);
-    });
+    navigator.serviceWorker.register(`${APP_PUBLIC_PATH}sw.js`, { scope: APP_PUBLIC_PATH })
+      .then(async (registration) => {
+        console.info('Mis Compras PWA: SW registrado', registration.scope);
+        try {
+          await navigator.serviceWorker.ready;
+          console.info('Mis Compras PWA: PWA ready');
+        } catch (error) {
+          console.error('Mis Compras PWA: error esperando SW ready', error);
+        }
+      })
+      .catch((error) => {
+        console.error('Mis Compras PWA: no se pudo registrar el service worker', error);
+      });
   }
 }
 
