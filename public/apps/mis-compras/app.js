@@ -626,6 +626,7 @@ function closeInstallModal(markSeen = true) {
 function registerInstallPrompt() {
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
+    console.info('Mis Compras PWA: beforeinstallprompt detectado');
     state.deferredPrompt = event;
     openInstallModal();
   });
