@@ -1,0 +1,5 @@
+RewriteEngine On
+
+# PWA publicas: URL oficial /apps/{nombre-app}/
+# Ruta fisica interna: /public/apps/{nombre-app}/
+RewriteRule ^apps/(.*)$ public/apps/$1 [L,QSA]

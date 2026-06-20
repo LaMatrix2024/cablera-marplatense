@@ -1,14 +1,14 @@
-const CACHE_NAME = 'mis-compras-pwa-v6';
+const CACHE_NAME = 'mis-compras-pwa-v7';
 const PRECACHE_URLS = [
-  './',
-  './index.html',
-  './style.css',
-  './app.js',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
-  './apple-touch-icon.png',
-  './favicon.ico',
+  '/apps/mis-compras/',
+  '/apps/mis-compras/index.html',
+  '/apps/mis-compras/style.css',
+  '/apps/mis-compras/app.js',
+  '/apps/mis-compras/manifest.json',
+  '/apps/mis-compras/icon-192.png',
+  '/apps/mis-compras/icon-512.png',
+  '/apps/mis-compras/apple-touch-icon.png',
+  '/apps/mis-compras/favicon.ico',
 ];
 
 self.addEventListener('install', (event) => {
@@ -42,7 +42,7 @@ self.addEventListener('fetch', (event) => {
         const responseClone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
         return response;
-      }).catch(() => caches.match('./index.html'));
+      }).catch(() => caches.match('/apps/mis-compras/index.html'));
     })
   );
 });

@@ -1,6 +1,7 @@
 /* global navigator, localStorage, window, document */
 
 const API_BASE = '/api/pwa/mis-compras';
+const APP_PUBLIC_PATH = '/apps/mis-compras/';
 const STORAGE = {
   user: 'mis_compras_user_v1',
   installSeen: 'mis_compras_install_seen_v1',
@@ -586,7 +587,7 @@ function setEstadoFilter(estado) {
 }
 
 async function shareList() {
-  const url = new URL(window.location.href);
+  const url = new URL(APP_PUBLIC_PATH, window.location.origin);
   if (state.lista) url.searchParams.set('lista', state.lista);
   const text = `${state.listaNombre}\n${url.toString()}`;
 
@@ -654,7 +655,7 @@ async function handleInstall() {
 
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch((error) => {
+    navigator.serviceWorker.register(`${APP_PUBLIC_PATH}sw.js`, { scope: APP_PUBLIC_PATH }).catch((error) => {
       console.warn('No se pudo registrar el service worker', error);
     });
   }
