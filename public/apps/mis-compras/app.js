@@ -19,6 +19,7 @@ const state = {
   productSuggestions: [],
   deferredPrompt: null,
   pendingExcludeId: null,
+  productIsComposing: false,
 };
 
 const els = {
@@ -145,12 +146,6 @@ function normalizeProduct(value) {
     .toLocaleUpperCase('es-AR');
 }
 
-function normalizeProductDraft(value) {
-  return String(value || '')
-    .replace(/\s+/g, ' ')
-    .toLocaleUpperCase('es-AR');
-}
-
 function normalizeRubroName(value) {
   const clean = String(value || '').replace(/\s+/g, ' ').trim();
   if (!clean) return '';
@@ -197,8 +192,8 @@ function mergeProductSuggestions(items) {
 }
 
 function renderProductSuggestions() {
-  const query = normalizeProduct(els.productInput.value).trim();
-  if (!query) {
+  const query = String(els.productInput.value || '').toLocaleUpperCase('es-AR');
+  if (!query.trim()) {
     hideProductSuggestions();
     return;
   }
@@ -221,13 +216,6 @@ function renderProductSuggestions() {
 function hideProductSuggestions() {
   els.productSuggestions.hidden = true;
   els.productSuggestions.innerHTML = '';
-}
-
-function normalizeProductInput(input) {
-  const normalized = normalizeProductDraft(input.value);
-  if (input.value !== normalized) {
-    input.value = normalized;
-  }
 }
 
 function renderSummary() {
@@ -681,11 +669,19 @@ function registerServiceWorker() {
 function bindEvents() {
   els.form.addEventListener('submit', addItem);
   els.productInput.addEventListener('input', () => {
-    normalizeProductInput(els.productInput);
+    if (state.productIsComposing) return;
     renderProductSuggestions();
   });
   els.productInput.addEventListener('focus', renderProductSuggestions);
+  els.productInput.addEventListener('compositionstart', () => {
+    state.productIsComposing = true;
+  });
+  els.productInput.addEventListener('compositionend', () => {
+    state.productIsComposing = false;
+    renderProductSuggestions();
+  });
   els.productInput.addEventListener('keydown', (event) => {
+    if (state.productIsComposing) return;
     if (event.key === 'Escape') {
       hideProductSuggestions();
       return;
@@ -720,7 +716,9 @@ function bindEvents() {
     hideProductSuggestions();
     els.productInput.focus();
   });
-  els.editProduct.addEventListener('input', () => normalizeProductInput(els.editProduct));
+  els.editProduct.addEventListener('input', () => {
+    els.editProduct.value = normalizeProduct(els.editProduct.value);
+  });
   document.addEventListener('click', (event) => {
     if (!els.productInput.contains(event.target) && !els.productSuggestions.contains(event.target)) {
       hideProductSuggestions();
