@@ -683,6 +683,9 @@ function bindEvents() {
 }
 
 function init() {
+  if (new URLSearchParams(window.location.search).get('debug') === '1') {
+    document.body.dataset.debug = '1';
+  }
   restoreUser();
   registerServiceWorker();
   registerInstallPrompt();
