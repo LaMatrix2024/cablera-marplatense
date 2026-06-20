@@ -14,6 +14,7 @@ const state = {
   items: [],
   estado: 'PENDIENTE',
   rubroId: '',
+  productSuggestions: [],
   deferredPrompt: null,
   pendingExcludeId: null,
 };
@@ -26,6 +27,7 @@ const els = {
   shareButton: document.getElementById('share-button'),
   form: document.getElementById('item-form'),
   productInput: document.getElementById('product-input'),
+  productSuggestions: document.getElementById('product-suggestions'),
   quantityInput: document.getElementById('quantity-input'),
   rubroSelect: document.getElementById('rubro-select'),
   rubroFilter: document.getElementById('rubro-filter'),
@@ -117,24 +119,6 @@ function formatDateAR(dateValue) {
   return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}`;
 }
 
-function formatDateTime(value) {
-  return formatDateAR(value);
-}
-
-function formatArgentinaNow() {
-  return formatDateAR(new Date());
-}
-
-function formatItemDates(item) {
-  return [
-    item.updated_at ? `Act. ${formatDateAR(item.updated_at)}` : '',
-    item.created_at ? `Creado ${formatDateAR(item.created_at)}` : '',
-    item.comprado_at ? `Comprado ${formatDateAR(item.comprado_at)}` : '',
-    item.cancelado_at ? `Cancelado ${formatDateAR(item.cancelado_at)}` : '',
-    item.excluido_at ? `Excluido ${formatDateAR(item.excluido_at)}` : '',
-  ].filter(Boolean);
-}
-
 function estadoLabel(estado) {
   const labels = {
     PENDIENTE: 'Pendiente',
@@ -143,6 +127,13 @@ function estadoLabel(estado) {
     EXCLUIDO: 'Excluido',
   };
   return labels[estado] || estado;
+}
+
+function normalizeProduct(value) {
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLocaleUpperCase('es-AR');
 }
 
 function currentUser() {
@@ -167,6 +158,49 @@ function renderRubros() {
   els.rubroFilter.innerHTML = `<option value="">Todos los rubros</option>${options}`;
 }
 
+function mergeProductSuggestions(items) {
+  const names = new Set(state.productSuggestions);
+  items.forEach((item) => {
+    const product = normalizeProduct(item.producto);
+    if (product) names.add(product);
+  });
+  state.productSuggestions = [...names].sort((a, b) => a.localeCompare(b, 'es-AR'));
+}
+
+function renderProductSuggestions() {
+  const query = normalizeProduct(els.productInput.value);
+  if (!query) {
+    hideProductSuggestions();
+    return;
+  }
+
+  const matches = state.productSuggestions
+    .filter((product) => product.includes(query) && product !== query)
+    .slice(0, 8);
+
+  if (matches.length === 0) {
+    hideProductSuggestions();
+    return;
+  }
+
+  els.productSuggestions.innerHTML = matches
+    .map((product) => `<button class="suggestion-button" type="button" data-product="${escapeHtml(product)}">${escapeHtml(product)}</button>`)
+    .join('');
+  els.productSuggestions.hidden = false;
+}
+
+function hideProductSuggestions() {
+  els.productSuggestions.hidden = true;
+  els.productSuggestions.innerHTML = '';
+}
+
+function normalizeProductInput(input) {
+  const normalized = normalizeProduct(input.value);
+  if (input.value !== normalized) {
+    input.value = normalized;
+  }
+}
+
 function renderSummary() {
   const pendientes = state.items.filter((item) => item.estado === 'PENDIENTE').length;
   const total = state.items.length;
@@ -175,7 +209,7 @@ function renderSummary() {
   } else {
     els.summaryCount.textContent = `${total} producto${total === 1 ? '' : 's'}`;
   }
-  els.lastUpdated.textContent = `Act. ${formatArgentinaNow()}`;
+  els.lastUpdated.textContent = `Act. ${formatDateAR(new Date())}`;
 }
 
 function actionButton(label, action, extraClass = '') {
@@ -186,7 +220,6 @@ function renderItem(item) {
   const meta = [
     item.cantidad ? item.cantidad : '',
     item.rubro ? item.rubro : 'Sin rubro',
-    ...formatItemDates(item),
   ].filter(Boolean).join(' · ');
 
   const actions = [];
@@ -202,7 +235,7 @@ function renderItem(item) {
   article.innerHTML = `
     <div class="item-card__main">
       <div>
-        <strong>${escapeHtml(item.producto)}</strong>
+        <strong>${escapeHtml(normalizeProduct(item.producto))}</strong>
         <p>${escapeHtml(meta)}</p>
       </div>
       <span class="state-pill">${estadoLabel(item.estado)}</span>
@@ -274,6 +307,7 @@ async function loadItems() {
 
   const data = await apiRequest(`items.php?${encodeQuery(query)}`);
   state.items = data.items || [];
+  mergeProductSuggestions(state.items);
   renderItems();
 }
 
@@ -285,7 +319,7 @@ async function refreshAll() {
     await loadList();
     await loadRubros();
     await loadItems();
-    setStatus('Actualizada', 'ok', formatArgentinaNow());
+    setStatus('Actualizada', 'ok', formatDateAR(new Date()));
   } catch (error) {
     console.warn(error);
     setStatus('Sin conexión', 'error', 'No se pudo actualizar');
@@ -296,7 +330,7 @@ async function refreshAll() {
 
 async function addItem(event) {
   event.preventDefault();
-  const producto = els.productInput.value.trim();
+  const producto = normalizeProduct(els.productInput.value);
   if (!producto) return;
 
   els.addButton.disabled = true;
@@ -315,9 +349,10 @@ async function addItem(event) {
     });
     setVisiblePendingFilter();
     els.form.reset();
+    hideProductSuggestions();
     restoreUser();
     await loadItems();
-    setStatus('Actualizada', 'ok', formatArgentinaNow());
+    setStatus('Actualizada', 'ok', formatDateAR(new Date()));
   } catch (error) {
     console.warn(error);
     setStatus('Sin conexión', 'error', 'No se pudo actualizar');
@@ -376,7 +411,7 @@ async function confirmExcludeItem() {
     });
     closeExcludeModal();
     await loadItems();
-    setStatus('Actualizada', 'ok', formatArgentinaNow());
+    setStatus('Actualizada', 'ok', formatDateAR(new Date()));
   } catch (error) {
     console.warn(error);
     setStatus('Sin conexión', 'error', 'No se pudo actualizar');
@@ -397,7 +432,7 @@ function closeExcludeModal() {
 
 function openEdit(item) {
   els.editId.value = item.id;
-  els.editProduct.value = item.producto || '';
+  els.editProduct.value = normalizeProduct(item.producto);
   els.editQuantity.value = item.cantidad || '';
   els.editRubro.value = item.rubro_id || '';
   els.editModal.hidden = false;
@@ -412,6 +447,7 @@ function closeEdit() {
 async function saveEdit(event) {
   event.preventDefault();
   const id = els.editId.value;
+  const producto = normalizeProduct(els.editProduct.value);
   persistUser();
 
   try {
@@ -419,7 +455,7 @@ async function saveEdit(event) {
       method: 'PATCH',
       body: JSON.stringify({
         lista: state.lista,
-        producto: els.editProduct.value.trim(),
+        producto,
         cantidad: els.editQuantity.value.trim(),
         rubro_id: els.editRubro.value || null,
         usuario: currentUser(),
@@ -546,6 +582,24 @@ function registerServiceWorker() {
 
 function bindEvents() {
   els.form.addEventListener('submit', addItem);
+  els.productInput.addEventListener('input', () => {
+    normalizeProductInput(els.productInput);
+    renderProductSuggestions();
+  });
+  els.productInput.addEventListener('focus', renderProductSuggestions);
+  els.productSuggestions.addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-product]');
+    if (!button) return;
+    els.productInput.value = button.dataset.product;
+    hideProductSuggestions();
+    els.productInput.focus();
+  });
+  els.editProduct.addEventListener('input', () => normalizeProductInput(els.editProduct));
+  document.addEventListener('click', (event) => {
+    if (!els.productInput.contains(event.target) && !els.productSuggestions.contains(event.target)) {
+      hideProductSuggestions();
+    }
+  });
   els.refreshButton.addEventListener('click', refreshAll);
   els.shareButton.addEventListener('click', shareList);
   els.viewListButton.addEventListener('click', openListMode);

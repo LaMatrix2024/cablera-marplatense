@@ -112,13 +112,20 @@ foreach ($estados as [$codigo, $nombre, $descripcion, $orden]) {
 
 $rubros = [
     ['Almacen', 10],
-    ['Carniceria', 20],
+    ['Carnicería', 20],
     ['Verduleria', 30],
     ['Limpieza', 40],
     ['Farmacia', 50],
     ['Bebidas', 60],
     ['Otros', 70],
 ];
+
+$stmtFixRubro = $pdo->prepare("
+    UPDATE pwa_compra_rubros
+    SET nombre = 'Carnicería', orden = 20, activo = 1
+    WHERE lista_id = :lista_id AND nombre = 'Carniceria'
+");
+$stmtFixRubro->execute(['lista_id' => $listaId]);
 
 $stmtRubro = $pdo->prepare("
     INSERT INTO pwa_compra_rubros (lista_id, nombre, orden, activo)
@@ -140,4 +147,3 @@ foreach ($rubros as [$nombre, $orden]) {
 }
 
 echo "OK: tablas y semillas de Mis Compras listas en u767019378_laboratorio" . PHP_EOL;
-

@@ -220,6 +220,52 @@ button {
   outline: none;
 }
 
+#product-input,
+#edit-product {
+  text-transform: uppercase;
+}
+
+.field--product {
+  position: relative;
+}
+
+.suggestions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  max-height: 160px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14);
+}
+
+.suggestion-button {
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.suggestion-button:hover,
+.suggestion-button:focus-visible {
+  background: rgba(37, 99, 235, 0.08);
+  outline: none;
+}
+
 .field input:focus,
 .field select:focus,
 .rubro-filter:focus {
