@@ -11,97 +11,6 @@ if ($requestMethod === 'OPTIONS') {
     exit;
 }
 
-function mc_load_env_file(string $path): void
-{
-    if (!is_file($path) || !is_readable($path)) {
-        return;
-    }
-
-    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if ($lines === false) {
-        return;
-    }
-
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
-            continue;
-        }
-
-        [$name, $value] = explode('=', $line, 2);
-        $name = trim($name);
-        $value = trim($value);
-
-        if ($name === '') {
-            continue;
-        }
-
-        if (
-            (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
-            (str_starts_with($value, "'") && str_ends_with($value, "'"))
-        ) {
-            $value = substr($value, 1, -1);
-        }
-
-        if (getenv($name) === false) {
-            putenv($name . '=' . $value);
-            $_ENV[$name] = $value;
-        }
-    }
-}
-
-function mc_bootstrap_env(): void
-{
-    $projectRoot = dirname(__DIR__, 4);
-
-    $envPhp = $projectRoot . '/config/env.php';
-    if (is_file($envPhp)) {
-        require_once $envPhp;
-    }
-
-    mc_load_env_file($projectRoot . '/config/env.local');
-    mc_load_env_file('C:/plantel/DATOS_LOCALES/plantel.env');
-    mc_load_env_file($projectRoot . '/.env');
-}
-
-function mc_env(string $name, ?string $default = null): ?string
-{
-    $value = getenv($name);
-    if ($value === false || $value === '') {
-        if (defined($name)) {
-            $constantValue = constant($name);
-            return is_scalar($constantValue) ? (string)$constantValue : $default;
-        }
-
-        return $default;
-    }
-
-    return $value;
-}
-
-function mc_first_env(array $names, ?string $default = null): ?string
-{
-    foreach ($names as $name) {
-        $value = mc_env($name);
-        if ($value !== null) {
-            return $value;
-        }
-    }
-
-    return $default;
-}
-
-function mc_required_env(array|string $names): string
-{
-    $nameList = is_array($names) ? $names : [$names];
-    $value = mc_first_env($nameList);
-    if ($value === null) {
-        mc_json(['ok' => false, 'error' => 'Falta variable de entorno: ' . implode(' o ', $nameList)], 500);
-    }
-
-    return $value;
-}
-
 function mc_pdo(): PDO
 {
     static $pdo = null;
@@ -110,25 +19,23 @@ function mc_pdo(): PDO
         return $pdo;
     }
 
-    mc_bootstrap_env();
+    $conexionPath = dirname(__DIR__, 3) . '/config/conexion.php';
+    if (!is_file($conexionPath)) {
+        mc_json(['ok' => false, 'error' => 'No se encontro la configuracion de conexion.'], 500);
+    }
 
-    $host = mc_required_env(['DB_HOSTINGER_LAB_HOST', 'LAB_DB_HOST']);
-    $port = mc_first_env(['DB_HOSTINGER_LAB_PORT', 'LAB_DB_PORT'], '3306');
-    $db = mc_required_env(['DB_HOSTINGER_LAB_DATABASE', 'LAB_DB_NAME']);
-    $user = mc_required_env(['DB_HOSTINGER_LAB_USER', 'LAB_DB_USER']);
-    $pass = mc_required_env(['DB_HOSTINGER_LAB_PASSWORD', 'LAB_DB_PASS']);
+    require_once $conexionPath;
 
-    if ($db !== 'u767019378_laboratorio') {
+    if (!isset($pdo_laboratorio) || !$pdo_laboratorio instanceof PDO) {
+        mc_json(['ok' => false, 'error' => 'No se encontro la conexion de laboratorio.'], 500);
+    }
+
+    $databaseName = (string)$pdo_laboratorio->query('SELECT DATABASE()')->fetchColumn();
+    if ($databaseName !== 'u767019378_laboratorio') {
         mc_json(['ok' => false, 'error' => 'Base de datos de laboratorio no autorizada.'], 500);
     }
 
-    $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $host, $port, $db);
-
-    $pdo = new PDO($dsn, $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
-    ]);
+    $pdo = $pdo_laboratorio;
 
     return $pdo;
 }
