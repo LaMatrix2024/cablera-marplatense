@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mis-compras-pwa-v2';
+const CACHE_NAME = 'mis-compras-pwa-v4';
 const PRECACHE_URLS = [
   './',
   './index.html',

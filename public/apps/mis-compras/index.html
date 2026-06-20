@@ -84,8 +84,14 @@
 
       <section class="list-panel" aria-label="Productos">
         <div class="summary-line">
-          <strong id="summary-count">0 pendientes</strong>
-          <span id="last-updated">Sin actualizar</span>
+          <div class="summary-copy">
+            <strong id="summary-count">0 pendientes</strong>
+            <span id="last-updated">Sin actualizar</span>
+          </div>
+          <div class="list-actions">
+            <button class="button button--secondary button--compact" id="view-list-button" type="button">Ver lista</button>
+            <button class="button button--secondary button--compact" id="back-list-button" type="button" hidden>Volver</button>
+          </div>
         </div>
         <div class="items-list" id="items-list" aria-live="polite"></div>
       </section>
@@ -136,6 +142,18 @@
     </form>
   </div>
 
+  <div class="confirm-modal" id="exclude-modal" hidden>
+    <div class="confirm-modal__backdrop"></div>
+    <div class="confirm-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="exclude-title">
+      <h2 id="exclude-title">Excluir producto</h2>
+      <p>¿Querés excluir este producto por error de carga?</p>
+      <div class="confirm-modal__actions">
+        <button class="button button--danger-soft" id="exclude-confirm-button" type="button">Excluir</button>
+        <button class="button button--secondary" id="exclude-cancel-button" type="button">Volver</button>
+      </div>
+    </div>
+  </div>
+
   <template id="empty-template">
     <div class="empty-state">
       <strong>No hay productos para este filtro</strong>
@@ -146,4 +164,3 @@
   <script src="./app.js" defer></script>
 </body>
 </html>
-

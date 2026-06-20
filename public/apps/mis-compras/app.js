@@ -1,4 +1,4 @@
-/* global navigator, localStorage, window, document, confirm */
+/* global navigator, localStorage, window, document */
 
 const API_BASE = '/api/pwa/mis-compras';
 const STORAGE = {
@@ -15,9 +15,11 @@ const state = {
   estado: 'PENDIENTE',
   rubroId: '',
   deferredPrompt: null,
+  pendingExcludeId: null,
 };
 
 const els = {
+  appShell: document.querySelector('.app-shell'),
   listName: document.getElementById('list-name'),
   statusText: document.getElementById('status-text'),
   refreshButton: document.getElementById('refresh-button'),
@@ -33,6 +35,8 @@ const els = {
   itemsList: document.getElementById('items-list'),
   summaryCount: document.getElementById('summary-count'),
   lastUpdated: document.getElementById('last-updated'),
+  viewListButton: document.getElementById('view-list-button'),
+  backListButton: document.getElementById('back-list-button'),
   emptyTemplate: document.getElementById('empty-template'),
   installModal: document.getElementById('install-modal'),
   installButton: document.getElementById('install-button'),
@@ -44,10 +48,23 @@ const els = {
   editQuantity: document.getElementById('edit-quantity'),
   editRubro: document.getElementById('edit-rubro'),
   editCancel: document.getElementById('edit-cancel'),
+  excludeModal: document.getElementById('exclude-modal'),
+  excludeConfirmButton: document.getElementById('exclude-confirm-button'),
+  excludeCancelButton: document.getElementById('exclude-cancel-button'),
 };
 
-function setStatus(message, kind = 'neutral') {
-  els.statusText.textContent = message;
+function setStatus(message, kind = 'neutral', detail = '') {
+  const icons = {
+    ok: '🟢',
+    error: '🔴',
+    loading: '🔵',
+    neutral: '⚪',
+  };
+  const icon = icons[kind] || icons.neutral;
+  els.statusText.innerHTML = `
+    <span class="status-line-main">${icon} ${escapeHtml(message)}</span>
+    ${detail ? `<span class="status-line-sub">${escapeHtml(detail)}</span>` : ''}
+  `;
   els.statusText.dataset.kind = kind;
 }
 
@@ -75,16 +92,47 @@ async function apiRequest(path, options = {}) {
   return data;
 }
 
-function formatDateTime(value) {
-  if (!value) return '';
-  const date = new Date(String(value).replace(' ', 'T'));
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('es-AR', {
+function formatDateAR(dateValue) {
+  if (!dateValue) return '';
+
+  const date = dateValue instanceof Date
+    ? dateValue
+    : new Date(String(dateValue).replace(' ', 'T'));
+
+  if (Number.isNaN(date.getTime())) return '';
+
+  const parts = new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
     day: '2-digit',
     month: '2-digit',
+    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(date);
+    hour12: false,
+  }).formatToParts(date).reduce((acc, part) => {
+    acc[part.type] = part.value;
+    return acc;
+  }, {});
+
+  return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}`;
+}
+
+function formatDateTime(value) {
+  return formatDateAR(value);
+}
+
+function formatArgentinaNow() {
+  return formatDateAR(new Date());
+}
+
+function formatItemDates(item) {
+  return [
+    item.updated_at ? `Act. ${formatDateAR(item.updated_at)}` : '',
+    item.created_at ? `Creado ${formatDateAR(item.created_at)}` : '',
+    item.comprado_at ? `Comprado ${formatDateAR(item.comprado_at)}` : '',
+    item.cancelado_at ? `Cancelado ${formatDateAR(item.cancelado_at)}` : '',
+    item.excluido_at ? `Excluido ${formatDateAR(item.excluido_at)}` : '',
+  ].filter(Boolean);
 }
 
 function estadoLabel(estado) {
@@ -127,10 +175,7 @@ function renderSummary() {
   } else {
     els.summaryCount.textContent = `${total} producto${total === 1 ? '' : 's'}`;
   }
-  els.lastUpdated.textContent = `Actualizado ${new Intl.DateTimeFormat('es-AR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date())}`;
+  els.lastUpdated.textContent = `Act. ${formatArgentinaNow()}`;
 }
 
 function actionButton(label, action, extraClass = '') {
@@ -141,7 +186,7 @@ function renderItem(item) {
   const meta = [
     item.cantidad ? item.cantidad : '',
     item.rubro ? item.rubro : 'Sin rubro',
-    item.updated_at ? `Act. ${formatDateTime(item.updated_at)}` : '',
+    ...formatItemDates(item),
   ].filter(Boolean).join(' · ');
 
   const actions = [];
@@ -240,10 +285,10 @@ async function refreshAll() {
     await loadList();
     await loadRubros();
     await loadItems();
-    setStatus('Lista actualizada', 'ok');
+    setStatus('Actualizada', 'ok', formatArgentinaNow());
   } catch (error) {
     console.warn(error);
-    setStatus(error.message || 'No se pudo actualizar', 'error');
+    setStatus('Sin conexión', 'error', 'No se pudo actualizar');
   } finally {
     els.refreshButton.disabled = false;
   }
@@ -271,15 +316,26 @@ async function addItem(event) {
     setVisiblePendingFilter();
     els.form.reset();
     restoreUser();
-    setStatus('Producto agregado', 'ok');
     await loadItems();
+    setStatus('Actualizada', 'ok', formatArgentinaNow());
   } catch (error) {
     console.warn(error);
-    setStatus(error.message || 'No se pudo agregar', 'error');
+    setStatus('Sin conexión', 'error', 'No se pudo actualizar');
   } finally {
     els.addButton.disabled = false;
     els.productInput.focus();
   }
+}
+
+function openListMode() {
+  els.appShell.classList.add('is-list-mode');
+  els.backListButton.hidden = false;
+  els.itemsList.scrollTop = 0;
+}
+
+function closeListMode() {
+  els.appShell.classList.remove('is-list-mode');
+  els.backListButton.hidden = true;
 }
 
 async function changeState(id, estado) {
@@ -296,16 +352,47 @@ async function changeState(id, estado) {
 }
 
 async function excludeItem(id) {
-  if (!confirm('¿Excluir este producto por error de carga?')) return;
+  state.pendingExcludeId = id;
+  openExcludeModal();
+}
+
+async function confirmExcludeItem() {
+  const id = state.pendingExcludeId;
+  if (!id) {
+    closeExcludeModal();
+    return;
+  }
+
   persistUser();
-  await apiRequest(`excluir.php?id=${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    body: JSON.stringify({
-      lista: state.lista,
-      usuario: currentUser(),
-    }),
-  });
-  await loadItems();
+  els.excludeConfirmButton.disabled = true;
+
+  try {
+    await apiRequest(`excluir.php?id=${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        lista: state.lista,
+        usuario: currentUser(),
+      }),
+    });
+    closeExcludeModal();
+    await loadItems();
+    setStatus('Actualizada', 'ok', formatArgentinaNow());
+  } catch (error) {
+    console.warn(error);
+    setStatus('Sin conexión', 'error', 'No se pudo actualizar');
+  } finally {
+    els.excludeConfirmButton.disabled = false;
+  }
+}
+
+function openExcludeModal() {
+  els.excludeModal.hidden = false;
+  els.excludeConfirmButton.focus();
+}
+
+function closeExcludeModal() {
+  els.excludeModal.hidden = true;
+  state.pendingExcludeId = null;
 }
 
 function openEdit(item) {
@@ -461,6 +548,8 @@ function bindEvents() {
   els.form.addEventListener('submit', addItem);
   els.refreshButton.addEventListener('click', refreshAll);
   els.shareButton.addEventListener('click', shareList);
+  els.viewListButton.addEventListener('click', openListMode);
+  els.backListButton.addEventListener('click', closeListMode);
   els.userSelect.addEventListener('change', persistUser);
   els.itemsList.addEventListener('click', handleItemAction);
   els.rubroFilter.addEventListener('change', () => {
@@ -475,6 +564,18 @@ function bindEvents() {
   els.editCancel.addEventListener('click', closeEdit);
   els.editModal.addEventListener('click', (event) => {
     if (event.target === els.editModal || event.target.classList.contains('edit-modal__backdrop')) closeEdit();
+  });
+  els.excludeConfirmButton.addEventListener('click', confirmExcludeItem);
+  els.excludeCancelButton.addEventListener('click', closeExcludeModal);
+  els.excludeModal.addEventListener('click', (event) => {
+    if (event.target === els.excludeModal || event.target.classList.contains('confirm-modal__backdrop')) {
+      closeExcludeModal();
+    }
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !els.excludeModal.hidden) {
+      closeExcludeModal();
+    }
   });
   els.installButton.addEventListener('click', handleInstall);
   els.dismissButton.addEventListener('click', () => closeInstallModal(true));
