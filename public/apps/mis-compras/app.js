@@ -143,6 +143,24 @@ function normalizeProduct(value) {
     .toLocaleUpperCase('es-AR');
 }
 
+function normalizeEstado(value) {
+  const compact = String(value || '')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleUpperCase('es-AR');
+
+  if (compact === 'PENDIENTE') return 'PENDIENTE';
+  if (compact === 'COMPRADO') return 'COMPRADO';
+  if (compact === 'CANCELADO') return 'CANCELADO';
+  if (compact === 'EXCLUIDO') return 'EXCLUIDO';
+  return compact || 'PENDIENTE';
+}
+
+function itemStateCode(item) {
+  return normalizeEstado(item?.estado ?? item?.estado_nombre);
+}
+
 function normalizeRubroName(value) {
   const clean = String(value || '').replace(/\s+/g, ' ').trim();
   if (!clean) return '';
@@ -180,7 +198,7 @@ function renderRubros(selectedId = null) {
 }
 
 function renderSummary() {
-  const pendientes = state.items.filter((item) => item.estado === 'PENDIENTE').length;
+  const pendientes = state.items.filter((item) => itemStateCode(item) === 'PENDIENTE').length;
   const total = state.items.length;
   if (state.estado === 'PENDIENTE') {
     els.summaryCount.textContent = `${pendientes} pendiente${pendientes === 1 ? '' : 's'}`;
@@ -195,31 +213,32 @@ function actionButton(label, action, extraClass = '') {
 }
 
 function renderItem(item) {
+  const estado = itemStateCode(item);
   const meta = [
     item.cantidad ? item.cantidad : '',
     item.rubro ? item.rubro : 'Sin rubro',
   ].filter(Boolean).join(' · ');
 
   const actions = [];
-  if (item.estado !== 'COMPRADO') actions.push(actionButton('Comprar', 'comprar', 'item-action--success'));
-  if (item.estado !== 'PENDIENTE') actions.push(actionButton('Pendiente', 'pendiente'));
-  if (item.estado !== 'CANCELADO') actions.push(actionButton('Cancelar', 'cancelar'));
+  if (estado !== 'COMPRADO') actions.push(actionButton('Comprar', 'comprar', 'item-action--success'));
+  if (estado !== 'PENDIENTE') actions.push(actionButton('Pendiente', 'pendiente'));
+  if (estado !== 'CANCELADO') actions.push(actionButton('Cancelar', 'cancelar'));
   actions.push(actionButton('Editar', 'editar'));
   actions.push(actionButton('Excluir', 'excluir', 'item-action--danger'));
 
   const article = document.createElement('article');
-  article.className = `item-card item-card--${item.estado.toLowerCase()}`;
+  article.className = `item-card item-card--${estado.toLowerCase()}`;
   article.dataset.id = item.id;
   article.innerHTML = `
-    <div class="item-card__main">
-      <div>
-        <strong>${escapeHtml(normalizeProduct(item.producto))}</strong>
-        <p>${escapeHtml(meta)}</p>
+      <div class="item-card__main">
+        <div>
+          <strong>${escapeHtml(normalizeProduct(item.producto))}</strong>
+          <p>${escapeHtml(meta)}</p>
+        </div>
+        <span class="state-pill state-pill--${estado.toLowerCase()}">${estadoLabel(estado)}</span>
       </div>
-      <span class="state-pill state-pill--${item.estado.toLowerCase()}">${estadoLabel(item.estado)}</span>
-    </div>
-    <div class="item-card__actions">${actions.join('')}</div>
-  `;
+      <div class="item-card__actions">${actions.join('')}</div>
+    `;
 
   return article;
 }
@@ -284,7 +303,11 @@ async function loadItems() {
   if (state.rubroId) query.rubro_id = state.rubroId;
 
   const data = await apiRequest(`items.php?${encodeQuery(query)}`);
-  state.items = data.items || [];
+  const items = Array.isArray(data?.items) ? data.items : Array.isArray(data?.data?.items) ? data.data.items : [];
+  state.items = items.map((item) => ({
+    ...item,
+    estado: itemStateCode(item),
+  }));
   renderItems();
 }
 
@@ -299,7 +322,7 @@ async function refreshAll() {
     setStatus('Actualizada', 'ok', formatDateAR(new Date()));
   } catch (error) {
     console.warn(error);
-    setStatus('Sin conexión', 'error', 'No se pudo actualizar');
+    setStatus('Error al actualizar', 'error', error.message || 'No se pudo actualizar');
   } finally {
     els.refreshButton.disabled = false;
   }
@@ -331,7 +354,7 @@ async function addItem(event) {
     setStatus('Actualizada', 'ok', formatDateAR(new Date()));
   } catch (error) {
     console.warn(error);
-    setStatus('Sin conexión', 'error', 'No se pudo actualizar');
+    setStatus('Error al guardar', 'error', error.message || 'No se pudo actualizar');
   } finally {
     els.addButton.disabled = false;
     els.nuevoProductoInput.focus();
@@ -390,7 +413,7 @@ async function confirmExcludeItem() {
     setStatus('Actualizada', 'ok', formatDateAR(new Date()));
   } catch (error) {
     console.warn(error);
-    setStatus('Sin conexión', 'error', 'No se pudo actualizar');
+    setStatus('Error al excluir', 'error', error.message || 'No se pudo actualizar');
   } finally {
     els.excludeConfirmButton.disabled = false;
   }
