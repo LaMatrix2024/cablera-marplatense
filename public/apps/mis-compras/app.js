@@ -27,7 +27,7 @@ const els = {
   refreshButton: document.getElementById('refresh-button'),
   shareButton: document.getElementById('share-button'),
   form: document.getElementById('item-form'),
-  productInput: document.getElementById('product-input'),
+  nuevoProductoInput: document.getElementById('nuevoProductoInput'),
   productSuggestions: document.getElementById('product-suggestions'),
   quantityInput: document.getElementById('quantity-input'),
   rubroSelect: document.getElementById('rubro-select'),
@@ -308,7 +308,7 @@ async function refreshAll() {
 
 async function addItem(event) {
   event.preventDefault();
-  const producto = normalizeProduct(els.productInput.value);
+  const producto = normalizeProduct(els.nuevoProductoInput.value);
   if (!producto) return;
 
   els.addButton.disabled = true;
@@ -335,7 +335,7 @@ async function addItem(event) {
     setStatus('Sin conexión', 'error', 'No se pudo actualizar');
   } finally {
     els.addButton.disabled = false;
-    els.productInput.focus();
+    els.nuevoProductoInput.focus();
   }
 }
 
@@ -629,7 +629,7 @@ function registerServiceWorker() {
 function bindEvents() {
   els.form.addEventListener('submit', addItem);
   document.addEventListener('click', (event) => {
-    if (!els.productInput.contains(event.target)) return;
+    if (!els.nuevoProductoInput.contains(event.target)) return;
   });
   els.refreshButton.addEventListener('click', refreshAll);
   els.shareButton.addEventListener('click', shareList);
