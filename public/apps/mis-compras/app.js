@@ -18,6 +18,7 @@ const state = {
   pendingNewRubroId: null,
   deferredPrompt: null,
   pendingExcludeId: null,
+  installTouchStamp: 0,
 };
 
 const els = {
@@ -577,6 +578,14 @@ function closeInstallModal(markSeen = true) {
   if (markSeen) localStorage.setItem(STORAGE.installSeen, 'dismissed');
 }
 
+function markInstallTouch() {
+  state.installTouchStamp = Date.now();
+}
+
+function shouldIgnoreInstallClick() {
+  return Date.now() - state.installTouchStamp < 700;
+}
+
 function registerInstallPrompt() {
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
@@ -673,8 +682,30 @@ function bindEvents() {
       closeRubroModal();
     }
   });
-  els.installButton.addEventListener('click', handleInstall);
-  els.dismissButton.addEventListener('click', () => closeInstallModal(true));
+  els.installButton.addEventListener('pointerup', (event) => {
+    event.preventDefault();
+    markInstallTouch();
+    handleInstall();
+  });
+  els.installButton.addEventListener('click', (event) => {
+    if (shouldIgnoreInstallClick()) {
+      event.preventDefault();
+      return;
+    }
+    handleInstall();
+  });
+  els.dismissButton.addEventListener('pointerup', (event) => {
+    event.preventDefault();
+    markInstallTouch();
+    closeInstallModal(true);
+  });
+  els.dismissButton.addEventListener('click', (event) => {
+    if (shouldIgnoreInstallClick()) {
+      event.preventDefault();
+      return;
+    }
+    closeInstallModal(true);
+  });
   els.installModal.addEventListener('click', (event) => {
     if (event.target === els.installModal || event.target.classList.contains('install-modal__backdrop')) {
       closeInstallModal(true);
