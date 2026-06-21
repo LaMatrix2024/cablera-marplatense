@@ -16,7 +16,6 @@ const state = {
   estado: 'PENDIENTE',
   rubroId: '',
   pendingNewRubroId: null,
-  deferredPrompt: null,
   pendingExcludeId: null,
 
 };
@@ -43,7 +42,6 @@ const els = {
   viewListButton: document.getElementById('view-list-button'),
   backListButton: document.getElementById('back-list-button'),
   emptyTemplate: document.getElementById('empty-template'),
-  installButton: document.getElementById('install-button'),
   editModal: document.getElementById('edit-modal'),
   editForm: document.getElementById('edit-form'),
   editId: document.getElementById('edit-id'),
@@ -311,21 +309,46 @@ async function loadItems() {
   renderItems();
 }
 
-async function refreshAll() {
-  els.refreshButton.disabled = true;
-  setStatus('Actualizando lista', 'loading');
+let refreshLock = Promise.resolve();
+let refreshGeneration = 0;
+let lastRefreshTriggerAt = 0;
 
-  try {
-    await loadList();
-    await loadRubros();
-    await loadItems();
-    setStatus('Actualizada', 'ok', formatDateAR(new Date()));
-  } catch (error) {
-    console.warn(error);
-    setStatus('Error al actualizar', 'error', error.message || 'No se pudo actualizar');
-  } finally {
-    els.refreshButton.disabled = false;
-  }
+function triggerRefresh(event) {
+  if (event) event.preventDefault();
+  const now = Date.now();
+  if (now - lastRefreshTriggerAt < 500) return;
+  lastRefreshTriggerAt = now;
+  refreshAll().catch((error) => console.warn(error));
+}
+
+async function refreshAll() {
+  const run = async () => {
+    const generation = ++refreshGeneration;
+    els.refreshButton.disabled = true;
+    setStatus('Actualizando...', 'loading');
+
+    try {
+      await loadList();
+      await loadRubros();
+      await loadItems();
+      if (generation === refreshGeneration) {
+        setStatus('Actualizada', 'ok', formatDateAR(new Date()));
+      }
+    } catch (error) {
+      console.warn(error);
+      if (generation === refreshGeneration) {
+        setStatus('Error al actualizar', 'error', error.message || 'No se pudo actualizar');
+      }
+      throw error;
+    } finally {
+      if (generation === refreshGeneration) {
+        els.refreshButton.disabled = false;
+      }
+    }
+  };
+
+  refreshLock = refreshLock.catch(() => {}).then(run);
+  return refreshLock;
 }
 
 async function addItem(event) {
@@ -589,41 +612,6 @@ async function shareList() {
   }
 }
 
-function setInstallButtonVisible(visible) {
-  els.installButton.hidden = !visible;
-}
-
-function registerInstallPrompt() {
-  window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault();
-    console.info('Mis Compras PWA: beforeinstallprompt detectado');
-    state.deferredPrompt = event;
-    setInstallButtonVisible(true);
-  });
-
-  window.addEventListener('appinstalled', () => {
-    localStorage.setItem(STORAGE.installed, 'yes');
-    state.deferredPrompt = null;
-    setInstallButtonVisible(false);
-  });
-}
-
-async function handleInstall() {
-  if (!state.deferredPrompt) {
-    setInstallButtonVisible(false);
-    return;
-  }
-
-  state.deferredPrompt.prompt();
-  try {
-    await state.deferredPrompt.userChoice;
-  } finally {
-    localStorage.setItem(STORAGE.installed, 'yes');
-    state.deferredPrompt = null;
-    setInstallButtonVisible(false);
-  }
-}
-
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register(`${APP_PUBLIC_PATH}sw.js`, { scope: APP_PUBLIC_PATH })
@@ -644,10 +632,9 @@ function registerServiceWorker() {
 
 function bindEvents() {
   els.form.addEventListener('submit', addItem);
-  document.addEventListener('click', (event) => {
-    if (!els.nuevoProductoInput.contains(event.target)) return;
-  });
-  els.refreshButton.addEventListener('click', refreshAll);
+  els.refreshButton.addEventListener('click', triggerRefresh);
+  els.refreshButton.addEventListener('pointerup', triggerRefresh);
+  els.refreshButton.addEventListener('touchend', triggerRefresh, { passive: false });
   els.shareButton.addEventListener('click', shareList);
   els.newRubroButton.addEventListener('click', openRubroModal);
   els.rubroForm.addEventListener('submit', createRubro);
@@ -681,30 +668,20 @@ function bindEvents() {
       closeExcludeModal();
     }
   });
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !els.excludeModal.hidden) {
-      closeExcludeModal();
-    }
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !els.excludeModal.hidden) {
+        closeExcludeModal();
+      }
     if (event.key === 'Escape' && !els.rubroModal.hidden) {
       closeRubroModal();
-    }
-  });
-  els.installButton.addEventListener('pointerup', (event) => {
-    event.preventDefault();
-    handleInstall();
-  });
-  els.installButton.addEventListener('click', (event) => {
-    event.preventDefault();
-    handleInstall();
-  });
-  setInstallButtonVisible(false);
-}
-function init() {
-  restoreUser();
-  registerServiceWorker();
-  registerInstallPrompt();
-  bindEvents();
-  refreshAll();
-}
+      }
+    });
+  }
+  function init() {
+    restoreUser();
+    registerServiceWorker();
+    bindEvents();
+    refreshAll().catch(() => {});
+  }
 
 init();
