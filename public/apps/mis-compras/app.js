@@ -18,7 +18,7 @@ const state = {
   pendingNewRubroId: null,
   deferredPrompt: null,
   pendingExcludeId: null,
-  installTouchStamp: 0,
+
 };
 
 const els = {
@@ -43,9 +43,7 @@ const els = {
   viewListButton: document.getElementById('view-list-button'),
   backListButton: document.getElementById('back-list-button'),
   emptyTemplate: document.getElementById('empty-template'),
-  installModal: document.getElementById('install-modal'),
   installButton: document.getElementById('install-button'),
-  dismissButton: document.getElementById('dismiss-button'),
   editModal: document.getElementById('edit-modal'),
   editForm: document.getElementById('edit-form'),
   editId: document.getElementById('edit-id'),
@@ -568,22 +566,8 @@ async function shareList() {
   }
 }
 
-function openInstallModal() {
-  if (localStorage.getItem(STORAGE.installSeen) === 'dismissed') return;
-  els.installModal.hidden = false;
-}
-
-function closeInstallModal(markSeen = true) {
-  els.installModal.hidden = true;
-  if (markSeen) localStorage.setItem(STORAGE.installSeen, 'dismissed');
-}
-
-function markInstallTouch() {
-  state.installTouchStamp = Date.now();
-}
-
-function shouldIgnoreInstallClick() {
-  return Date.now() - state.installTouchStamp < 700;
+function setInstallButtonVisible(visible) {
+  els.installButton.hidden = !visible;
 }
 
 function registerInstallPrompt() {
@@ -591,19 +575,19 @@ function registerInstallPrompt() {
     event.preventDefault();
     console.info('Mis Compras PWA: beforeinstallprompt detectado');
     state.deferredPrompt = event;
-    openInstallModal();
+    setInstallButtonVisible(true);
   });
 
   window.addEventListener('appinstalled', () => {
     localStorage.setItem(STORAGE.installed, 'yes');
     state.deferredPrompt = null;
-    closeInstallModal(true);
+    setInstallButtonVisible(false);
   });
 }
 
 async function handleInstall() {
   if (!state.deferredPrompt) {
-    closeInstallModal(true);
+    setInstallButtonVisible(false);
     return;
   }
 
@@ -613,7 +597,7 @@ async function handleInstall() {
   } finally {
     localStorage.setItem(STORAGE.installed, 'yes');
     state.deferredPrompt = null;
-    closeInstallModal(true);
+    setInstallButtonVisible(false);
   }
 }
 
@@ -684,35 +668,14 @@ function bindEvents() {
   });
   els.installButton.addEventListener('pointerup', (event) => {
     event.preventDefault();
-    markInstallTouch();
     handleInstall();
   });
   els.installButton.addEventListener('click', (event) => {
-    if (shouldIgnoreInstallClick()) {
-      event.preventDefault();
-      return;
-    }
+    event.preventDefault();
     handleInstall();
   });
-  els.dismissButton.addEventListener('pointerup', (event) => {
-    event.preventDefault();
-    markInstallTouch();
-    closeInstallModal(true);
-  });
-  els.dismissButton.addEventListener('click', (event) => {
-    if (shouldIgnoreInstallClick()) {
-      event.preventDefault();
-      return;
-    }
-    closeInstallModal(true);
-  });
-  els.installModal.addEventListener('click', (event) => {
-    if (event.target === els.installModal || event.target.classList.contains('install-modal__backdrop')) {
-      closeInstallModal(true);
-    }
-  });
+  setInstallButtonVisible(false);
 }
-
 function init() {
   restoreUser();
   registerServiceWorker();

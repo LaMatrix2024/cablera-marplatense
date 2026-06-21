@@ -25,6 +25,7 @@
           </div>
         </div>
         <div class="header-actions" aria-label="Acciones">
+          <button class="button button--secondary button--compact" id="install-button" type="button" hidden>Instalar</button>
           <button class="icon-button" id="share-button" type="button" aria-label="Compartir lista" title="Compartir lista">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.1c-1.1 0-2.1.5-2.7 1.3L8.9 13.7a3.2 3.2 0 0 0 0-3.4l6.4-3.7A3.3 3.3 0 1 0 14.4 5c0 .2 0 .4.1.6L8.1 9.3a3.3 3.3 0 1 0 0 5.4l6.4 3.7c0 .2-.1.4-.1.6a3.3 3.3 0 1 0 3.6-2.9Z"/></svg>
           </button>
@@ -105,20 +106,8 @@
       <div>© 2026 Mis Compras</div>
       <div>Lista compartida</div>
       <div>Versión 1.0.0</div>
-      <div>BUILD: V18</div>
+      <div>BUILD: V19</div>
     </footer>
-  </div>
-
-  <div class="install-modal" id="install-modal" hidden>
-    <div class="install-modal__backdrop"></div>
-    <div class="install-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="install-title">
-      <h2 id="install-title">Instalar Mis Compras</h2>
-      <p>¿Querés instalar esta aplicación en tu dispositivo?</p>
-      <div class="install-modal__actions">
-        <button class="button button--primary" id="install-button" type="button">Instalar</button>
-        <button class="button button--secondary" id="dismiss-button" type="button">Ahora no</button>
-      </div>
-    </div>
   </div>
 
   <div class="edit-modal" id="edit-modal" hidden>
