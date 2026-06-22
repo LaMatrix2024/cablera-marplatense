@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2563EB">
+  <meta name="description" content="Lista compartida de compras.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/apps/mis-compras/manifest.json">
+  <link rel="apple-touch-icon" href="/apps/mis-compras/apple-touch-icon.png">
+  <link rel="icon" href="/apps/mis-compras/favicon.ico">
+  <link rel="stylesheet" href="./style.css">
+  <title>Mis Compras</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="app-header__top">
+        <div class="brand">
+          <img src="/apps/mis-compras/icon-192.png" alt="Mis Compras" class="brand__icon" width="48" height="48">
+          <div class="brand__copy">
+            <h1>Mis Compras</h1>
+            <p id="list-name">Lista compartida</p>
+          </div>
+        </div>
+        <div class="header-actions" aria-label="Acciones">
+          <button class="icon-button" id="share-button" type="button" aria-label="Compartir lista" title="Compartir lista">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.1c-1.1 0-2.1.5-2.7 1.3L8.9 13.7a3.2 3.2 0 0 0 0-3.4l6.4-3.7A3.3 3.3 0 1 0 14.4 5c0 .2 0 .4.1.6L8.1 9.3a3.3 3.3 0 1 0 0 5.4l6.4 3.7c0 .2-.1.4-.1.6a3.3 3.3 0 1 0 3.6-2.9Z"/></svg>
+          </button>
+          <button class="icon-button" id="refresh-button" type="button" aria-label="Actualizar" title="Actualizar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.7 6.3A8 8 0 0 0 4 12H1l4 4 4-4H6a6 6 0 1 1 1.8 4.2l-1.4 1.4A8 8 0 1 0 17.7 6.3Z"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="app-header__subtitle" id="status-text">Cargando lista</p>
+    </header>
+
+    <main class="app-main">
+      <section class="card form-card" aria-label="Agregar producto">
+        <form id="item-form" autocomplete="off">
+          <div class="field field--product">
+            <label for="nuevoProductoInput">Producto</label>
+            <input id="nuevoProductoInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="¿Qué hace falta comprar?" required>
+            <div class="suggestions" id="product-suggestions" hidden></div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="quantity-input">Cantidad</label>
+              <input id="quantity-input" name="cantidad" type="text" maxlength="60" placeholder="Opcional">
+            </div>
+            <div class="field">
+              <label for="rubro-select">Rubro</label>
+              <div class="rubro-control">
+                <select id="rubro-select" name="rubro_id"></select>
+                <button class="button button--secondary button--compact" id="new-rubro-button" type="button">+ Rubro</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-row form-row--actions">
+            <div class="field">
+              <label for="user-select">Usuario</label>
+              <select id="user-select" name="usuario">
+                <option value="claudio">Claudio</option>
+                <option value="faby">Faby</option>
+                <option value="sin_identificar">Sin identificar</option>
+              </select>
+            </div>
+            <button class="button button--primary" id="add-button" type="submit">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></svg>
+              Agregar
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="filters-card" aria-label="Filtros">
+        <div class="segmented" id="state-filters">
+          <button class="segment is-active" type="button" data-estado="PENDIENTE">Pendientes</button>
+          <button class="segment" type="button" data-estado="TODAS">Todas</button>
+          <button class="segment" type="button" data-estado="COMPRADO">Compradas</button>
+          <button class="segment" type="button" data-estado="CANCELADO">Canceladas</button>
+        </div>
+        <select class="rubro-filter" id="rubro-filter" aria-label="Filtrar por rubro">
+          <option value="">Todos los rubros</option>
+        </select>
+      </section>
+
+      <section class="list-panel" aria-label="Productos">
+        <div class="summary-line">
+          <div class="summary-copy">
+            <strong id="summary-count">0 pendientes</strong>
+            <span id="last-updated">Sin actualizar</span>
+          </div>
+          <div class="list-actions">
+            <button class="button button--secondary button--compact" id="view-list-button" type="button">Ver lista</button>
+            <button class="button button--secondary button--compact" id="back-list-button" type="button" hidden>Volver</button>
+          </div>
+        </div>
+        <div class="items-list" id="items-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <div>© 2026 Mis Compras</div>
+      <div>Lista compartida</div>
+      <div>Versión 1.0.0</div>
+      <div>BUILD: V21</div>
+    </footer>
+  </div>
+
+  <div class="edit-modal" id="edit-modal" hidden>
+    <div class="edit-modal__backdrop"></div>
+    <form class="edit-modal__dialog" id="edit-form" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+      <h2 id="edit-title">Editar producto</h2>
+      <input type="hidden" id="edit-id">
+      <div class="field">
+        <label for="edit-product">Producto</label>
+        <input id="edit-product" type="text" maxlength="160" required>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label for="edit-quantity">Cantidad</label>
+          <input id="edit-quantity" type="text" maxlength="60">
+        </div>
+        <div class="field">
+          <label for="edit-rubro">Rubro</label>
+          <select id="edit-rubro"></select>
+        </div>
+      </div>
+      <div class="edit-modal__actions">
+        <button class="button button--secondary" id="edit-cancel" type="button">Cancelar</button>
+        <button class="button button--primary" type="submit">Guardar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="confirm-modal" id="exclude-modal" hidden>
+    <div class="confirm-modal__backdrop"></div>
+    <div class="confirm-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="exclude-title">
+      <h2 id="exclude-title">Excluir producto</h2>
+      <p>¿Querés excluir este producto por error de carga?</p>
+      <div class="confirm-modal__actions">
+        <button class="button button--danger-soft" id="exclude-confirm-button" type="button">Excluir</button>
+        <button class="button button--secondary" id="exclude-cancel-button" type="button">Volver</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="confirm-modal" id="rubro-modal" hidden>
+    <div class="confirm-modal__backdrop"></div>
+    <form class="confirm-modal__dialog" id="rubro-form" role="dialog" aria-modal="true" aria-labelledby="rubro-title">
+      <h2 id="rubro-title">Nuevo rubro</h2>
+      <div class="field">
+        <label for="rubro-name-input">Nombre del rubro</label>
+        <input id="rubro-name-input" type="text" maxlength="80" required>
+      </div>
+      <p class="modal-message" id="rubro-message" hidden></p>
+      <div class="confirm-modal__actions">
+        <button class="button button--primary" id="rubro-create-button" type="submit">Crear</button>
+        <button class="button button--secondary" id="rubro-cancel-button" type="button">Volver</button>
+      </div>
+    </form>
+  </div>
+
+  <template id="empty-template">
+    <div class="empty-state">
+      <strong>No hay productos para este filtro</strong>
+      <span>Agregá una necesidad o cambiá el filtro.</span>
+    </div>
+  </template>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
