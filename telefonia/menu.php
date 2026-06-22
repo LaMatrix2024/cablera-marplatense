@@ -22,7 +22,7 @@ require_once __DIR__ . '/../shared/layout.php';
     <section class="lcm-grid lcm-module-grid" aria-label="Modulos de Telefonia">
         <a class="lcm-card" href="/telefonia/produccion_planta">
             <strong>Producción Planta</strong>
-            <small>Resumen y detalle de producción OCRAS y PTRs.</small>
+            <small>Dashboard y detalle de producción OCRAS y PTRs.</small>
         </a>
         
         <a class="lcm-card" href="/telefonia/produccion_b2b">

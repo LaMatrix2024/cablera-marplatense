@@ -27,16 +27,16 @@ require_once __DIR__ . '/shared/layout.php';
             <small>Indicadores ejecutivos y gestion transversal.</small>
         </a>
         <a class="lcm-card" href="/telefonia/menu.php">
-            <strong>Telefonia</strong>
+            <strong>Telefonía</strong>
             <small>Producción, certificación, precios y control operativo.</small>
         </a>
         <a class="lcm-card" href="/obras/">
             <strong>Obras</strong>
-            <small>Procesos y reportes del area.</small>
+            <small>Procesos y reportes del área.</small>
         </a>
         <a class="lcm-card" href="/rrhh/">
             <strong>RRHH</strong>
-            <small>Gestion de personas y estructura organizacional.</small>
+            <small>Gestión de personas y estructura organizacional.</small>
         </a>
         <a class="lcm-card" href="/contable/">
             <strong>Contable</strong>
@@ -52,7 +52,7 @@ require_once __DIR__ . '/shared/layout.php';
         </a>
         <a class="lcm-card" href="/mi_info/bcoCentral/indicesBCRA.html">
             <strong>Mis Datos</strong>
-            <small>Indices y mas </small>
+            <small>Indices y más </small>
         </a>
     </section>
 </main>
