@@ -11,7 +11,7 @@ git status
 
 echo.
 echo Actualizando desde GitHub...
-git pull origin main
+git -c safe.directory=C:/plantel/cablera-marplatense pull origin main
 
 echo.
 echo Proceso terminado.
