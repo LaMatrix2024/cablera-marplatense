@@ -1016,9 +1016,19 @@ function renderPeriodos() {
         });
     });
 
-    document.getElementById('limpiarPeriodos').addEventListener('click', () => {
+    document.getElementById('limpiarPeriodos').addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         periodosPendientes = [];
+        periodosSeleccionados = [];
+        actualizarTextoPeriodo();
+        zonaActiva = 'Total compañía';
+        sucursalesDisponibles = [];
+        sucursalesSeleccionadas = [];
         renderPeriodos();
+        periodoMenu.classList.add('open');
+        periodoBtn.setAttribute('aria-expanded', 'true');
+        await refrescarTodo();
     });
 
     document.getElementById('aceptarPeriodos').addEventListener('click', async () => {
@@ -1148,7 +1158,14 @@ async function cargarZonas() {
 async function cargarDistribucion() {
     const periodos = periodosParam();
 
-    if (!periodos) return;
+    if (!periodos) {
+        barsEl.innerHTML = `<div class="prod-empty">Seleccioná al menos un período.</div>`;
+        distribucionBody.innerHTML = '';
+        distribucionTotal.innerHTML = '';
+        totalVentaViz.textContent = fmtMoney(0);
+        renderSucursales([]);
+        return;
+    }
 
     const params = new URLSearchParams();
     params.set('periodos', periodos);
