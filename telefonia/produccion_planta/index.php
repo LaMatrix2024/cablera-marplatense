@@ -4,7 +4,9 @@ require_once __DIR__ . '/../../shared/layout.php';
 <!doctype html>
 <html lang="es">
 <head>
-    <?php lcm_head('Producción Planta Externa'); ?>
+    <?php lcm_head('Producción Planta Externa', [
+        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css'
+    ]); ?>
 
     <style>
         .prod-page {
@@ -102,6 +104,29 @@ require_once __DIR__ . '/../../shared/layout.php';
             box-shadow: 0 18px 45px rgba(0,0,0,.35);
             padding: 8px;
         }
+
+        .periodo-options { max-height: 200px; overflow: auto; }
+
+        .periodo-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(0,0,0,.14);
+        }
+
+        .periodo-actions button {
+            border: 0;
+            border-radius: 8px;
+            padding: 9px 10px;
+            cursor: pointer;
+            font-family: var(--lcm-font-base);
+            font-weight: 900;
+        }
+
+        .periodo-clear { background: #ded8ce; color: #111; }
+        .periodo-apply { background: var(--lcm-orange); color: #111; }
+        .periodo-apply:disabled { cursor: not-allowed; opacity: .5; }
 
         .periodo-menu.open {
             display: block;
@@ -242,6 +267,30 @@ require_once __DIR__ . '/../../shared/layout.php';
             justify-content: start;
         }
 
+        .prod-table-summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(120px, 1fr));
+            gap: 1px;
+            background: var(--lcm-border);
+            border-bottom: 1px solid var(--lcm-border);
+        }
+
+        .prod-table-summary div { padding: 12px 18px; background: #2a1d16; }
+        .prod-table-summary span {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--lcm-muted);
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+        .prod-table-summary strong {
+            color: var(--lcm-text);
+            font-size: 18px;
+            font-variant-numeric: tabular-nums;
+        }
+
         .prod-excel-wrap {
             display: flex;
             align-items: center;
@@ -268,6 +317,101 @@ require_once __DIR__ . '/../../shared/layout.php';
 
         .prod-excel:hover {
             filter: brightness(1.12);
+        }
+
+        .prod-detail-button {
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--lcm-border);
+            border-radius: 9px;
+            background: #2a2a2a;
+            color: var(--lcm-orange);
+            cursor: pointer;
+        }
+
+        .prod-detail-button:hover,
+        .prod-detail-button:focus-visible {
+            border-color: var(--lcm-orange);
+            background: rgba(255,107,53,.12);
+        }
+
+        .prod-modal[hidden] { display: none; }
+        .prod-modal {
+            position: fixed;
+            inset: 0;
+            bottom: 49px;
+            z-index: 100;
+            display: grid;
+            place-items: center;
+            padding: 12px;
+            background: rgba(0,0,0,.78);
+        }
+
+        .prod-modal-card {
+            width: 100%;
+            max-height: 100%;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            overflow: hidden;
+            border: 1px solid var(--lcm-border);
+            border-radius: 16px;
+            background: var(--lcm-panel);
+            box-shadow: 0 24px 80px rgba(0,0,0,.55);
+        }
+
+        .prod-modal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--lcm-border);
+        }
+
+        .prod-modal-title { min-width: 0; }
+        .prod-modal-title h2 { margin: 0 0 4px; font-size: 20px; }
+        .prod-modal-title strong {
+            display: block;
+            margin-bottom: 2px;
+            color: var(--lcm-text);
+            font-size: 18px;
+            font-weight: 900;
+        }
+        .prod-modal-title span { display: block; color: var(--lcm-muted); font-size: 12px; }
+        .prod-modal-actions { display: flex; align-items: center; gap: 10px; }
+        .prod-modal-close {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--lcm-border);
+            border-radius: 10px;
+            background: #2a2a2a;
+            color: var(--lcm-text);
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .prod-modal .prod-table-wrap { max-height: none; }
+        .prod-modal .prod-table th { z-index: 3; }
+        .prod-modal .prod-table { min-width: 1250px; }
+        .prod-detail-description {
+            width: 100ch;
+            max-width: 100ch;
+            white-space: normal !important;
+            overflow-wrap: break-word;
+            word-break: normal;
+            line-height: 1.35;
+        }
+
+        .lcm-sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+            border: 0;
         }
 
         .prod-viz {
@@ -345,6 +489,11 @@ require_once __DIR__ . '/../../shared/layout.php';
 
         .prod-num {
             text-align: right !important;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .prod-center {
+            text-align: center !important;
             font-variant-numeric: tabular-nums;
         }
 
@@ -495,6 +644,8 @@ require_once __DIR__ . '/../../shared/layout.php';
             }
 
         @media(max-width:650px) {
+            .prod-table-summary { grid-template-columns: 1fr 1fr; }
+
             .prod-zone-strip {
                 grid-template-columns: 1fr;
             }
@@ -519,7 +670,7 @@ require_once __DIR__ . '/../../shared/layout.php';
             <div class="prod-label">
                 Periodo
                 <div class="periodo-dropdown">
-                    <button id="periodoBtn" class="periodo-button" type="button">
+                    <button id="periodoBtn" class="periodo-button" type="button" aria-expanded="false" aria-controls="periodoMenu">
                         <span>Seleccionar</span>
                         <strong>▾</strong>
                     </button>
@@ -597,8 +748,8 @@ require_once __DIR__ . '/../../shared/layout.php';
                     Tipo contratista
                     <select id="tipoContratista" class="prod-select">
                         <option value="TODOS">Todos</option>
-                        <option value="PROP">PROP</option>
-                        <option value="CONT">CONT</option>
+                        <option value="PROP">MANO OBRA PROPIA</option>
+                        <option value="CONT">M.O. SUBCONTRATADA</option>
                     </select>
                 </label>
 
@@ -619,6 +770,13 @@ require_once __DIR__ . '/../../shared/layout.php';
             </div>
         </div>
 
+        <div class="prod-table-summary" aria-live="polite" aria-label="Totales de contratistas filtrados">
+            <div><span>HB PTRS</span><strong id="resumenPtr">0</strong></div>
+            <div><span>HB OCRAS</span><strong id="resumenOcra">0</strong></div>
+            <div><span>Total HB</span><strong id="resumenHb">0</strong></div>
+            <div><span>Venta devengada</span><strong id="resumenVenta">$ 0</strong></div>
+        </div>
+
         <div class="prod-table-wrap">
             
             <table class="prod-table" id="tablaContratistas">
@@ -627,9 +785,10 @@ require_once __DIR__ . '/../../shared/layout.php';
                         <th>Contratista</th>
                         <th class="prod-num">HB PTRS</th>
                         <th class="prod-num">HB OCRAS</th>
-                        <th class="prod-num">Total HB</th>
-                        <th class="prod-num">Venta</th>
-                        <th class="prod-num">% sobre total</th>
+                        <th class="prod-num">TOTAL HB</th>
+                        <th class="prod-num">Venta Devengada</th>
+                        <th class="prod-num">PONDERADO</th>
+                        <th class="prod-num">Detalle</th>
                     </tr>
                 </thead>
                 <tbody id="contratistasBody"></tbody>
@@ -637,6 +796,47 @@ require_once __DIR__ . '/../../shared/layout.php';
             </table>
         </div>
     </section>
+
+    <div id="detalleModal" class="prod-modal" role="dialog" aria-modal="true" aria-labelledby="detalleTitulo" hidden>
+        <section class="prod-modal-card">
+            <header class="prod-modal-head">
+                <div class="prod-modal-title">
+                    <h2 id="detalleTitulo">Detalle de producción por Cuadrilla/Contratista</h2>
+                    <strong id="detalleContratista">Contratista</strong>
+                    <span id="detalleContexto">Período</span>
+                </div>
+                <div class="prod-modal-actions">
+                    <button id="detalleExcel" class="prod-excel" type="button">
+                        <i class="fa-solid fa-file-excel" aria-hidden="true"></i> Exportar XLSX
+                    </button>
+                    <button id="detalleCerrar" class="prod-modal-close" type="button" aria-label="Cerrar detalle">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </header>
+            <div id="detalleTableWrap" class="prod-table-wrap">
+                <table class="prod-table">
+                    <thead>
+                        <tr>
+                            <th>SIGEST</th>
+                            <th>Sucursal</th>
+                            <th class="prod-detail-description">Descripción</th>
+                            <th>Tarea</th>
+                            <th class="prod-num">HS L</th>
+                            <th class="prod-num">HS N</th>
+                            <th class="prod-num">HS LZ</th>
+                            <th class="prod-num">HS LC</th>
+                            <th class="prod-num">Total HB</th>
+                            <th class="prod-center">Precio</th>
+                            <th class="prod-num">Valor Venta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detalleBody"></tbody>
+                    <tfoot id="detalleTotal"></tfoot>
+                </table>
+            </div>
+        </section>
+    </div>
 
 </main>
 
@@ -670,13 +870,29 @@ const contratistasTotal = document.getElementById('contratistasTotal');
 const stamp = document.getElementById('stamp');
 const totalVentaViz = document.getElementById('totalVentaViz');
 const zonaSeleccionada = document.getElementById('zonaSeleccionada');
+const resumenPtr = document.getElementById('resumenPtr');
+const resumenOcra = document.getElementById('resumenOcra');
+const resumenHb = document.getElementById('resumenHb');
+const resumenVenta = document.getElementById('resumenVenta');
+const detalleModal = document.getElementById('detalleModal');
+const detalleTitulo = document.getElementById('detalleTitulo');
+const detalleContratista = document.getElementById('detalleContratista');
+const detalleContexto = document.getElementById('detalleContexto');
+const detalleBody = document.getElementById('detalleBody');
+const detalleTotal = document.getElementById('detalleTotal');
+const detalleTableWrap = document.getElementById('detalleTableWrap');
+const detalleExcel = document.getElementById('detalleExcel');
+const detalleCerrar = document.getElementById('detalleCerrar');
 
 let zonaActiva = 'Total compañía';
 let periodosDisponibles = [];
 let periodosSeleccionados = [];
+let periodosPendientes = [];
 let sucursalesDisponibles = [];
 let sucursalesSeleccionadas = [];
 let debounceTimer = null;
+let contratistaDetalle = '';
+let detalleTrigger = null;
 
 function n(valor) {
     return Number(valor || 0);
@@ -686,6 +902,13 @@ function fmtNum(valor) {
     return n(valor).toLocaleString('es-AR', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
+    });
+}
+
+function fmtHoras(valor) {
+    return n(valor).toLocaleString('es-AR', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
     });
 }
 
@@ -717,6 +940,25 @@ function escapeJs(value) {
     return String(value ?? '').replaceAll("\\", "\\\\").replaceAll("'", "\\'");
 }
 
+function textoEnLineas(value, maximo = 100) {
+    const palabras = String(value ?? '').trim().split(/\s+/).filter(Boolean);
+    const lineas = [];
+    let linea = '';
+
+    palabras.forEach(palabra => {
+        const propuesta = linea ? `${linea} ${palabra}` : palabra;
+        if (linea && propuesta.length > maximo) {
+            lineas.push(linea);
+            linea = palabra;
+        } else {
+            linea = propuesta;
+        }
+    });
+
+    if (linea) lineas.push(linea);
+    return lineas.map(escapeHtml).join('<br>');
+}
+
 function periodosParam() {
     return periodosSeleccionados.join(',');
 }
@@ -742,43 +984,67 @@ function actualizarTextoPeriodo() {
 }
 
 function renderPeriodos() {
-    periodoMenu.innerHTML = periodosDisponibles.map(p => `
-        <label class="periodo-option">
-            <input type="checkbox" value="${p}" ${periodosSeleccionados.includes(p) ? 'checked' : ''}>
-            <span>${p}</span>
-        </label>
-    `).join('');
+    periodoMenu.innerHTML = `
+        <div class="periodo-options">
+            ${periodosDisponibles.map(p => `
+                <label class="periodo-option">
+                    <input type="checkbox" value="${escapeHtml(p)}" ${periodosPendientes.includes(p) ? 'checked' : ''}>
+                    <span>${escapeHtml(p)}</span>
+                </label>
+            `).join('')}
+        </div>
+        <div class="periodo-actions">
+            <button id="limpiarPeriodos" class="periodo-clear" type="button">Limpiar</button>
+            <button id="aceptarPeriodos" class="periodo-apply" type="button" ${periodosPendientes.length ? '' : 'disabled'}>Aceptar</button>
+        </div>
+    `;
 
     periodoMenu.querySelectorAll('input[type="checkbox"]').forEach(chk => {
         chk.addEventListener('change', () => {
             const value = chk.value;
 
             if (chk.checked) {
-                if (!periodosSeleccionados.includes(value)) {
-                    periodosSeleccionados.push(value);
+                if (!periodosPendientes.includes(value)) {
+                    periodosPendientes.push(value);
                 }
             } else {
-                periodosSeleccionados = periodosSeleccionados.filter(p => p !== value);
+                periodosPendientes = periodosPendientes.filter(p => p !== value);
             }
 
-            periodosSeleccionados.sort((a, b) => b.localeCompare(a));
-            actualizarTextoPeriodo();
-
-            zonaActiva = 'Total compañía';
-            sucursalesDisponibles = [];
-            sucursalesSeleccionadas = [];
-            refrescarTodo();
+            periodosPendientes.sort((a, b) => b.localeCompare(a));
+            document.getElementById('aceptarPeriodos').disabled = periodosPendientes.length === 0;
         });
+    });
+
+    document.getElementById('limpiarPeriodos').addEventListener('click', () => {
+        periodosPendientes = [];
+        renderPeriodos();
+    });
+
+    document.getElementById('aceptarPeriodos').addEventListener('click', async () => {
+        if (!periodosPendientes.length) return;
+
+        periodosSeleccionados = [...periodosPendientes];
+        actualizarTextoPeriodo();
+        periodoMenu.classList.remove('open');
+        periodoBtn.setAttribute('aria-expanded', 'false');
+        sucursalesDisponibles = [];
+        sucursalesSeleccionadas = [];
+        await refrescarTodo();
     });
 }
 
 periodoBtn.addEventListener('click', () => {
+    periodosPendientes = [...periodosSeleccionados];
+    renderPeriodos();
     periodoMenu.classList.toggle('open');
+    periodoBtn.setAttribute('aria-expanded', periodoMenu.classList.contains('open') ? 'true' : 'false');
 });
 
 document.addEventListener('click', (e) => {
     if (!e.target.closest('.periodo-dropdown')) {
         periodoMenu.classList.remove('open');
+        periodoBtn.setAttribute('aria-expanded', 'false');
     }
 });
 
@@ -800,8 +1066,16 @@ async function cargarEstado() {
 }
 
 async function cargarPeriodos() {
-    const res = await fetch(`${API_BASE}/periodos.php`);
-    const json = await res.json();
+    let json;
+
+    try {
+        const res = await fetch(`${API_BASE}/periodos.php`);
+        json = await res.json();
+    } catch (e) {
+        zonesEl.innerHTML = `<div class="prod-empty">No se pudieron cargar los períodos.</div>`;
+        actualizarResumenFijo();
+        return;
+    }
 
     if (!json.ok) {
         zonesEl.innerHTML = `<div class="prod-empty">No se pudieron cargar los períodos.</div>`;
@@ -810,6 +1084,7 @@ async function cargarPeriodos() {
 
     periodosDisponibles = json.periodos || [];
     periodosSeleccionados = periodosDisponibles.length ? [periodosDisponibles[0]] : [];
+    periodosPendientes = [...periodosSeleccionados];
 
     renderPeriodos();
     actualizarTextoPeriodo();
@@ -842,6 +1117,10 @@ async function cargarZonas() {
     const total = json.total;
     const zonas = json.zonas || [];
     const cards = [total, ...zonas];
+
+    if (!cards.some(z => z && z.zona === zonaActiva)) {
+        zonaActiva = total?.zona || 'Total compañía';
+    }
 
     zonesEl.innerHTML = cards.map(z => `
         <button class="prod-zone-card ${z.zona === zonaActiva ? 'active' : ''}"
@@ -1001,11 +1280,106 @@ function limpiarSucursales() {
     cargarContratistas();
 }
 
+function actualizarResumenFijo(totalPtr = 0, totalOcra = 0, totalHb = 0, totalVenta = 0) {
+    resumenPtr.textContent = fmtNum(totalPtr);
+    resumenOcra.textContent = fmtNum(totalOcra);
+    resumenHb.textContent = fmtNum(totalHb);
+    resumenVenta.textContent = fmtMoney(totalVenta);
+}
+
+function crearParametrosDetalle(contratista) {
+    const params = new URLSearchParams();
+    params.set('periodos', periodosParam());
+    params.set('contratista', contratista);
+    params.set('tipo_contratista', tipoContratistaEl.value);
+    params.set('tipo', tipoEl.value);
+
+    if (zonaActiva && zonaActiva !== 'Total compañía') {
+        params.set('zona', zonaActiva);
+    }
+
+    const sucursales = sucursalesParam();
+    if (sucursales) {
+        params.set('sucursales', sucursales);
+    }
+
+    return params;
+}
+
+async function abrirDetalleContratista(contratista, trigger) {
+    contratistaDetalle = contratista;
+    detalleTrigger = trigger;
+    detalleContratista.textContent = contratista;
+    detalleContexto.textContent = `Período: ${periodosSeleccionados.join(', ')} · Tareas: ${tipoEl.options[tipoEl.selectedIndex].text}`;
+    detalleBody.innerHTML = `<tr><td colspan="11">Cargando obras...</td></tr>`;
+    detalleTotal.innerHTML = '';
+    detalleModal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    detalleTableWrap.scrollTop = 0;
+    detalleTableWrap.scrollLeft = 0;
+    detalleCerrar.focus();
+
+    try {
+        const params = crearParametrosDetalle(contratista);
+        const res = await fetch(`${API_BASE}/obras.php?${params.toString()}`);
+        const json = await res.json();
+
+        if (!res.ok || !json.ok) {
+            throw new Error(json.error || 'No se pudo cargar el detalle.');
+        }
+
+        const rows = json.rows || [];
+        if (!rows.length) {
+            detalleBody.innerHTML = `<tr><td colspan="11">Sin obras para los filtros seleccionados.</td></tr>`;
+            return;
+        }
+
+        detalleBody.innerHTML = rows.map(r => `
+            <tr>
+                <td><strong>${escapeHtml(r.sigest)}</strong></td>
+                <td>${escapeHtml(r.sucursal)}</td>
+                <td class="prod-detail-description">${textoEnLineas(r.descripcion)}</td>
+                <td>${escapeHtml(r.tipo)}</td>
+                <td class="prod-num">${fmtHoras(r.nl)}</td>
+                <td class="prod-num">${fmtHoras(r.nn)}</td>
+                <td class="prod-num">${fmtHoras(r.nlz)}</td>
+                <td class="prod-num">${fmtHoras(r.nlc)}</td>
+                <td class="prod-num">${fmtHoras(r.total_hb)}</td>
+                <td class="prod-center">${fmtNum(r.precio)}</td>
+                <td class="prod-num">${fmtMoney(r.valor_venta)}</td>
+            </tr>
+        `).join('');
+
+        const totales = json.totales || {};
+        detalleTotal.innerHTML = `
+            <tr class="prod-total-row">
+                <td colspan="4">Total</td>
+                <td class="prod-num">${fmtHoras(totales.nl)}</td>
+                <td class="prod-num">${fmtHoras(totales.nn)}</td>
+                <td class="prod-num">${fmtHoras(totales.nlz)}</td>
+                <td class="prod-num">${fmtHoras(totales.nlc)}</td>
+                <td class="prod-num">${fmtHoras(totales.total_hb)}</td>
+                <td></td>
+                <td class="prod-num">${fmtMoney(totales.valor_venta)}</td>
+            </tr>
+        `;
+    } catch (e) {
+        detalleBody.innerHTML = `<tr><td colspan="11">No se pudo cargar el detalle de obras.</td></tr>`;
+    }
+}
+
+function cerrarDetalleContratista() {
+    detalleModal.hidden = true;
+    document.body.style.overflow = '';
+    detalleTrigger?.focus();
+}
+
 async function cargarContratistas() {
     const periodos = periodosParam();
 
     if (!periodos) {
-        contratistasBody.innerHTML = `<tr><td colspan="6">Seleccioná al menos un período.</td></tr>`;
+        contratistasBody.innerHTML = `<tr><td colspan="7">Seleccioná al menos un período.</td></tr>`;
+        contratistasTotal.innerHTML = '';
         actualizarResumenFijo();
         return;
     }
@@ -1029,13 +1403,15 @@ async function cargarContratistas() {
         params.set('contratista', contratistaEl.value.trim());
     }
 
-    contratistasBody.innerHTML = `<tr><td colspan="6">Cargando contratistas...</td></tr>`;
+    contratistasBody.innerHTML = `<tr><td colspan="7">Cargando contratistas...</td></tr>`;
 
     const res = await fetch(`${API_BASE}/contratistas.php?${params.toString()}`);
     const json = await res.json();
 
     if (!json.ok) {
-        contratistasBody.innerHTML = `<tr><td colspan="6">No se pudieron cargar los contratistas.</td></tr>`;
+        contratistasBody.innerHTML = `<tr><td colspan="7">No se pudieron cargar los contratistas.</td></tr>`;
+        contratistasTotal.innerHTML = '';
+        actualizarResumenFijo();
         return;
     }
 
@@ -1051,7 +1427,7 @@ async function cargarContratistas() {
     let totalVenta = 0;
 
     if (!rows.length) {
-        contratistasBody.innerHTML = `<tr><td colspan="6">Sin datos para los filtros seleccionados.</td></tr>`;
+        contratistasBody.innerHTML = `<tr><td colspan="7">Sin datos para los filtros seleccionados.</td></tr>`;
         contratistasTotal.innerHTML = '';
         actualizarResumenFijo();
         return;
@@ -1071,9 +1447,18 @@ async function cargarContratistas() {
                 <td class="prod-num">${fmtNum(r.total_hb)}</td>
                 <td class="prod-num">${fmtMoney(r.venta)}</td>
                 <td class="prod-num">${fmtPct(r.share)}</td>
+                <td class="prod-num">
+                    <button class="prod-detail-button" type="button" data-contratista="${escapeHtml(r.contratista)}" aria-label="Ver obras de ${escapeHtml(r.contratista)}" title="Ver detalle de obras">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    </button>
+                </td>
             </tr>
         `;
     }).join('');
+
+    contratistasBody.querySelectorAll('.prod-detail-button').forEach(button => {
+        button.addEventListener('click', () => abrirDetalleContratista(button.dataset.contratista, button));
+    });
 
     actualizarResumenFijo(totalPtr, totalOcra, totalHb, totalVenta);
 
@@ -1085,6 +1470,7 @@ async function cargarContratistas() {
             <td class="prod-num">${fmtNum(totalHb)}</td>
             <td class="prod-num">${fmtMoney(totalVenta)}</td>
             <td class="prod-num">100,00%</td>
+            <td></td>
         </tr>
     `;
 }
@@ -1127,6 +1513,18 @@ tipoContratistaEl.addEventListener('change', cargarContratistas);
 contratistaEl.addEventListener('input', () => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(cargarContratistas, 350);
+});
+
+detalleCerrar.addEventListener('click', cerrarDetalleContratista);
+detalleModal.addEventListener('click', (e) => {
+    if (e.target === detalleModal) cerrarDetalleContratista();
+});
+detalleExcel.addEventListener('click', () => {
+    if (!contratistaDetalle) return;
+    window.location.href = `${API_BASE}/exportar_obras_excel.php?${crearParametrosDetalle(contratistaDetalle).toString()}`;
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !detalleModal.hidden) cerrarDetalleContratista();
 });
 
 cargarPeriodos();
