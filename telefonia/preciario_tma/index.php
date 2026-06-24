@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../shared/layout.php';
 </head>
 <body class="lcm-page lcm-page--with-nav">
 <?php lcm_topbar('telefonia'); ?>
-<?php lcm_coming_soon('Telefonia', 'Preciario TMA', 'Proximamente modulo de precios TMA.'); ?>
+<?php lcm_coming_soon('Telefonía', 'Preciario TMA', 'Próximamente: módulo de precios TMA.'); ?>
 <?php lcm_footer(); ?>
 </body>
 </html>

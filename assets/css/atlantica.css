@@ -1,0 +1,484 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
+
+:root {
+    --atlantic-bg: #eef3f6;
+    --atlantic-surface: #ffffff;
+    --atlantic-surface-soft: #f5f8fa;
+    --atlantic-ink: #1d3040;
+    --atlantic-muted: #6b7e8b;
+    --atlantic-line: #d9e3e9;
+    --atlantic-primary: #326f93;
+    --atlantic-primary-strong: #244e68;
+    --atlantic-primary-soft: #e3eff5;
+    --atlantic-success: #39745c;
+    --atlantic-success-soft: #e8f2ed;
+    --atlantic-warning: #96723b;
+    --atlantic-warning-soft: #f7f0e4;
+    --atlantic-danger: #ad5960;
+    --atlantic-danger-soft: #f8eaec;
+    --atlantic-shadow: 0 6px 22px rgba(29, 59, 78, .065);
+    --atlantic-radius: 10px;
+
+    --lcm-bg: var(--atlantic-bg);
+    --lcm-panel: var(--atlantic-surface);
+    --lcm-panel-soft: var(--atlantic-surface-soft);
+    --lcm-orange: var(--atlantic-primary);
+    --lcm-text: var(--atlantic-ink);
+    --lcm-muted: var(--atlantic-muted);
+    --lcm-border: var(--atlantic-line);
+    --lcm-font-title: 'Manrope', 'DM Sans', Arial, sans-serif;
+    --lcm-font-base: 'DM Sans', Arial, sans-serif;
+}
+
+html {
+    min-width: 320px;
+    background: var(--atlantic-bg);
+}
+
+body.lcm-page {
+    overflow-x: hidden;
+    background: var(--atlantic-bg);
+    color: var(--atlantic-ink);
+    font-family: var(--lcm-font-base);
+}
+
+.lcm-page--with-nav {
+    padding-top: 72px;
+}
+
+.lcm-topbar {
+    min-height: 72px;
+    padding: 10px max(22px, calc((100vw - 1380px) / 2));
+    border-bottom: 1px solid rgba(255, 255, 255, .16);
+    background: var(--atlantic-primary-strong);
+    box-shadow: 0 4px 18px rgba(23, 54, 73, .12);
+}
+
+.lcm-brand__logo {
+    height: 48px;
+}
+
+.lcm-nav {
+    gap: 4px;
+}
+
+.lcm-nav a,
+.lcm-action,
+.lcm-chip {
+    min-height: 38px;
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+.lcm-nav a {
+    border-color: transparent;
+    color: rgba(255, 255, 255, .78);
+}
+
+.lcm-nav a[aria-current="page"],
+.lcm-nav a:hover {
+    border-color: rgba(255, 255, 255, .34);
+    background: rgba(255, 255, 255, .14);
+    color: #ffffff;
+}
+
+.lcm-shell {
+    width: min(1380px, calc(100% - 36px));
+    padding: 30px 0 82px;
+}
+
+.lcm-page-head {
+    margin-bottom: 22px;
+}
+
+.lcm-page h1 {
+    margin: 9px 0 7px;
+    color: var(--atlantic-ink);
+    font-size: clamp(30px, 4vw, 46px);
+    line-height: 1.06;
+    letter-spacing: -.04em;
+}
+
+.lcm-page h2,
+.lcm-card strong,
+.lcm-kpi strong {
+    color: var(--atlantic-ink);
+}
+
+.lcm-muted {
+    color: var(--atlantic-muted);
+}
+
+.lcm-eyebrow {
+    min-height: auto;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--atlantic-primary);
+    font-size: 10px;
+    letter-spacing: .12em;
+}
+
+.lcm-action,
+.lcm-chip {
+    border-color: var(--atlantic-line);
+    background: var(--atlantic-surface);
+    color: var(--atlantic-primary-strong);
+}
+
+.lcm-action:hover {
+    border-color: var(--atlantic-primary);
+    background: var(--atlantic-primary-soft);
+    color: var(--atlantic-primary-strong);
+}
+
+.lcm-module-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.lcm-card,
+.lcm-kpi,
+.lcm-panel,
+.lcm-brand-card {
+    border: 1px solid var(--atlantic-line);
+    border-radius: var(--atlantic-radius);
+    background: var(--atlantic-surface);
+    box-shadow: var(--atlantic-shadow);
+}
+
+.lcm-brand-card {
+    background: var(--atlantic-primary-strong);
+    color: #ffffff;
+}
+
+.lcm-brand-card h2 {
+    color: #ffffff;
+}
+
+.lcm-card {
+    position: relative;
+    min-height: 132px;
+    padding: 20px;
+    overflow: hidden;
+}
+
+.lcm-card::before {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: var(--atlantic-primary);
+    content: '';
+}
+
+.lcm-card:hover,
+.lcm-kpi:hover {
+    border-color: var(--atlantic-primary);
+    transform: translateY(-1px);
+}
+
+.lcm-card strong {
+    font-size: 20px;
+}
+
+.lcm-card small {
+    color: var(--atlantic-muted);
+    line-height: 1.5;
+}
+
+.lcm-kpi {
+    border-top: 3px solid var(--atlantic-primary);
+    padding: 20px;
+}
+
+.lcm-panel-head,
+.lcm-panel-titlebar {
+    border-bottom-color: var(--atlantic-line);
+}
+
+.lcm-page th {
+    background: var(--atlantic-primary-soft);
+    color: var(--atlantic-primary-strong);
+}
+
+.lcm-page td {
+    border-bottom-color: var(--atlantic-line);
+    color: var(--atlantic-ink);
+}
+
+.lcm-status {
+    background: var(--atlantic-primary-soft);
+    color: var(--atlantic-primary-strong);
+}
+
+.lcm-empty-state {
+    min-height: calc(100vh - 72px);
+}
+
+.lcm-empty-state .lcm-panel {
+    max-width: 760px;
+    padding: 30px;
+}
+
+.lcm-footer {
+    border-top: 1px solid var(--atlantic-line);
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 -4px 18px rgba(29, 59, 78, .06);
+    color: var(--atlantic-muted);
+}
+
+/* Compatibilidad Atlántica: Producción Planta */
+body.lcm-page .prod-controls,
+body.lcm-page .prod-zone-card,
+body.lcm-page .prod-panel,
+body.lcm-page .prod-modal-card {
+    border-color: var(--atlantic-line) !important;
+    border-radius: var(--atlantic-radius) !important;
+    background: var(--atlantic-surface) !important;
+    box-shadow: var(--atlantic-shadow) !important;
+    color: var(--atlantic-ink) !important;
+}
+
+body.lcm-page .prod-controls {
+    padding: 16px !important;
+}
+
+body.lcm-page .prod-select,
+body.lcm-page .prod-input,
+body.lcm-page .periodo-button,
+body.lcm-page .periodo-menu,
+body.lcm-page .sucursal-filter,
+body.lcm-page .sucursal-options {
+    border: 1px solid var(--atlantic-line) !important;
+    border-radius: 8px !important;
+    background: var(--atlantic-surface) !important;
+    color: var(--atlantic-ink) !important;
+    box-shadow: none !important;
+}
+
+body.lcm-page .prod-select:focus,
+body.lcm-page .prod-input:focus,
+body.lcm-page .periodo-button:focus {
+    border-color: var(--atlantic-primary) !important;
+    box-shadow: 0 0 0 3px var(--atlantic-primary-soft) !important;
+    outline: none;
+}
+
+body.lcm-page .periodo-button {
+    color: var(--atlantic-primary-strong) !important;
+    text-shadow: none !important;
+}
+
+body.lcm-page .periodo-option:hover,
+body.lcm-page .prod-zone-card:hover,
+body.lcm-page .prod-zone-card.active,
+body.lcm-page .sucursal-chip.active {
+    border-color: var(--atlantic-primary) !important;
+    background: var(--atlantic-primary-soft) !important;
+    box-shadow: 0 0 0 2px rgba(50, 111, 147, .10) !important;
+}
+
+body.lcm-page .periodo-option input,
+body.lcm-page .sucursal-options input {
+    accent-color: var(--atlantic-primary) !important;
+}
+
+body.lcm-page .periodo-clear {
+    background: var(--atlantic-surface-soft) !important;
+    color: var(--atlantic-ink) !important;
+}
+
+body.lcm-page .periodo-apply,
+body.lcm-page .prod-detail-button {
+    background: var(--atlantic-primary) !important;
+    color: #ffffff !important;
+}
+
+body.lcm-page .prod-zone-card {
+    border-top: 3px solid var(--atlantic-primary) !important;
+}
+
+body.lcm-page .prod-share,
+body.lcm-page .prod-panel-head strong,
+body.lcm-page .prod-panel-titlebar strong {
+    color: var(--atlantic-primary) !important;
+}
+
+body.lcm-page .prod-label,
+body.lcm-page .prod-metric span,
+body.lcm-page .prod-panel-head span,
+body.lcm-page .prod-modal-title span,
+body.lcm-page .prod-table-summary span,
+body.lcm-page .prod-bar-value {
+    color: var(--atlantic-muted) !important;
+}
+
+body.lcm-page .prod-metric strong,
+body.lcm-page .prod-panel-title,
+body.lcm-page .prod-modal-title,
+body.lcm-page .prod-table td,
+body.lcm-page .prod-table strong {
+    color: var(--atlantic-ink) !important;
+}
+
+body.lcm-page .prod-panel-head,
+body.lcm-page .prod-panel-titlebar,
+body.lcm-page .prod-filter-bar,
+body.lcm-page .prod-table td,
+body.lcm-page .prod-modal-head,
+body.lcm-page .prod-modal-actions {
+    border-color: var(--atlantic-line) !important;
+}
+
+body.lcm-page .prod-table th {
+    border-color: var(--atlantic-line) !important;
+    background: var(--atlantic-primary-soft) !important;
+    color: var(--atlantic-primary-strong) !important;
+}
+
+body.lcm-page .prod-table tbody tr:hover {
+    background: rgba(227, 239, 245, .55) !important;
+}
+
+body.lcm-page .prod-table-summary {
+    border-color: var(--atlantic-line) !important;
+    background: var(--atlantic-surface-soft) !important;
+}
+
+body.lcm-page .prod-table-summary div {
+    background: transparent !important;
+    color: var(--atlantic-ink) !important;
+}
+
+body.lcm-page .prod-excel {
+    border-color: #2f7654 !important;
+    background: #39745c !important;
+    box-shadow: none !important;
+}
+
+body.lcm-page .prod-detail-button {
+    border-color: var(--atlantic-primary) !important;
+}
+
+body.lcm-page .prod-modal {
+    background: rgba(23, 43, 55, .58) !important;
+    backdrop-filter: blur(4px);
+}
+
+body.lcm-page .prod-modal-close {
+    border-color: var(--atlantic-line) !important;
+    background: var(--atlantic-surface-soft) !important;
+    color: var(--atlantic-ink) !important;
+}
+
+body.lcm-page .prod-bar-track {
+    background: var(--atlantic-line) !important;
+}
+
+body.lcm-page .prod-bar-fill {
+    background: linear-gradient(90deg, var(--atlantic-primary), #6da2bd) !important;
+}
+
+body.lcm-page .prod-total-row,
+body.lcm-page .prod-total-row td {
+    border-top-color: var(--atlantic-primary) !important;
+    background: var(--atlantic-primary-soft) !important;
+    color: var(--atlantic-primary-strong) !important;
+}
+
+body.lcm-page .prod-empty {
+    background: var(--atlantic-surface-soft) !important;
+    color: var(--atlantic-muted) !important;
+}
+
+body.lcm-page .sucursal-filter-actions button,
+body.lcm-page .sucursal-chip {
+    border-color: var(--atlantic-line) !important;
+    background: var(--atlantic-surface-soft) !important;
+    color: var(--atlantic-ink) !important;
+}
+
+body.lcm-page .sucursal-filter-actions button:hover,
+body.lcm-page .sucursal-chip:hover {
+    border-color: var(--atlantic-primary) !important;
+    background: var(--atlantic-primary-soft) !important;
+}
+
+body.lcm-page .sucursal-chip input {
+    accent-color: var(--atlantic-primary) !important;
+}
+
+@media (max-width: 900px) {
+    .lcm-topbar {
+        width: 100%;
+        max-width: 100vw;
+        overflow: hidden;
+        padding: 14px;
+    }
+
+    .lcm-page--with-nav {
+        padding-top: 0;
+    }
+
+    .lcm-nav {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .lcm-shell {
+        width: min(calc(100% - 20px), 1380px);
+        padding-top: 22px;
+    }
+
+    .lcm-module-grid,
+    .lcm-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    body.lcm-page .prod-head {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    body.lcm-page .prod-controls {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    body.lcm-page .prod-title,
+    body.lcm-page .prod-title h1,
+    body.lcm-page .prod-title p {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
+}
+
+@media (max-width: 620px) {
+    .lcm-module-grid,
+    .lcm-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .lcm-shell {
+        width: min(calc(100% - 20px), 1380px);
+    }
+
+    .lcm-page h1 {
+        font-size: 30px;
+    }
+
+    body.lcm-page .prod-page {
+        padding-top: 22px !important;
+    }
+
+    body.lcm-page .prod-title h1 {
+        margin-top: 0 !important;
+        font-size: 32px !important;
+    }
+
+    body.lcm-page .periodo-button {
+        font-size: 20px !important;
+    }
+}

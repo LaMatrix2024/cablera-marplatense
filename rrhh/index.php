@@ -8,7 +8,7 @@ require_once __DIR__ . '/../shared/layout.php';
 </head>
 <body class="lcm-page lcm-page--with-nav">
 <?php lcm_topbar('rrhh'); ?>
-<?php lcm_coming_soon('RRHH', 'RRHH', 'Proximamente gestion de personas y estructura organizacional.', '/'); ?>
+<?php lcm_coming_soon('RRHH', 'RRHH', 'Próximamente: gestión de personas y estructura organizacional.', '/'); ?>
 <?php lcm_footer(); ?>
 </body>
 </html>

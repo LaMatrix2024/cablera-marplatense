@@ -13,6 +13,7 @@ function lcm_head(string $title, array $stylesheets = []): void
     echo '<title>' . lcm_html_attr($title) . ' | LCM</title>' . PHP_EOL;
     echo '<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">' . PHP_EOL;
     echo '<link rel="stylesheet" href="/assets/css/brand.css">' . PHP_EOL;
+    echo '<link rel="stylesheet" href="/assets/css/atlantica.css?v=4">' . PHP_EOL;
 
     foreach ($stylesheets as $href) {
         echo '<link rel="stylesheet" href="' . lcm_html_attr($href) . '">' . PHP_EOL;
@@ -33,7 +34,7 @@ function lcm_topbar(string $active = ''): void
 
     echo '<header class="lcm-topbar">';
     echo '<a class="lcm-brand" href="/">' . lcm_logo('nav') . '</a>';
-    echo '<nav class="lcm-nav" aria-label="Areas de negocio">';
+    echo '<nav class="lcm-nav" aria-label="Áreas de negocio">';
 
     foreach ($areas as $key => [$label, $href]) {
         $current = $key === $active ? ' aria-current="page"' : '';
@@ -46,7 +47,7 @@ function lcm_topbar(string $active = ''): void
 
 function lcm_footer(): void
 {
-    echo '<footer class="lcm-footer">LCM - La Cablera Marplatense · Plataforma de Gestion Grupo Plantel</footer>';
+    echo '<footer class="lcm-footer">LCM - La Cablera Marplatense · Plataforma de Gestión Grupo Plantel</footer>';
 }
 
 function lcm_coming_soon(string $area, string $module, string $description, string $backHref = '/telefonia/menu.php'): void

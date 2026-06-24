@@ -8,7 +8,7 @@ require_once __DIR__ . '/../shared/layout.php';
 </head>
 <body class="lcm-page lcm-page--with-nav">
 <?php lcm_topbar('contable'); ?>
-<?php lcm_coming_soon('Contable', 'Contable', 'Proximamente informacion contable y tableros de gestion.', '/'); ?>
+<?php lcm_coming_soon('Contable', 'Contable', 'Próximamente: información contable y tableros de gestión.', '/'); ?>
 <?php lcm_footer(); ?>
 </body>
 </html>

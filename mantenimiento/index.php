@@ -8,7 +8,7 @@ require_once __DIR__ . '/../shared/layout.php';
 </head>
 <body class="lcm-page lcm-page--with-nav">
 <?php lcm_topbar('mantenimiento'); ?>
-<?php lcm_coming_soon('Mantenimiento', 'Mantenimiento', 'Proximamente seguimiento y administracion operativa.', '/'); ?>
+<?php lcm_coming_soon('Mantenimiento', 'Mantenimiento', 'Próximamente: seguimiento y administración operativa.', '/'); ?>
 <?php lcm_footer(); ?>
 </body>
 </html>

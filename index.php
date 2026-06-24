@@ -10,21 +10,19 @@ require_once __DIR__ . '/shared/layout.php';
 <?php lcm_topbar(''); ?>
 
 <main class="lcm-shell">
-    <!--
     <section class="lcm-page-head">
         <div>
             <span class="lcm-eyebrow">Plataforma corporativa</span>
-            <h1>LCM</h1>
-            <p class="lcm-muted">La Cablera Marplatense · Plataforma de Gestion Grupo Plantel</p>
+            <h1>La Cablera Marplatense</h1>
+            <p class="lcm-muted">Plataforma de Gestión Grupo Plantel.</p>
         </div>
-        <a class="lcm-action" href="/telefonia/menu.php">Ingresar</a>
+        <a class="lcm-action" href="/telefonia/menu.php">Ir a Telefonía</a>
     </section>
-    -->
-<a class="lcm-action" href="/telefonia/menu.php">Ingresar</a>
-    <section class="lcm-grid lcm-module-grid" aria-label="Areas de negocio">
+
+    <section class="lcm-grid lcm-module-grid" aria-label="Áreas de negocio">
         <a class="lcm-card" href="/direccion/">
             <strong>Dirección</strong>
-            <small>Indicadores ejecutivos y gestion transversal.</small>
+            <small>Indicadores ejecutivos y gestión transversal.</small>
         </a>
         <a class="lcm-card" href="/telefonia/menu.php">
             <strong>Telefonía</strong>
@@ -52,7 +50,7 @@ require_once __DIR__ . '/shared/layout.php';
         </a>
         <a class="lcm-card" href="/mi_info/bcoCentral/indicesBCRA.html">
             <strong>Mis Datos</strong>
-            <small>Indices y más </small>
+            <small>Índices y más.</small>
         </a>
     </section>
 </main>

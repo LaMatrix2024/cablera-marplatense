@@ -8,7 +8,7 @@ require_once __DIR__ . '/../shared/layout.php';
 </head>
 <body class="lcm-page lcm-page--with-nav">
 <?php lcm_topbar('licitaciones'); ?>
-<?php lcm_coming_soon('Licitaciones', 'Licitaciones', 'Proximamente procesos transversales de licitacion del grupo.', '/'); ?>
+<?php lcm_coming_soon('Licitaciones', 'Licitaciones', 'Próximamente: procesos transversales de licitación del grupo.', '/'); ?>
 <?php lcm_footer(); ?>
 </body>
 </html>

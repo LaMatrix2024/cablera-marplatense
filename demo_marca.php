@@ -12,7 +12,7 @@ require_once __DIR__ . '/shared/layout.php';
             <div>
                 <span class="lcm-eyebrow">Identidad oficial</span>
                 <h1>LCM</h1>
-                <p class="lcm-muted">La Cablera Marplatense · Plataforma de Gestion Grupo Plantel</p>
+                <p class="lcm-muted">La Cablera Marplatense · Plataforma de Gestión Grupo Plantel</p>
             </div>
             <a class="lcm-action" href="/">Inicio</a>
         </section>

@@ -668,7 +668,7 @@ require_once __DIR__ . '/../../shared/layout.php';
 
         <aside class="prod-controls">
             <div class="prod-label">
-                Periodo
+                Período
                 <div class="periodo-dropdown">
                     <button id="periodoBtn" class="periodo-button" type="button" aria-expanded="false" aria-controls="periodoMenu">
                         <span>Seleccionar</span>
