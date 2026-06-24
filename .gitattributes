@@ -1,0 +1,6 @@
+* text=auto
+*.php text
+*.js text
+*.css text
+*.md text
+*.json text
