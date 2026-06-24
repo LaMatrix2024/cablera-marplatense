@@ -36,7 +36,7 @@ La Cablera debe evolucionar como una plataforma modular organizada por areas de 
 
 Areas:
 
-- Direccion
+- Gerencia
 - Telefonia
 - Obras
 - RRHH
@@ -57,7 +57,7 @@ config
 logs
 tmp
 
-direccion
+gerencia
 telefonia
 obras
 rrhh
@@ -248,7 +248,7 @@ Telefonia
 - Preciario TMA
 - Control Logicas
 
-Direccion
+Gerencia
 - Dashboard Ejecutivo
 
 Contable

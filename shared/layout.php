@@ -23,7 +23,7 @@ function lcm_head(string $title, array $stylesheets = []): void
 function lcm_topbar(string $active = ''): void
 {
     $areas = [
-        'direccion' => ['Dirección', '/direccion/'],
+        'gerencia' => ['Gerencia', '/gerencia/'],
         'telefonia' => ['Telefonía', '/telefonia/menu.php'],
         'obras' => ['Obras', '/obras/'],
         'rrhh' => ['RRHH', '/rrhh/'],

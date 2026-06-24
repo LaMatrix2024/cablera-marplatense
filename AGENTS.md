@@ -16,7 +16,7 @@ La Cablera debe evolucionar como una plataforma modular organizada por áreas de
 
 Ejemplos:
 
-* Dirección
+* Gerencia
 * Telefonía
 * Obras
 * RRHH
@@ -39,7 +39,7 @@ C:\plantel\cablera-marplatense
 ├── logs
 ├── tmp
 
-├── direccion
+├── gerencia
 ├── telefonia
 ├── obras
 ├── rrhh
@@ -140,7 +140,7 @@ Correcto:
 /contable
 /mantenimiento
 /licitaciones
-/direccion
+/gerencia
 ```
 
 Cada área contendrá sus propios módulos.
@@ -242,7 +242,7 @@ Ejemplos:
 /api/contable
 /api/mantenimiento
 /api/lictaciones
-/api/direccion
+/api/gerencia
 ```
 
 ---

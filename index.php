@@ -20,9 +20,9 @@ require_once __DIR__ . '/shared/layout.php';
     </section>
 
     <section class="lcm-grid lcm-module-grid" aria-label="Áreas de negocio">
-        <a class="lcm-card" href="/direccion/">
-            <strong>Dirección</strong>
-            <small>Indicadores ejecutivos y gestión transversal.</small>
+        <a class="lcm-card" href="/gerencia/">
+            <strong>Gerencia</strong>
+            <small>Análisis económico e indicadores de gestión transversal.</small>
         </a>
         <a class="lcm-card" href="/telefonia/menu.php">
             <strong>Telefonía</strong>

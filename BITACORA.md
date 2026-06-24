@@ -37,7 +37,7 @@ Se aprueba:
 Estructura modular por áreas de negocio:
 
 ```text
-direccion
+gerencia
 telefonia
 obras
 rrhh
@@ -255,7 +255,7 @@ Telefonía
 ├── Preciario TMA
 ├── Control Lógicas
 
-Dirección
+Gerencia
 ├── Dashboard Ejecutivo
 
 Contable

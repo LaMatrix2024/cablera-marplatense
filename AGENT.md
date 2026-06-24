@@ -25,7 +25,7 @@ Correcto:
 /contable
 /mantenimiento
 /licitaciones
-/direccion
+/gerencia
 ```
 
 Cada area contendra sus propios modulos.
@@ -41,7 +41,7 @@ config
 logs
 tmp
 
-direccion
+gerencia
 telefonia
 obras
 rrhh
@@ -69,7 +69,7 @@ Ejemplos:
 /api/contable
 /api/mantenimiento
 /api/lictaciones
-/api/direccion
+/api/gerencia
 ```
 
 ## Patron De Desarrollo

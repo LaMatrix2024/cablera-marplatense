@@ -1,0 +1,135 @@
+.iet-page {
+    display: grid;
+    gap: 22px;
+}
+
+.iet-status-panel,
+.iet-next-stage {
+    overflow: hidden;
+    border: 1px solid var(--atlantic-line);
+    border-radius: var(--atlantic-radius);
+    background: var(--atlantic-surface);
+    box-shadow: var(--atlantic-shadow);
+}
+
+.iet-status-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--atlantic-line);
+}
+
+.iet-status-head h2,
+.iet-next-stage h2 {
+    margin: 4px 0 0;
+    color: var(--atlantic-ink);
+}
+
+.iet-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.iet-badge--neutral {
+    background: var(--atlantic-surface-soft);
+    color: var(--atlantic-muted);
+}
+
+.iet-badge--ok {
+    background: #e5f2eb;
+    color: var(--atlantic-success);
+}
+
+.iet-badge--warning {
+    background: #f6efdf;
+    color: var(--atlantic-warning);
+}
+
+.iet-badge--error {
+    background: #f8e8e9;
+    color: var(--atlantic-danger);
+}
+
+.iet-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--atlantic-line);
+}
+
+.iet-card {
+    min-width: 0;
+    padding: 20px 22px;
+    background: var(--atlantic-surface);
+}
+
+.iet-card--wide {
+    grid-column: span 2;
+}
+
+.iet-card span {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--atlantic-muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.iet-card strong {
+    display: block;
+    overflow-wrap: anywhere;
+    color: var(--atlantic-ink);
+    font-size: 19px;
+    font-variant-numeric: tabular-nums;
+}
+
+.iet-message {
+    margin: 0;
+    padding: 14px 22px;
+    border-top: 1px solid var(--atlantic-line);
+    background: var(--atlantic-surface-soft);
+    color: var(--atlantic-muted);
+}
+
+.iet-next-stage {
+    padding: 24px;
+    border-left: 4px solid var(--atlantic-primary);
+}
+
+.iet-next-stage p {
+    max-width: 850px;
+    margin: 12px 0 0;
+    color: var(--atlantic-muted);
+    line-height: 1.6;
+}
+
+@media (max-width: 850px) {
+    .iet-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .iet-status-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .iet-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .iet-card--wide {
+        grid-column: auto;
+    }
+}

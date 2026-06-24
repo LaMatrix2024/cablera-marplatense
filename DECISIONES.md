@@ -66,7 +66,7 @@ La estructura del proyecto sera modular por areas de negocio.
 Areas:
 
 ```text
-direccion
+gerencia
 telefonia
 obras
 rrhh
