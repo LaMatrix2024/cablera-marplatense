@@ -13,7 +13,7 @@ require_once __DIR__ . '/../../shared/layout.php';
             display: grid;
             gap: 18px;
             padding-top: 64px;
-            padding-bottom: 120px;
+            padding-bottom: 58px;
         }
 
         .prod-head {
@@ -70,7 +70,7 @@ require_once __DIR__ . '/../../shared/layout.php';
             color: #d90000;
             border: 0;
             border-radius: 10px;
-            padding: 11px 12px;
+            padding: 10px 12px;
             font-size: 18px;
             font-weight: bold;
             text-align: center;
@@ -158,6 +158,21 @@ require_once __DIR__ . '/../../shared/layout.php';
             display: grid;
             grid-template-columns: repeat(4, minmax(180px, 1fr));
             gap: 12px;
+        }
+
+        .prod-primary-filters {
+            display: grid;
+            grid-template-columns: minmax(190px, 240px) minmax(170px, 220px);
+            gap: 16px;
+            align-items: end;
+            justify-content: start;
+            width: min(100%, 500px);
+            margin-top: 28px;
+            padding: 16px;
+            background: var(--lcm-panel);
+            border: 1px solid var(--lcm-border);
+            border-radius: 14px;
+            box-sizing: border-box;
         }
 
         .prod-zone-card {
@@ -251,6 +266,18 @@ require_once __DIR__ . '/../../shared/layout.php';
         .prod-panel-title {
             display: grid;
             gap: 4px;
+        }
+
+        .prod-panel-actions {
+            display: flex;
+            align-items: end;
+            justify-content: flex-end;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .prod-contractor-search {
+            width: clamp(220px, 26vw, 380px);
         }
 
         .prod-filter-bar {
@@ -606,6 +633,20 @@ require_once __DIR__ . '/../../shared/layout.php';
                 min-width: 0;
             }
 
+            .prod-primary-filters {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .prod-panel-actions {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                width: 100%;
+            }
+
+            .prod-contractor-search {
+                width: 100%;
+            }
+
             .prod-filter-group {
                 grid-template-columns: 1fr;
                 gap: 12px;
@@ -649,6 +690,11 @@ require_once __DIR__ . '/../../shared/layout.php';
             .prod-zone-strip {
                 grid-template-columns: 1fr;
             }
+
+            .prod-primary-filters,
+            .prod-panel-actions {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -664,6 +710,27 @@ require_once __DIR__ . '/../../shared/layout.php';
             <p class="lcm-muted">
                 Resumen venta devengada, período, zona contrato, sucursales, contratistas y HB ejecutadas.
             </p>
+
+            <div class="prod-primary-filters" aria-label="Filtros generales de producción">
+                <label class="prod-label">
+                    Tipo de contratista
+                    <select id="tipoContratista" class="prod-select">
+                        <option value="TODOS">Todos</option>
+                        <option value="PROP">MANO DE OBRA PROPIA</option>
+                        <option value="CONT">M.O. SUBCONTRATADA</option>
+                    </select>
+                </label>
+
+                <label class="prod-label">
+                    Tareas
+                    <select id="tipo" class="prod-select">
+                        <option value="TODAS">Todas</option>
+                        <option value="PTRS">PTRS</option>
+                        <option value="OCRAS">OCRAS</option>
+                        <option value="MAREA">MAREA</option>
+                    </select>
+                </label>
+            </div>
         </div>
 
         <aside class="prod-controls">
@@ -735,38 +802,17 @@ require_once __DIR__ . '/../../shared/layout.php';
                 <h2>Contratistas</h2>
             </div>
 
-            <div class="prod-excel-wrap">
-                <button class="prod-excel" type="button" onclick="exportarExcel()">
-                    <span>📗</span> Exportar Excel
-                </button>
-            </div>
-        </div>
-
-        <div class="prod-filter-bar">
-            <div class="prod-filter-group">
-                <label class="prod-label">
-                    Tipo contratista
-                    <select id="tipoContratista" class="prod-select">
-                        <option value="TODOS">Todos</option>
-                        <option value="PROP">MANO OBRA PROPIA</option>
-                        <option value="CONT">M.O. SUBCONTRATADA</option>
-                    </select>
-                </label>
-
-                <label class="prod-label">
-                    Tareas
-                    <select id="tipo" class="prod-select">
-                        <option value="TODAS">Todas</option>
-                        <option value="PTRS">PTRS</option>
-                        <option value="OCRAS">OCRAS</option>
-                        <option value="MAREA">MAREA</option>
-                    </select>
-                </label>
-
-                <label class="prod-label">
+            <div class="prod-panel-actions">
+                <label class="prod-label prod-contractor-search">
                     Contratista
                     <input id="contratista" class="prod-input" type="text" placeholder="Buscar...">
                 </label>
+
+                <div class="prod-excel-wrap">
+                    <button class="prod-excel" type="button" onclick="exportarExcel()">
+                        <span>📗</span> Exportar Excel
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -777,7 +823,7 @@ require_once __DIR__ . '/../../shared/layout.php';
             <div><span>Venta devengada</span><strong id="resumenVenta">$ 0</strong></div>
         </div>
 
-        <div class="prod-table-wrap">
+        <div class="prod-table-wrap prod-table-wrap--contractors">
             
             <table class="prod-table" id="tablaContratistas">
                 <thead>
@@ -963,6 +1009,18 @@ function periodosParam() {
     return periodosSeleccionados.join(',');
 }
 
+function agregarFiltrosPrincipales(params) {
+    params.set('tipo_contratista', tipoContratistaEl.value);
+    params.set('tipo', tipoEl.value);
+
+    const contratista = contratistaEl.value.trim();
+    if (contratista) {
+        params.set('contratista', contratista);
+    }
+
+    return params;
+}
+
 function sucursalesParam() {
     if (!sucursalesDisponibles.length) return '';
     if (sucursalesSeleccionadas.length === sucursalesDisponibles.length) return '';
@@ -1116,7 +1174,10 @@ async function cargarZonas() {
         return;
     }
 
-    const res = await fetch(`${API_BASE}/zonas.php?periodos=${encodeURIComponent(periodos)}`);
+    const params = agregarFiltrosPrincipales(new URLSearchParams());
+    params.set('periodos', periodos);
+
+    const res = await fetch(`${API_BASE}/zonas.php?${params.toString()}`);
     const json = await res.json();
 
     if (!json.ok) {
@@ -1170,6 +1231,7 @@ async function cargarDistribucion() {
     const params = new URLSearchParams();
     params.set('periodos', periodos);
     params.set('zona', zonaActiva);
+    agregarFiltrosPrincipales(params);
 
     const res = await fetch(`${API_BASE}/distribucion.php?${params.toString()}`);
     const json = await res.json();
@@ -1487,7 +1549,7 @@ async function cargarContratistas() {
             <td class="prod-num">${fmtNum(totalHb)}</td>
             <td class="prod-num">${fmtMoney(totalVenta)}</td>
             <td class="prod-num">100,00%</td>
-            <td></td>
+            <td aria-hidden="true">&nbsp;</td>
         </tr>
     `;
 }
@@ -1524,12 +1586,20 @@ function exportarExcel() {
     window.location.href = `${API_BASE}/exportar_excel.php?${params.toString()}`;
 }
 
-tipoEl.addEventListener('change', cargarContratistas);
-tipoContratistaEl.addEventListener('change', cargarContratistas);
+async function refrescarFiltrosPrincipales() {
+    sucursalesDisponibles = [];
+    sucursalesSeleccionadas = [];
+    await cargarZonas();
+    await cargarDistribucion();
+    await cargarContratistas();
+}
+
+tipoEl.addEventListener('change', refrescarFiltrosPrincipales);
+tipoContratistaEl.addEventListener('change', refrescarFiltrosPrincipales);
 
 contratistaEl.addEventListener('input', () => {
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(cargarContratistas, 350);
+    debounceTimer = setTimeout(refrescarFiltrosPrincipales, 350);
 });
 
 detalleCerrar.addEventListener('click', cerrarDetalleContratista);

@@ -55,6 +55,7 @@ $sheetRows .= '<row r="3" ht="24" customHeight="1">' . obrasStr('A3', 'Contratis
 
 $filtros = 'Períodos: ' . implode(', ', array_map('periodoLegible', $detalle['periodos']))
     . ' | Zona: ' . ($detalle['zona'] ?: 'Todas')
+    . ' | Tipo de contratista: ' . $detalle['tipo_contratista']
     . ' | Tareas: ' . $detalle['tipo'];
 $sheetRows .= '<row r="4">' . obrasStr('A4', $filtros, 3) . '</row>';
 
@@ -68,13 +69,15 @@ $sheetRows .= '</row>';
 
 $rowNumber = 7;
 foreach ($rows as $row) {
-    $sheetRows .= '<row r="' . $rowNumber . '">';
+    $descriptionLength = strlen((string)$row['descripcion']);
+    $rowHeight = $descriptionLength > 85 ? 45 : 30;
+    $sheetRows .= '<row r="' . $rowNumber . '" ht="' . $rowHeight . '" customHeight="1">';
     $sheetRows .= ctype_digit((string)$row['sigest'])
         ? obrasNum('A' . $rowNumber, (int)$row['sigest'], 12)
         : obrasStr('A' . $rowNumber, $row['sigest'], 12);
-    $sheetRows .= obrasStr('B' . $rowNumber, $row['sucursal'], 5);
+    $sheetRows .= obrasStr('B' . $rowNumber, $row['sucursal'], 14);
     $sheetRows .= obrasStr('C' . $rowNumber, $row['descripcion'], 5);
-    $sheetRows .= obrasStr('D' . $rowNumber, $row['tipo'], 5);
+    $sheetRows .= obrasStr('D' . $rowNumber, $row['tipo'], 14);
     $sheetRows .= obrasNum('E' . $rowNumber, $row['nl'], 6);
     $sheetRows .= obrasNum('F' . $rowNumber, $row['nn'], 6);
     $sheetRows .= obrasNum('G' . $rowNumber, $row['nlz'], 6);
@@ -119,11 +122,16 @@ $sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <sheetFormatPr defaultRowHeight="19"/>
     <cols>
         <col min="1" max="1" width="16" customWidth="1"/>
-        <col min="2" max="2" width="24" customWidth="1"/>
+        <col min="2" max="2" width="12.86" customWidth="1"/>
         <col min="3" max="3" width="58" customWidth="1"/>
-        <col min="4" max="4" width="14" customWidth="1"/>
-        <col min="5" max="9" width="12" customWidth="1"/>
-        <col min="10" max="11" width="20" customWidth="1"/>
+        <col min="4" max="4" width="10.43" customWidth="1"/>
+        <col min="5" max="5" width="9.14" customWidth="1"/>
+        <col min="6" max="6" width="9.71" customWidth="1"/>
+        <col min="7" max="7" width="10.14" customWidth="1"/>
+        <col min="8" max="8" width="10.29" customWidth="1"/>
+        <col min="9" max="9" width="12.86" customWidth="1"/>
+        <col min="10" max="10" width="11.14" customWidth="1"/>
+        <col min="11" max="11" width="16" customWidth="1"/>
     </cols>
     <sheetData>' . $sheetRows . '</sheetData>
     <autoFilter ref="A6:K' . $lastDataRow . '"/>
@@ -168,7 +176,7 @@ $styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         </border>
     </borders>
     <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-    <cellXfs count="14">
+    <cellXfs count="15">
         <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
         <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
         <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
@@ -183,6 +191,7 @@ $styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <xf numFmtId="0" fontId="5" fillId="0" borderId="0" xfId="0" applyFont="1"/>
         <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
         <xf numFmtId="1" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
+        <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top" wrapText="1"/></xf>
     </cellXfs>
     <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>';

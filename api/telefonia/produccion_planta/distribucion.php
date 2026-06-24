@@ -5,6 +5,9 @@ require_once __DIR__ . '/../../../config/conexion.php';
 try {
     $periodosParam = $_GET['periodos'] ?? ($_GET['periodo'] ?? null);
     $zona = $_GET['zona'] ?? 'Total compañía';
+    $tipo = strtoupper(trim($_GET['tipo'] ?? 'TODAS'));
+    $tipoContratista = strtoupper(trim($_GET['tipo_contratista'] ?? 'TODOS'));
+    $contratista = trim($_GET['contratista'] ?? '');
 
     if (!$periodosParam) {
         $periodosParam = $pdo_laboratorio
@@ -16,6 +19,29 @@ try {
     $placeholders = implode(',', array_fill(0, count($periodos), '?'));
 
     $params = $periodos;
+    $whereFiltros = '';
+
+    if ($tipoContratista !== 'TODOS') {
+        if ($tipoContratista === 'CONT') {
+            $whereFiltros .= " AND c_tipo_contratista IN ('CONT', 'CTTA')";
+        } else {
+            $whereFiltros .= " AND c_tipo_contratista = ?";
+            $params[] = $tipoContratista;
+        }
+    }
+
+    if ($tipo === 'PTRS') {
+        $whereFiltros .= " AND c_cod_pl_tare_tipo LIKE '%PTR%'";
+    } elseif ($tipo === 'OCRAS') {
+        $whereFiltros .= " AND c_cod_pl_tare_tipo LIKE '%OCRA%'";
+    } elseif ($tipo === 'MAREA') {
+        $whereFiltros .= " AND c_cod_pl_tare_tipo LIKE '%MAREA%'";
+    }
+
+    if ($contratista !== '') {
+        $whereFiltros .= " AND c_nom_pl_cont LIKE ?";
+        $params[] = '%' . $contratista . '%';
+    }
 
     $zonaExpr = "
         CASE
@@ -44,6 +70,7 @@ try {
             SUM(n_valor_tasa_total) AS venta
         FROM raw_produccion_planta
         WHERE periodo IN ($placeholders)
+        $whereFiltros
         $whereZona
         GROUP BY nombre
         ORDER BY venta DESC, nombre

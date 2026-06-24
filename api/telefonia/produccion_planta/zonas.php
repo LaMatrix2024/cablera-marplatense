@@ -4,6 +4,9 @@ require_once __DIR__ . '/../../../config/conexion.php';
 
 try {
     $periodosParam = $_GET['periodos'] ?? ($_GET['periodo'] ?? null);
+    $tipo = strtoupper(trim($_GET['tipo'] ?? 'TODAS'));
+    $tipoContratista = strtoupper(trim($_GET['tipo_contratista'] ?? 'TODOS'));
+    $contratista = trim($_GET['contratista'] ?? '');
 
     if (!$periodosParam) {
         $periodosParam = $pdo_laboratorio
@@ -18,6 +21,30 @@ try {
     }
 
     $placeholders = implode(',', array_fill(0, count($periodos), '?'));
+    $where = "WHERE periodo IN ($placeholders)";
+    $params = $periodos;
+
+    if ($tipoContratista !== 'TODOS') {
+        if ($tipoContratista === 'CONT') {
+            $where .= " AND c_tipo_contratista IN ('CONT', 'CTTA')";
+        } else {
+            $where .= " AND c_tipo_contratista = ?";
+            $params[] = $tipoContratista;
+        }
+    }
+
+    if ($tipo === 'PTRS') {
+        $where .= " AND c_cod_pl_tare_tipo LIKE '%PTR%'";
+    } elseif ($tipo === 'OCRAS') {
+        $where .= " AND c_cod_pl_tare_tipo LIKE '%OCRA%'";
+    } elseif ($tipo === 'MAREA') {
+        $where .= " AND c_cod_pl_tare_tipo LIKE '%MAREA%'";
+    }
+
+    if ($contratista !== '') {
+        $where .= " AND c_nom_pl_cont LIKE ?";
+        $params[] = '%' . $contratista . '%';
+    }
 
     $sql = "
         SELECT
@@ -32,13 +59,13 @@ try {
             SUM(n_totalhs_tasa) AS total_hb,
             SUM(n_valor_tasa_total) AS venta
         FROM raw_produccion_planta
-        WHERE periodo IN ($placeholders)
+        $where
         GROUP BY zona
         ORDER BY zona
     ";
 
     $stmt = $pdo_laboratorio->prepare($sql);
-    $stmt->execute($periodos);
+    $stmt->execute($params);
     $rows = $stmt->fetchAll();
 
     $totalVenta = array_sum(array_column($rows, 'venta'));

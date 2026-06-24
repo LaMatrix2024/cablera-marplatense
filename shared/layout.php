@@ -13,7 +13,7 @@ function lcm_head(string $title, array $stylesheets = []): void
     echo '<title>' . lcm_html_attr($title) . ' | LCM</title>' . PHP_EOL;
     echo '<link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">' . PHP_EOL;
     echo '<link rel="stylesheet" href="/assets/css/brand.css">' . PHP_EOL;
-    echo '<link rel="stylesheet" href="/assets/css/atlantica.css?v=4">' . PHP_EOL;
+    echo '<link rel="stylesheet" href="/assets/css/atlantica.css?v=7">' . PHP_EOL;
 
     foreach ($stylesheets as $href) {
         echo '<link rel="stylesheet" href="' . lcm_html_attr($href) . '">' . PHP_EOL;

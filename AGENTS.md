@@ -461,3 +461,17 @@ Marca:
 Antes de crear un componente nuevo, verificar si ya existe una versión reutilizable.
 
 No duplicar componentes.
+
+---
+
+# Exportaciones Excel
+
+Toda exportación `.xlsx` de La Cablera debe aplicar el estándar documentado en:
+
+```text
+docs/diseno/sistema-visual-atlantica.md
+```
+
+El apartado `Estándar de exportaciones Excel` es la referencia obligatoria para la cabecera institucional, tabla, filtros informados, anchos, totales, formatos numéricos, nombre del archivo y configuración de impresión.
+
+La exportación debe reflejar los filtros activos de la página y no debe exponer campos internos ni información adicional no visible para el usuario.

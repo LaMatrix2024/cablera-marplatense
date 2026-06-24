@@ -340,6 +340,38 @@ body.lcm-page .prod-table tbody tr:hover {
     background: rgba(227, 239, 245, .55) !important;
 }
 
+body.lcm-page .prod-table-wrap--contractors {
+    height: clamp(400px, calc(100vh - 300px), 690px);
+    max-height: none !important;
+    overflow: auto;
+}
+
+body.lcm-page #tablaContratistas tfoot {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    background: var(--atlantic-primary-soft) !important;
+}
+
+body.lcm-page #tablaContratistas th,
+body.lcm-page #tablaContratistas td {
+    padding: 8px 12px;
+}
+
+body.lcm-page #tablaContratistas tfoot td {
+    position: sticky !important;
+    bottom: 0;
+    z-index: 4;
+    border-top: 2px solid var(--atlantic-primary) !important;
+    background: var(--atlantic-primary-soft) !important;
+    box-shadow: 0 -5px 12px rgba(29, 59, 78, .10);
+    color: var(--atlantic-primary-strong) !important;
+}
+
+body.lcm-page #tablaContratistas tfoot td:last-child {
+    min-width: 72px;
+}
+
 body.lcm-page .prod-table-summary {
     border-color: var(--atlantic-line) !important;
     background: var(--atlantic-surface-soft) !important;
@@ -452,6 +484,11 @@ body.lcm-page .sucursal-chip input {
     body.lcm-page .prod-title p {
         max-width: 100%;
         overflow-wrap: anywhere;
+    }
+
+    body.lcm-page .prod-table-wrap--contractors {
+        height: min(60vh, 560px);
+        min-height: 360px;
     }
 }
 
