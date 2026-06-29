@@ -1,5 +1,36 @@
 # Cablera Marplatense
 
+## Arquitectura PLANTEL
+
+Antes de realizar cualquier tarea de análisis, diseño o implementación, el agente debe leer:
+
+```text
+C:\plantel\ARQUITECTURA_PLANTEL.md
+```
+
+Ese documento constituye la máxima autoridad arquitectónica del ecosistema PLANTEL. Sus reglas prevalecen sobre cualquier convención local del proyecto, salvo que el propio documento indique una excepción.
+
+Antes de crear carpetas, archivos, tablas, APIs, scripts, automatizaciones, procesos o servicios, el agente debe respetar las convenciones definidas allí.
+
+Antes de proponer reorganizaciones, debe verificar la arquitectura existente.
+
+Antes de generar prompts para Codex que creen recursos permanentes, debe acordar previamente los nombres con el responsable del proyecto.
+
+No debe asumir nombres de carpetas, tablas, APIs o componentes.
+
+Cuando exista conflicto entre documentación local y `C:\plantel\ARQUITECTURA_PLANTEL.md`, debe advertir la inconsistencia antes de continuar.
+
+## Jerarquía documental
+
+Orden de consulta obligatorio:
+
+1. `C:\plantel\ARQUITECTURA_PLANTEL.md`
+2. `PROYECTO.md`
+3. `DECISIONES.md`
+4. `AGENT.md`
+5. `README.md`
+6. Documentación específica del módulo
+
 ## Regla Principal
 
 La Cablera Marplatense es una plataforma modular de gestion para el Grupo Plantel.
