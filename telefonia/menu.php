@@ -24,7 +24,7 @@ require_once __DIR__ . '/../shared/layout.php';
             <strong>Producción Planta</strong>
             <small>Panel y detalle de producción OCRAS y PTRs.</small>
         </a>
-        
+
         <a class="lcm-card" href="/telefonia/produccion_b2b">
             <strong>Producción B2B</strong>
             <small>Panel de visión de órdenes de trabajo.</small>
@@ -44,6 +44,10 @@ require_once __DIR__ . '/../shared/layout.php';
         <a class="lcm-card" href="/telefonia/control_logicas">
             <strong>Lógicas HUB/CTO</strong>
             <small>Registros y control de certificación CTO.</small>
+        </a>
+        <a class="lcm-card" href="/telefonia/tracking_tirones/">
+            <strong>Tracking Tirones</strong>
+            <small>Desmonte de cables desde ToolBox con vista resumen y detalle.</small>
         </a>
     </section>
 </main>

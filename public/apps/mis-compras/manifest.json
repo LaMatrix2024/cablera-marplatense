@@ -2,6 +2,7 @@
   "name": "Mis Compras",
   "short_name": "Compras",
   "id": "/apps/mis-compras/",
+  "version": "1.0.0",
   "description": "Lista compartida de compras.",
   "start_url": "/apps/mis-compras/?lista=claudio-faby",
   "scope": "/apps/mis-compras/",

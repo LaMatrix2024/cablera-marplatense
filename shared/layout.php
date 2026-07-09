@@ -38,7 +38,7 @@ function lcm_topbar(string $active = ''): void
 
     foreach ($areas as $key => [$label, $href]) {
         $current = $key === $active ? ' aria-current="page"' : '';
-        echo '<a href="' . lcm_html_attr($href) . '"' . $current . '>' . lcm_html_attr($label) . '</a>';
+        echo '<a href="' . lcm_html_attr($href) . '"' . $current . '>' . $label . '</a>';
     }
 
     echo '</nav>';

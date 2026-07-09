@@ -2,10 +2,12 @@
 
 const API_BASE = '/api/pwa/mis-compras';
 const APP_PUBLIC_PATH = '/apps/mis-compras/';
+const APP_VERSION = document.querySelector('meta[name="app-version"]')?.content || '1.0.0';
 const STORAGE = {
   user: 'mis_compras_user_v1',
   installSeen: 'mis_compras_install_seen_v1',
   installed: 'mis_compras_installed_v1',
+  acceptedVersion: 'mis_compras_accepted_version_v1',
 };
 
 const state = {
@@ -17,10 +19,17 @@ const state = {
   rubroId: '',
   pendingNewRubroId: null,
   pendingExcludeId: null,
+  serverVersion: APP_VERSION,
 
 };
 
 const els = {
+  body: document.body,
+  gate: document.getElementById('pwa-gate'),
+  gateTitle: document.getElementById('pwa-gate-title'),
+  gateText: document.getElementById('pwa-gate-text'),
+  gateHint: document.getElementById('pwa-gate-hint'),
+  gateAction: document.getElementById('pwa-gate-action'),
   appShell: document.querySelector('.app-shell'),
   listName: document.getElementById('list-name'),
   statusText: document.getElementById('status-text'),
@@ -60,6 +69,9 @@ const els = {
   rubroCancelButton: document.getElementById('rubro-cancel-button'),
 };
 
+let deferredInstallPrompt = null;
+let serviceWorkerRegistration = null;
+
 function setStatus(message, kind = 'neutral', detail = '') {
   const icons = {
     ok: '🟢',
@@ -73,6 +85,60 @@ function setStatus(message, kind = 'neutral', detail = '') {
     ${detail ? `<span class="status-line-sub">${escapeHtml(detail)}</span>` : ''}
   `;
   els.statusText.dataset.kind = kind;
+}
+
+function isStandaloneApp() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function getAcceptedVersion() {
+  return localStorage.getItem(STORAGE.acceptedVersion) || '';
+}
+
+function markVersionAccepted(version) {
+  if (version) {
+    localStorage.setItem(STORAGE.acceptedVersion, version);
+  }
+}
+
+function markInstalled(version) {
+  localStorage.setItem(STORAGE.installed, 'true');
+  if (version) {
+    markVersionAccepted(version);
+  }
+}
+
+function setGateState(kind, title, text, hint, actionLabel, onAction) {
+  els.gate.dataset.kind = kind;
+  els.gateTitle.textContent = title;
+  els.gateText.textContent = text;
+  els.gateHint.textContent = hint;
+  els.gateAction.textContent = actionLabel;
+  els.gateAction.onclick = onAction;
+  els.gate.hidden = false;
+  els.body.classList.add('is-gated');
+}
+
+function hideGate() {
+  els.gate.hidden = true;
+  els.body.classList.remove('is-gated');
+}
+
+async function loadManifestVersion() {
+  try {
+    const response = await fetch('./manifest.json', { cache: 'no-store' });
+    if (!response.ok) return APP_VERSION;
+    const manifest = await response.json();
+    return manifest.version || APP_VERSION;
+  } catch (error) {
+    console.warn('No se pudo leer manifest.json', error);
+    return APP_VERSION;
+  }
+}
+
+function needsForcedUpdate(serverVersion) {
+  const acceptedVersion = getAcceptedVersion();
+  return Boolean(acceptedVersion && serverVersion && acceptedVersion !== serverVersion);
 }
 
 function encodeQuery(params) {
@@ -613,21 +679,129 @@ async function shareList() {
 }
 
 function registerServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register(`${APP_PUBLIC_PATH}sw.js`, { scope: APP_PUBLIC_PATH })
-      .then(async (registration) => {
-        console.info('Mis Compras PWA: SW registrado', registration.scope);
-        try {
-          await navigator.serviceWorker.ready;
-          console.info('Mis Compras PWA: PWA ready');
-        } catch (error) {
-          console.error('Mis Compras PWA: error esperando SW ready', error);
-        }
-      })
-      .catch((error) => {
-        console.error('Mis Compras PWA: no se pudo registrar el service worker', error);
+  if (!('serviceWorker' in navigator)) return Promise.resolve(null);
+
+  return navigator.serviceWorker.register(`${APP_PUBLIC_PATH}sw.js`, { scope: APP_PUBLIC_PATH })
+    .then(async (registration) => {
+      serviceWorkerRegistration = registration;
+      console.info('Mis Compras PWA: SW registrado', registration.scope);
+
+      registration.addEventListener('updatefound', () => {
+        const { installing } = registration;
+        if (!installing) return;
+
+        installing.addEventListener('statechange', () => {
+          if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+            setGateState(
+              'update',
+              'Actualización obligatoria',
+              'Hay una nueva versión disponible. Debés actualizar la aplicación para seguir usando Mis Compras.',
+              'La actualización no se puede postergar.',
+              'Actualizar ahora',
+              requestForcedUpdate
+            );
+          }
+        });
       });
+
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        const acceptedVersion = state.serverVersion || APP_VERSION;
+        markVersionAccepted(acceptedVersion);
+        window.location.reload();
+      });
+
+      try {
+        await navigator.serviceWorker.ready;
+        console.info('Mis Compras PWA: PWA ready');
+      } catch (error) {
+        console.error('Mis Compras PWA: error esperando SW ready', error);
+      }
+
+      try {
+        await registration.update();
+      } catch (error) {
+        console.warn('Mis Compras PWA: no se pudo verificar update del SW', error);
+      }
+
+      return registration;
+    })
+    .catch((error) => {
+      console.error('Mis Compras PWA: no se pudo registrar el service worker', error);
+      return null;
+    });
+}
+
+async function requestInstall() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    const choice = await deferredInstallPrompt.userChoice.catch(() => null);
+    deferredInstallPrompt = null;
+    if (choice?.outcome === 'accepted') {
+      markInstalled(state.serverVersion);
+      hideGate();
+      return;
+    }
   }
+
+  const isAppleDevice = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  setGateState(
+    'install',
+    'Instalación obligatoria',
+    isAppleDevice
+      ? 'En iPhone o iPad instalá la app desde el botón Compartir y la opción "Agregar a pantalla de inicio".'
+      : 'Abrí el menú del navegador y elegí "Instalar aplicación" o "Agregar a pantalla de inicio".',
+    'La app no se habilita hasta estar instalada como PWA.',
+    'Reintentar instalación',
+    requestInstall
+  );
+}
+
+async function requestForcedUpdate() {
+  try {
+    if (serviceWorkerRegistration) {
+      await serviceWorkerRegistration.update();
+      if (serviceWorkerRegistration.waiting) {
+        serviceWorkerRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        return;
+      }
+    }
+  } catch (error) {
+    console.warn('Mis Compras PWA: update manual falló', error);
+  }
+
+  markVersionAccepted(state.serverVersion || APP_VERSION);
+  window.location.reload();
+}
+
+async function applyPwaPolicy() {
+  state.serverVersion = await loadManifestVersion();
+
+  if (!isStandaloneApp() && localStorage.getItem(STORAGE.installed) !== 'true') {
+    setGateState(
+      'install',
+      'Instalación obligatoria',
+      'Esta app debe instalarse como PWA antes de usarla por primera vez.',
+      'El acceso a la interfaz queda bloqueado hasta instalarla.',
+      'Instalar ahora',
+      requestInstall
+    );
+    return;
+  }
+
+  if (needsForcedUpdate(state.serverVersion)) {
+    setGateState(
+      'update',
+      'Actualización obligatoria',
+      'Hay una nueva versión disponible en el servidor. Debés actualizar antes de seguir.',
+      'La app se bloqueará hasta aplicar la actualización.',
+      'Actualizar ahora',
+      requestForcedUpdate
+    );
+    return;
+  }
+
+  hideGate();
+  markInstalled(state.serverVersion);
 }
 
 function bindEvents() {
@@ -677,11 +851,28 @@ function bindEvents() {
       }
     });
   }
-  function init() {
-    restoreUser();
-    registerServiceWorker();
-    bindEvents();
+async function init() {
+  restoreUser();
+  bindEvents();
+
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    localStorage.setItem(STORAGE.installSeen, 'true');
+  });
+
+  window.addEventListener('appinstalled', () => {
+    markInstalled(state.serverVersion || APP_VERSION);
+    hideGate();
+    refreshAll().catch(() => {});
+  });
+
+  await registerServiceWorker();
+  await applyPwaPolicy();
+
+  if (els.gate.hidden) {
     refreshAll().catch(() => {});
   }
+}
 
 init();

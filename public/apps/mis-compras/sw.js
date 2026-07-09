@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mis-compras-pwa-v21';
+const CACHE_NAME = 'mis-compras-pwa-v22';
 const PRECACHE_URLS = [
   '/apps/mis-compras/',
   '/apps/mis-compras/index.html',
@@ -27,6 +27,12 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
@@ -36,13 +42,14 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.includes('/api/')) return;
 
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((response) => {
+    fetch(request).then((response) => {
+      if (response.ok) {
         const responseClone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-        return response;
-      }).catch(() => caches.match('/apps/mis-compras/index.html'));
-    })
+      }
+      return response;
+    }).catch(() =>
+      caches.match(request).then((cached) => cached || caches.match('/apps/mis-compras/index.html'))
+    )
   );
 });

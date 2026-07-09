@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#2563EB">
+  <meta name="app-version" content="1.0.0">
   <meta name="description" content="Lista compartida de compras.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,6 +15,18 @@
   <title>Mis Compras</title>
 </head>
 <body>
+  <div class="pwa-gate" id="pwa-gate" hidden>
+    <div class="pwa-gate__card">
+      <p class="eyebrow">Instalación obligatoria</p>
+      <h2 id="pwa-gate-title">Instalá Mis Compras</h2>
+      <p id="pwa-gate-text">Para usar esta aplicación por primera vez tenés que instalarla como PWA.</p>
+      <p class="pwa-gate__hint" id="pwa-gate-hint">El acceso a la app queda bloqueado hasta completar la instalación.</p>
+      <div class="pwa-gate__actions">
+        <button class="button button--primary" id="pwa-gate-action" type="button">Instalar ahora</button>
+      </div>
+    </div>
+  </div>
+
   <div class="app-shell">
     <header class="app-header">
       <div class="app-header__top">

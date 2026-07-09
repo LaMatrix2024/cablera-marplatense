@@ -178,3 +178,7 @@ En la exportación aprobada de detalle de obras se utilizaron, aproximadamente: 
 ### Adaptación a otros módulos
 
 La cantidad y el nombre de las columnas dependen de cada página. La estructura visual, la trazabilidad de filtros, el comportamiento de totales y la configuración de lectura e impresión deben mantenerse. Si un módulo necesita apartarse de este patrón, la excepción debe documentarse y contar con aprobación explícita.
+
+## Paridad visual entre modulos
+
+La regla completa para que dos pantallas queden visualmente equivalentes esta documentada en `docs/diseno/paridad-visual-modulos.md`. Cuando una pagina deba tomar el modelo de otra, no basta con copiar la paleta: tambien deben coincidir contenedor, padding, tipografia, tarjetas, paneles, tablas y comportamiento responsive.
