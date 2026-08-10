@@ -4,3 +4,8 @@ RewriteEngine On
 # Ruta fisica interna: /public/apps/{nombre-app}/
 RewriteRule ^apps/([^/]+)/(.*\.(?:png|ico|json|js|css))$ public/apps/$1/$2 [L,QSA,NC]
 RewriteRule ^apps/(.*)$ public/apps/$1 [L,QSA]
+
+# API v1 corporativa
+RewriteRule ^api/v1/admin/invitations/?$ api/v1/admin/invitations/index.php [L,QSA,NC]
+RewriteRule ^api/v1/admin/invitations/([0-9]+)/?$ api/v1/admin/invitations/detail.php?id=$1 [L,QSA,NC]
+RewriteRule ^api/v1/admin/invitations/([0-9]+)/revoke/?$ api/v1/admin/invitations/revoke.php?id=$1 [L,QSA,NC]

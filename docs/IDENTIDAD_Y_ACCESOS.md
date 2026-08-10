@@ -157,6 +157,12 @@ Perfiles usados en esta fase:
 
 La base local `lacablera` figura en `plantel.env`, pero no acepto conexion desde este equipo durante la validacion. Por eso, cuando no existe `config/env.php`, `config/env_loader.php` prioriza el perfil Hostinger Plantel disponible y mantiene los perfiles locales como fallback configurado.
 
+## Invitaciones
+
+La fase de invitaciones esta documentada en `docs/INVITACIONES_Y_ACTIVACION.md`.
+
+Se agrego el modulo `IDENTIDAD_ACCESOS` en `CABLERAMARPLATENSE` para validar en backend la administracion de invitaciones. El rol `ADMINISTRADOR` posee permisos completos sobre ese modulo.
+
 ## Auditoria inicial
 
 La auditoria estatica detecto:
