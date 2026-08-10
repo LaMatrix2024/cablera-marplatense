@@ -40,6 +40,7 @@ Tablas creadas por `database/migrations/20260810_001_corporate_identity_access_u
 - `usuario_rol`: roles del usuario dentro de una aplicacion.
 - `rol_modulo`: permisos normales heredados por rol sobre cada modulo.
 - `usuario_modulo`: excepciones particulares sobre permisos heredados.
+- `identidad_conflictos`: auditoria de intentos de vincular un UID distinto al ya asociado u otros conflictos de identidad.
 
 Estados validos de usuario: `PENDIENTE`, `ACTIVO`, `BLOQUEADO`, `BAJA`.
 
@@ -91,6 +92,7 @@ El seed `database/migrations/20260810_002_corporate_identity_access_seed.sql` pr
 - aplicacion `PLANTEL_MOBILE`;
 - modulos iniciales de La Cablera detectados en la navegacion actual;
 - roles iniciales de La Cablera;
+- permisos base iniciales de roles sobre modulos;
 - usuario `aguileraclaudiomdq@gmail.com` como `ACTIVO` y `es_superadmin = 1`.
 
 `firebase_uid` queda `NULL` hasta el primer login valido.
@@ -140,16 +142,31 @@ requirePermission(usuario, CABLERAMARPLATENSE, TELEFONIA_PRODUCCION_PLANTA, pued
 
 `database/migrations/20260810_001_corporate_identity_access_down.sql` elimina las tablas nuevas. Debe ejecutarse solo si ninguna integracion posterior depende de ellas.
 
+## Validacion MySQL
+
+Herramientas CLI agregadas:
+
+- `tools/apply_corporate_identity_migration.php`: aplica un SQL versionado sobre un perfil de `plantel.env`.
+- `tools/test_corporate_access_mysql.php`: valida permisos efectivos contra MySQL real con datos de prueba dentro de una transaccion y rollback final.
+- `tools/corporate_identity_db.php`: resuelve perfiles de conexion sin exponer secretos.
+
+Perfiles usados en esta fase:
+
+- `hostinger_laboratorio`: validacion inicial de migracion, seed, FKs, indices y permisos.
+- `hostinger_plantel`: base principal real de Plantel usada por La Cablera en Hostinger.
+
+La base local `lacablera` figura en `plantel.env`, pero no acepto conexion desde este equipo durante la validacion. Por eso, cuando no existe `config/env.php`, `config/env_loader.php` prioriza el perfil Hostinger Plantel disponible y mantiene los perfiles locales como fallback configurado.
+
 ## Auditoria inicial
 
 La auditoria estatica detecto:
 
 - no hay framework ni migraciones existentes;
-- `config/conexion.php` define conexiones PDO a `lacablera` y `laboratorio` mediante `config/env.php`;
-- `config/env.php` no esta presente en este workspace y esta correctamente incluido en `.gitignore`;
+- `config/conexion.php` define conexiones PDO a la base principal y a laboratorio;
+- si existe `config/env.php`, se mantiene compatibilidad legacy;
+- si no existe, `config/env_loader.php` carga `C:\plantel\DATOS_LOCALES\plantel.env` como fuente unica local de secretos;
 - existe `telefonia/identidades`, pero solo consume un Identity Core externo para estado y HMAC, sin persistir usuarios, roles, modulos ni permisos locales;
 - el menu actual esta hardcodeado en `index.php`, `shared/layout.php` y `telefonia/menu.php`;
 - no se detecto middleware corporativo de autenticacion/autorizacion;
 - las APIs actuales consultan datos directamente y no validan permisos corporativos;
 - `api/pwa/mis-compras` usa un selector/localStorage de usuario propio de esa PWA, no una identidad corporativa.
-

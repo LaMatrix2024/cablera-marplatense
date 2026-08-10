@@ -73,3 +73,141 @@ ON DUPLICATE KEY UPDATE
     es_superadmin = 1,
     updated_at = CURRENT_TIMESTAMP;
 
+INSERT INTO usuario_aplicacion (usuario_id, aplicacion_id, activo)
+SELECT u.id, a.id, 1
+FROM usuarios u
+JOIN aplicaciones a ON a.codigo = 'CABLERAMARPLATENSE'
+WHERE u.email = 'aguileraclaudiomdq@gmail.com'
+ON DUPLICATE KEY UPDATE
+    activo = VALUES(activo),
+    updated_at = CURRENT_TIMESTAMP;
+
+INSERT INTO usuario_rol (usuario_id, aplicacion_id, rol_id, activo)
+SELECT u.id, a.id, r.id, 1
+FROM usuarios u
+JOIN aplicaciones a ON a.codigo = 'CABLERAMARPLATENSE'
+JOIN roles r ON r.aplicacion_id = a.id AND r.codigo = 'ADMINISTRADOR'
+WHERE u.email = 'aguileraclaudiomdq@gmail.com'
+ON DUPLICATE KEY UPDATE
+    activo = VALUES(activo),
+    updated_at = CURRENT_TIMESTAMP;
+
+INSERT INTO rol_modulo (
+    rol_id,
+    aplicacion_id,
+    modulo_id,
+    puede_ver,
+    puede_crear,
+    puede_editar,
+    puede_eliminar,
+    puede_exportar,
+    puede_aprobar
+)
+SELECT r.id, a.id, m.id, 1, 1, 1, 1, 1, 1
+FROM aplicaciones a
+JOIN roles r ON r.aplicacion_id = a.id AND r.codigo = 'ADMINISTRADOR'
+JOIN modulos m ON m.aplicacion_id = a.id
+WHERE a.codigo = 'CABLERAMARPLATENSE'
+ON DUPLICATE KEY UPDATE
+    puede_ver = VALUES(puede_ver),
+    puede_crear = VALUES(puede_crear),
+    puede_editar = VALUES(puede_editar),
+    puede_eliminar = VALUES(puede_eliminar),
+    puede_exportar = VALUES(puede_exportar),
+    puede_aprobar = VALUES(puede_aprobar);
+
+INSERT INTO rol_modulo (
+    rol_id,
+    aplicacion_id,
+    modulo_id,
+    puede_ver,
+    puede_crear,
+    puede_editar,
+    puede_eliminar,
+    puede_exportar,
+    puede_aprobar
+)
+SELECT r.id, a.id, m.id, 1, 0, 0, 0, 1, 0
+FROM aplicaciones a
+JOIN roles r ON r.aplicacion_id = a.id AND r.codigo IN ('GERENCIA', 'JEFATURA')
+JOIN modulos m ON m.aplicacion_id = a.id
+WHERE a.codigo = 'CABLERAMARPLATENSE'
+ON DUPLICATE KEY UPDATE
+    puede_ver = VALUES(puede_ver),
+    puede_crear = VALUES(puede_crear),
+    puede_editar = VALUES(puede_editar),
+    puede_eliminar = VALUES(puede_eliminar),
+    puede_exportar = VALUES(puede_exportar),
+    puede_aprobar = VALUES(puede_aprobar);
+
+INSERT INTO rol_modulo (
+    rol_id,
+    aplicacion_id,
+    modulo_id,
+    puede_ver,
+    puede_crear,
+    puede_editar,
+    puede_eliminar,
+    puede_exportar,
+    puede_aprobar
+)
+SELECT r.id, a.id, m.id, 1, 0, 1, 0, 1, 1
+FROM aplicaciones a
+JOIN roles r ON r.aplicacion_id = a.id AND r.codigo = 'RESPONSABLE_PLANTA'
+JOIN modulos m ON m.aplicacion_id = a.id AND m.codigo = 'TELEFONIA_PRODUCCION_PLANTA'
+WHERE a.codigo = 'CABLERAMARPLATENSE'
+ON DUPLICATE KEY UPDATE
+    puede_ver = VALUES(puede_ver),
+    puede_crear = VALUES(puede_crear),
+    puede_editar = VALUES(puede_editar),
+    puede_eliminar = VALUES(puede_eliminar),
+    puede_exportar = VALUES(puede_exportar),
+    puede_aprobar = VALUES(puede_aprobar);
+
+INSERT INTO rol_modulo (
+    rol_id,
+    aplicacion_id,
+    modulo_id,
+    puede_ver,
+    puede_crear,
+    puede_editar,
+    puede_eliminar,
+    puede_exportar,
+    puede_aprobar
+)
+SELECT r.id, a.id, m.id, 1, 0, 1, 0, 1, 1
+FROM aplicaciones a
+JOIN roles r ON r.aplicacion_id = a.id AND r.codigo = 'RESPONSABLE_INSTALACIONES'
+JOIN modulos m ON m.aplicacion_id = a.id AND m.codigo = 'TELEFONIA_PRODUCCION_INSTALACIONES'
+WHERE a.codigo = 'CABLERAMARPLATENSE'
+ON DUPLICATE KEY UPDATE
+    puede_ver = VALUES(puede_ver),
+    puede_crear = VALUES(puede_crear),
+    puede_editar = VALUES(puede_editar),
+    puede_eliminar = VALUES(puede_eliminar),
+    puede_exportar = VALUES(puede_exportar),
+    puede_aprobar = VALUES(puede_aprobar);
+
+INSERT INTO rol_modulo (
+    rol_id,
+    aplicacion_id,
+    modulo_id,
+    puede_ver,
+    puede_crear,
+    puede_editar,
+    puede_eliminar,
+    puede_exportar,
+    puede_aprobar
+)
+SELECT r.id, a.id, m.id, 1, 0, 0, 0, 0, 0
+FROM aplicaciones a
+JOIN roles r ON r.aplicacion_id = a.id AND r.codigo = 'ASISTENTE'
+JOIN modulos m ON m.aplicacion_id = a.id
+WHERE a.codigo = 'CABLERAMARPLATENSE'
+ON DUPLICATE KEY UPDATE
+    puede_ver = VALUES(puede_ver),
+    puede_crear = VALUES(puede_crear),
+    puede_editar = VALUES(puede_editar),
+    puede_eliminar = VALUES(puede_eliminar),
+    puede_exportar = VALUES(puede_exportar),
+    puede_aprobar = VALUES(puede_aprobar);

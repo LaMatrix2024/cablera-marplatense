@@ -47,6 +47,41 @@ final class CorporateAccessRepository
         }
     }
 
+    public function registerIdentityConflict(
+        ?int $usuarioId,
+        string $email,
+        ?string $existingFirebaseUid,
+        string $receivedFirebaseUid,
+        string $type,
+        ?string $detail = null
+    ): void {
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO identidad_conflictos (
+                usuario_id,
+                email,
+                firebase_uid_existente,
+                firebase_uid_recibido,
+                tipo,
+                detalle
+             ) VALUES (
+                :usuario_id,
+                :email,
+                :firebase_uid_existente,
+                :firebase_uid_recibido,
+                :tipo,
+                :detalle
+             )'
+        );
+        $stmt->execute([
+            'usuario_id' => $usuarioId,
+            'email' => strtolower(trim($email)),
+            'firebase_uid_existente' => $existingFirebaseUid,
+            'firebase_uid_recibido' => $receivedFirebaseUid,
+            'tipo' => $type,
+            'detalle' => $detail,
+        ]);
+    }
+
     public function effectivePermissions(int $usuarioId, string $aplicacionCodigo, string $moduloCodigo): array
     {
         $context = $this->loadContext($usuarioId, $aplicacionCodigo, $moduloCodigo);

@@ -1,6 +1,8 @@
 <?php
 
-require_once __DIR__ . '/env.php';
+require_once __DIR__ . '/env_loader.php';
+
+lcm_load_database_config();
 
 function crearConexionPDO(string $host, string $port, string $db, string $user, string $pass): PDO
 {
