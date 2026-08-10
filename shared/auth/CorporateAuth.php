@@ -19,26 +19,10 @@ final class CorporateAuth
     public function requireAuthenticatedUser(?string $authorizationHeader): array
     {
         $identity = $this->verifier->verifyBearer($authorizationHeader);
-        $repo = new CorporateAccessRepository($this->pdo);
-        $user = $repo->findUserByFirebaseIdentity($identity['uid'], $identity['email']);
+        $user = $this->resolveAndLinkUser($identity);
 
         if ($user === null) {
             throw new HttpError(403, 'Usuario corporativo no autorizado.', 'corporate_user_not_found');
-        }
-
-        $link = CorporateAccess::resolveIdentityLink($user, $identity['uid'], $identity['email']);
-        if (!$link['ok']) {
-            if (($link['reason'] ?? '') === 'firebase_uid_conflict') {
-                $repo->registerIdentityConflict(
-                    (int)$user['id'],
-                    $identity['email'],
-                    $user['firebase_uid'] ?? null,
-                    $identity['uid'],
-                    'firebase_uid_conflict',
-                    'Conflicto detectado en autenticacion corporativa.'
-                );
-            }
-            throw new HttpError(409, 'Conflicto de identidad.', (string)($link['reason'] ?? 'identity_conflict'));
         }
 
         if (!CorporateAccess::isActiveUser($user)) {
@@ -59,5 +43,102 @@ final class CorporateAuth
             throw new HttpError(403, 'Permiso insuficiente.', 'permission_denied');
         }
     }
-}
 
+    private function resolveAndLinkUser(array $identity): ?array
+    {
+        $uid = (string)$identity['uid'];
+        $email = strtolower(trim((string)$identity['email']));
+        $conflict = null;
+
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare(
+                'SELECT *
+                 FROM usuarios
+                 WHERE firebase_uid = :uid_filter OR email = :email
+                 ORDER BY CASE WHEN firebase_uid = :uid_order THEN 0 ELSE 1 END
+                 LIMIT 1
+                 FOR UPDATE'
+            );
+            $stmt->execute([
+                'uid_filter' => $uid,
+                'uid_order' => $uid,
+                'email' => $email,
+            ]);
+            $user = $stmt->fetch();
+            if (!is_array($user)) {
+                $this->pdo->commit();
+                return null;
+            }
+
+            $storedUid = $user['firebase_uid'] ?? null;
+            if ($storedUid !== null && $storedUid !== '') {
+                if (hash_equals((string)$storedUid, $uid)) {
+                    $this->pdo->commit();
+                    return $user;
+                }
+
+                $conflict = [(int)$user['id'], $email, (string)$storedUid, $uid];
+                throw new HttpError(409, 'Conflicto de identidad.', 'identity_uid_conflict');
+            }
+
+            if (strtolower(trim((string)$user['email'])) !== $email) {
+                throw new HttpError(409, 'Conflicto de email.', 'identity_email_conflict');
+            }
+
+            if (!CorporateAccess::isActiveUser($user)) {
+                $this->pdo->commit();
+                return $user;
+            }
+
+            $uidStmt = $this->pdo->prepare(
+                'SELECT id
+                 FROM usuarios
+                 WHERE firebase_uid = :uid AND id <> :id
+                 LIMIT 1
+                 FOR UPDATE'
+            );
+            $uidStmt->execute([
+                'uid' => $uid,
+                'id' => (int)$user['id'],
+            ]);
+            if ($uidStmt->fetch()) {
+                $conflict = [(int)$user['id'], $email, null, $uid];
+                throw new HttpError(409, 'Conflicto de identidad.', 'identity_uid_conflict');
+            }
+
+            $update = $this->pdo->prepare(
+                'UPDATE usuarios
+                 SET firebase_uid = :uid
+                 WHERE id = :id AND firebase_uid IS NULL'
+            );
+            $update->execute([
+                'uid' => $uid,
+                'id' => (int)$user['id'],
+            ]);
+            if ($update->rowCount() !== 1) {
+                $conflict = [(int)$user['id'], $email, $user['firebase_uid'] ?? null, $uid];
+                throw new HttpError(409, 'Conflicto de identidad.', 'identity_uid_conflict');
+            }
+
+            $user['firebase_uid'] = $uid;
+            $this->pdo->commit();
+            return $user;
+        } catch (Throwable $exception) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            if ($conflict !== null) {
+                (new CorporateAccessRepository($this->pdo))->registerIdentityConflict(
+                    $conflict[0],
+                    $conflict[1],
+                    $conflict[2],
+                    $conflict[3],
+                    'identity_uid_conflict',
+                    'Conflicto detectado en autenticacion corporativa.'
+                );
+            }
+            throw $exception;
+        }
+    }
+}

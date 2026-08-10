@@ -271,14 +271,26 @@ final class CorporateInvitationService
             throw new HttpError(404, 'Usuario inexistente.', 'corporate_user_not_found');
         }
 
-        $apps = $this->pdo->prepare(
-            'SELECT a.codigo, a.nombre, ua.activo
-             FROM usuario_aplicacion ua
-             INNER JOIN aplicaciones a ON a.id = ua.aplicacion_id
-             WHERE ua.usuario_id = :usuario_id
-             ORDER BY a.codigo'
-        );
-        $apps->execute(['usuario_id' => $usuarioId]);
+        $isSuperadmin = (int)$user['es_superadmin'] === 1;
+
+        if ($isSuperadmin) {
+            $appsRows = $this->pdo->query(
+                'SELECT codigo, nombre, activo
+                 FROM aplicaciones
+                 WHERE activo = 1
+                 ORDER BY codigo'
+            )->fetchAll();
+        } else {
+            $apps = $this->pdo->prepare(
+                'SELECT a.codigo, a.nombre, ua.activo
+                 FROM usuario_aplicacion ua
+                 INNER JOIN aplicaciones a ON a.id = ua.aplicacion_id
+                 WHERE ua.usuario_id = :usuario_id
+                 ORDER BY a.codigo'
+            );
+            $apps->execute(['usuario_id' => $usuarioId]);
+            $appsRows = $apps->fetchAll();
+        }
 
         $roles = $this->pdo->prepare(
             'SELECT a.codigo AS aplicacion, r.codigo, r.nombre
@@ -290,18 +302,28 @@ final class CorporateInvitationService
         );
         $roles->execute(['usuario_id' => $usuarioId]);
 
-        $modules = $this->pdo->prepare(
-            'SELECT a.codigo AS aplicacion, m.codigo, m.nombre, m.orden
-             FROM modulos m
-             INNER JOIN aplicaciones a ON a.id = m.aplicacion_id
-             INNER JOIN usuario_aplicacion ua ON ua.aplicacion_id = a.id AND ua.usuario_id = :usuario_id AND ua.activo = 1
-             WHERE m.activo = 1
-             ORDER BY a.codigo, m.orden'
-        );
-        $modules->execute(['usuario_id' => $usuarioId]);
+        if ($isSuperadmin) {
+            $moduleRows = $this->pdo->query(
+                'SELECT a.codigo AS aplicacion, m.codigo, m.nombre, m.orden
+                 FROM modulos m
+                 INNER JOIN aplicaciones a ON a.id = m.aplicacion_id
+                 WHERE m.activo = 1 AND a.activo = 1
+                 ORDER BY a.codigo, m.orden'
+            )->fetchAll();
+        } else {
+            $modules = $this->pdo->prepare(
+                'SELECT a.codigo AS aplicacion, m.codigo, m.nombre, m.orden
+                 FROM modulos m
+                 INNER JOIN aplicaciones a ON a.id = m.aplicacion_id
+                 INNER JOIN usuario_aplicacion ua ON ua.aplicacion_id = a.id AND ua.usuario_id = :usuario_id AND ua.activo = 1
+                 WHERE m.activo = 1
+                 ORDER BY a.codigo, m.orden'
+            );
+            $modules->execute(['usuario_id' => $usuarioId]);
+            $moduleRows = $modules->fetchAll();
+        }
 
         $repo = new CorporateAccessRepository($this->pdo);
-        $moduleRows = $modules->fetchAll();
         foreach ($moduleRows as &$module) {
             $permissions = $repo->effectivePermissions($usuarioId, $module['aplicacion'], $module['codigo']);
             $module['permissions'] = $permissions['permissions'];
@@ -310,7 +332,7 @@ final class CorporateInvitationService
 
         return [
             'user' => $user,
-            'applications' => $apps->fetchAll(),
+            'applications' => $appsRows,
             'roles' => $roles->fetchAll(),
             'modules' => $moduleRows,
         ];

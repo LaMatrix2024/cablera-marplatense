@@ -163,6 +163,10 @@ La fase de invitaciones esta documentada en `docs/INVITACIONES_Y_ACTIVACION.md`.
 
 Se agrego el modulo `IDENTIDAD_ACCESOS` en `CABLERAMARPLATENSE` para validar en backend la administracion de invitaciones. El rol `ADMINISTRADOR` posee permisos completos sobre ese modulo.
 
+## Firebase Auth
+
+La integracion backend con Firebase Auth esta documentada en `docs/FIREBASE_AUTH.md`.
+
 ## Auditoria inicial
 
 La auditoria estatica detecto:

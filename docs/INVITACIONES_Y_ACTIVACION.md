@@ -83,7 +83,7 @@ Los endpoints administrativos exigen usuario autenticado y permiso backend `pued
 - expiracion;
 - UID y email.
 
-En `plantel.env` todavia no hay variables Firebase. Hasta configurar `FIREBASE_PROJECT_ID`, los endpoints que requieren token real responderan 401 `firebase_not_configured`.
+`FIREBASE_PROJECT_ID` debe estar definido en `plantel.env`. La configuracion detallada esta en `docs/FIREBASE_AUTH.md`.
 
 ## Atomicidad
 
@@ -129,4 +129,3 @@ Resultados:
 13. Toda autorizacion se valida tambien en backend.
 14. Plantel Mobile usara la misma autoridad corporativa.
 15. Laravel queda fuera del nuevo modelo.
-

@@ -40,6 +40,42 @@ function lcm_define_if_missing(string $name, ?string $value): void
     }
 }
 
+function lcm_local_env_path(): string
+{
+    return 'C:\\plantel\\DATOS_LOCALES\\plantel.env';
+}
+
+function lcm_config_value(string $key, ?string $default = null): ?string
+{
+    $env = getenv($key);
+    if (is_string($env) && trim($env) !== '') {
+        return trim($env);
+    }
+
+    $path = lcm_local_env_path();
+    if (!is_file($path)) {
+        return $default;
+    }
+
+    $values = lcm_read_dotenv_file($path);
+    return lcm_env_value($values, [$key], $default);
+}
+
+function lcm_load_dotenv_to_process(): void
+{
+    $path = lcm_local_env_path();
+    if (!is_file($path)) {
+        return;
+    }
+
+    foreach (lcm_read_dotenv_file($path) as $key => $value) {
+        if (getenv($key) === false) {
+            putenv($key . '=' . $value);
+            $_ENV[$key] = $value;
+        }
+    }
+}
+
 function lcm_load_database_config(): void
 {
     $legacyPath = __DIR__ . '/env.php';
@@ -48,8 +84,9 @@ function lcm_load_database_config(): void
         return;
     }
 
-    $envPath = 'C:\\plantel\\DATOS_LOCALES\\plantel.env';
+    $envPath = lcm_local_env_path();
     $values = lcm_read_dotenv_file($envPath);
+    lcm_load_dotenv_to_process();
 
     lcm_define_if_missing('DB_HOST', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_HOST', 'DB_LOCAL_HOST', 'DB_HOST']));
     lcm_define_if_missing('DB_PORT', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_PORT', 'DB_LOCAL_PORT', 'DB_PORT'], '3306'));

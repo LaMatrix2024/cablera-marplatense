@@ -10,6 +10,9 @@ require_once __DIR__ . '/../../shared/auth/HttpError.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
+api_apply_cors();
+api_require_https_in_production();
+
 function api_json(array $payload, int $status = 200): never
 {
     http_response_code($status);
@@ -35,6 +38,47 @@ function api_input(): array
 function api_authorization_header(): ?string
 {
     return $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? null;
+}
+
+function api_apply_cors(): void
+{
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $allowed = array_filter(array_map(
+        'trim',
+        explode(',', (string)lcm_config_value('LCM_ALLOWED_ORIGINS', 'https://lacablera.com'))
+    ));
+
+    if ($origin !== '' && in_array($origin, $allowed, true)) {
+        header('Access-Control-Allow-Origin: ' . $origin);
+        header('Vary: Origin');
+        header('Access-Control-Allow-Credentials: true');
+        header('Access-Control-Allow-Headers: Authorization, Content-Type');
+        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    }
+
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
+}
+
+function api_require_https_in_production(): void
+{
+    $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+    if ($host === '' || in_array($host, ['localhost', '127.0.0.1'], true)) {
+        return;
+    }
+
+    $isHttps = (($_SERVER['HTTPS'] ?? '') === 'on')
+        || strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+
+    if (!$isHttps && str_contains($host, 'lacablera.com')) {
+        api_json([
+            'ok' => false,
+            'error' => 'https_required',
+            'message' => 'HTTPS requerido.',
+        ], 403);
+    }
 }
 
 function api_handle(callable $callback): never
