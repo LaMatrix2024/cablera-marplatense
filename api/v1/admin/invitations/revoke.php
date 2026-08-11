@@ -14,5 +14,15 @@ api_handle(function () use ($pdo_lacablera): void {
     }
 
     $service = new CorporateInvitationService($pdo_lacablera);
-    api_json(['ok' => true, 'result' => $service->revokeInvitation($id, (int)$admin['id'])]);
+    $before = $service->publicInvitation($id);
+    $result = $service->revokeInvitation($id, (int)$admin['id']);
+    $after = $service->publicInvitation($id);
+    (new IdentityAdminService($pdo_lacablera, $admin))->recordAudit(
+        'invitacion.revocar',
+        'invitacion',
+        $id,
+        $before,
+        $after
+    );
+    api_json(['ok' => true, 'result' => $result]);
 });

@@ -15,6 +15,17 @@ api_handle(function () use ($pdo_lacablera): void {
     api_require_method('POST');
     $admin = api_admin_user($pdo_lacablera, 'puede_crear');
     $created = $service->createInvitation(api_input(), (int)$admin['id']);
+    (new IdentityAdminService($pdo_lacablera, $admin))->recordAudit(
+        'invitacion.crear',
+        'invitacion',
+        (int)$created['id'],
+        null,
+        [
+            'id' => (int)$created['id'],
+            'email' => $created['email'],
+            'expires_at' => $created['expires_at'],
+        ]
+    );
 
     api_json([
         'ok' => true,

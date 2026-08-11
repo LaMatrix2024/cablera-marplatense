@@ -13,6 +13,7 @@ api_require_https_in_production();
 require_once __DIR__ . '/../../config/conexion.php';
 require_once __DIR__ . '/../../shared/auth/CorporateAuth.php';
 require_once __DIR__ . '/../../shared/auth/CorporateInvitationService.php';
+require_once __DIR__ . '/../../shared/auth/IdentityAdminService.php';
 require_once __DIR__ . '/../../shared/auth/HttpError.php';
 
 function api_json(array $payload, int $status = 200): never
@@ -123,4 +124,9 @@ function api_admin_user(PDO $pdo, string $permission = 'puede_crear'): array
     $auth->requireModulePermission($session['user'], 'IDENTIDAD_ACCESOS', $permission);
 
     return $session['user'];
+}
+
+function api_admin_service(PDO $pdo, string $permission = 'puede_editar'): IdentityAdminService
+{
+    return new IdentityAdminService($pdo, api_admin_user($pdo, $permission));
 }

@@ -1,0 +1,55 @@
+.ia-shell { padding-bottom: 96px; }
+.ia-head { align-items: center; }
+.ia-session, .ia-actions, .ia-toolbar, .ia-filters, .ia-tabs { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.ia-session { color: var(--lcm-muted); font-size: 14px; }
+.ia-login { display: grid; grid-template-columns: minmax(0,1fr) minmax(280px,420px); gap: 24px; padding: 24px; }
+.ia-form, .ia-drawer__body, .ia-stack { display: grid; gap: 12px; }
+.ia-form label { display: grid; gap: 6px; color: var(--lcm-muted); font-size: 13px; font-weight: 800; }
+.ia-form input, .ia-form select, .ia-form textarea, .ia-filters input, .ia-filters select {
+    width: 100%; min-height: 38px; border: 1px solid var(--lcm-border); border-radius: 8px;
+    background: #151515; color: var(--lcm-text); padding: 9px 10px; font: inherit;
+}
+.ia-btn, .ia-icon-btn {
+    min-height: 38px; border: 1px solid var(--lcm-border); border-radius: 8px; background: #262626;
+    color: var(--lcm-text); padding: 9px 12px; font: inherit; font-weight: 800; cursor: pointer;
+}
+.ia-btn--primary { background: var(--lcm-orange); color: #111; border-color: transparent; }
+.ia-btn--danger { border-color: rgba(255,88,88,.45); background: rgba(255,88,88,.12); }
+.ia-btn--ghost { background: transparent; }
+.ia-tabs { overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px; }
+.ia-tabs button {
+    min-height: 38px; border: 1px solid var(--lcm-border); border-radius: 8px; background: #1b1b1b;
+    color: var(--lcm-muted); padding: 8px 12px; font-weight: 900; cursor: pointer; white-space: nowrap;
+}
+.ia-tabs button[aria-current="page"] { color: var(--lcm-text); border-color: rgba(255,107,53,.54); background: rgba(255,107,53,.12); }
+.ia-toolbar { justify-content: space-between; margin-bottom: 14px; }
+.ia-kpi-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; margin-bottom: 16px; }
+.ia-kpi, .ia-card { border: 1px solid var(--lcm-border); border-radius: 8px; background: var(--lcm-panel); padding: 16px; }
+.ia-kpi small { color: var(--lcm-muted); text-transform: uppercase; font-weight: 900; font-size: 11px; }
+.ia-kpi strong { display: block; margin-top: 8px; font-size: 30px; }
+.ia-table-wrap { overflow: auto; border: 1px solid var(--lcm-border); border-radius: 8px; background: var(--lcm-panel); }
+.ia-table { width: 100%; border-collapse: collapse; }
+.ia-table th, .ia-table td { padding: 12px; border-bottom: 1px solid var(--lcm-border); text-align: left; vertical-align: top; }
+.ia-table th { color: var(--lcm-muted); font-size: 11px; text-transform: uppercase; }
+.ia-badge { display: inline-flex; min-height: 24px; align-items: center; border-radius: 8px; padding: 4px 8px; background: rgba(255,255,255,.08); color: var(--lcm-text); font-size: 12px; font-weight: 900; }
+.ia-badge--ok { background: rgba(73,190,123,.16); color: #8af0b1; }
+.ia-badge--warn { background: rgba(255,193,7,.16); color: #ffd45f; }
+.ia-badge--danger { background: rgba(255,88,88,.16); color: #ff9a9a; }
+.ia-alert { margin-bottom: 12px; border: 1px solid rgba(255,107,53,.4); border-radius: 8px; padding: 12px; background: rgba(255,107,53,.10); }
+.ia-drawer { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,.58); }
+.ia-drawer__panel { width: min(820px,100%); height: 100%; margin-left: auto; background: #161616; border-left: 1px solid var(--lcm-border); overflow: auto; }
+.ia-drawer__head { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; gap: 12px; padding: 18px; background: #161616; border-bottom: 1px solid var(--lcm-border); }
+.ia-drawer__body { padding: 18px; }
+.ia-grid-2 { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+.ia-perm-row { display: grid; grid-template-columns: minmax(150px,1fr) repeat(6,minmax(72px,auto)); gap: 6px; align-items: center; border-bottom: 1px solid var(--lcm-border); padding-bottom: 8px; }
+.ia-toggle { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.ia-muted { color: var(--lcm-muted); }
+@media (max-width: 900px) {
+    .ia-login, .ia-grid-2, .ia-kpi-grid { grid-template-columns: 1fr; }
+    .ia-toolbar { align-items: stretch; flex-direction: column; }
+    .ia-table thead { display: none; }
+    .ia-table, .ia-table tbody, .ia-table tr, .ia-table td { display: block; width: 100%; }
+    .ia-table tr { border-bottom: 1px solid var(--lcm-border); padding: 8px 0; }
+    .ia-table td { border: 0; white-space: normal; }
+    .ia-perm-row { grid-template-columns: 1fr 1fr; }
+}

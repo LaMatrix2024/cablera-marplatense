@@ -30,6 +30,7 @@ function lcm_topbar(string $active = ''): void
         'contable' => ['Contable', '/contable/'],
         'mantenimiento' => ['Mantenimiento', '/mantenimiento/'],
         'licitaciones' => ['Licitaciones', '/licitaciones/'],
+        'identidad' => ['Identidad', '/admin/identidad-accesos/'],
     ];
 
     echo '<header class="lcm-topbar">';
