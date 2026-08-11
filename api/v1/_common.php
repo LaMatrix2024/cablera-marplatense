@@ -2,16 +2,18 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../config/conexion.php';
-require_once __DIR__ . '/../../shared/auth/CorporateAuth.php';
-require_once __DIR__ . '/../../shared/auth/CorporateInvitationService.php';
-require_once __DIR__ . '/../../shared/auth/HttpError.php';
+require_once __DIR__ . '/../../config/env_loader.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 api_apply_cors();
 api_require_https_in_production();
+
+require_once __DIR__ . '/../../config/conexion.php';
+require_once __DIR__ . '/../../shared/auth/CorporateAuth.php';
+require_once __DIR__ . '/../../shared/auth/CorporateInvitationService.php';
+require_once __DIR__ . '/../../shared/auth/HttpError.php';
 
 function api_json(array $payload, int $status = 200): never
 {
@@ -43,10 +45,15 @@ function api_authorization_header(): ?string
 function api_apply_cors(): void
 {
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-    $allowed = array_filter(array_map(
+    $requiredAllowedOrigins = [
+        'https://lacablera.com',
+        'https://mis-apps-nine.vercel.app',
+    ];
+    $configuredAllowedOrigins = array_filter(array_map(
         'trim',
-        explode(',', (string)lcm_config_value('LCM_ALLOWED_ORIGINS', 'https://lacablera.com'))
+        explode(',', (string)lcm_config_value('LCM_ALLOWED_ORIGINS', ''))
     ));
+    $allowed = array_values(array_unique(array_merge($requiredAllowedOrigins, $configuredAllowedOrigins)));
 
     if ($origin !== '' && in_array($origin, $allowed, true)) {
         header('Access-Control-Allow-Origin: ' . $origin);
