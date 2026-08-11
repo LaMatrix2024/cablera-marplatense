@@ -6,55 +6,45 @@ require_once __DIR__ . '/../../shared/layout.php';
 <head>
     <?php lcm_head('Identidad y Accesos', ['/admin/identidad-accesos/identidad-accesos.css?v=1']); ?>
 </head>
-<body class="lcm-page lcm-page--with-nav ia-page">
-<?php lcm_topbar(''); ?>
+<body class="ia-page">
+<div class="ia-mobile-backdrop" id="ia-mobile-backdrop" hidden></div>
 
-<main class="lcm-shell ia-shell">
-    <section class="lcm-page-head ia-head">
-        <div>
-            <span class="lcm-eyebrow">Administracion corporativa</span>
-            <h1>Identidad y Accesos</h1>
-            <p class="lcm-muted">Gobierno de usuarios, invitaciones, aplicaciones, roles, modulos y permisos.</p>
-        </div>
-        <div class="ia-session">
-            <span id="ia-session-label">Sin sesion</span>
-            <button class="ia-btn ia-btn--ghost" id="ia-signout" type="button" hidden>Salir</button>
-        </div>
-    </section>
+<div class="ia-app-shell" id="ia-app-shell">
+    <aside class="ia-sidebar" id="ia-sidebar" aria-label="Navegacion principal"></aside>
 
-    <section class="lcm-panel ia-login" id="ia-login-panel">
-        <div>
-            <span class="lcm-eyebrow">Acceso administrador</span>
-            <h2>Ingresar</h2>
-            <p class="lcm-muted">La autorizacion final se valida siempre en backend sobre IDENTIDAD_ACCESOS.</p>
-        </div>
-        <form id="ia-login-form" class="ia-form ia-form--login">
-            <label>Email<input name="email" type="email" autocomplete="username" required></label>
-            <label>Contrasena<input name="password" type="password" autocomplete="current-password" required></label>
-            <button class="ia-btn ia-btn--primary" type="submit">Ingresar</button>
-        </form>
-    </section>
+    <section class="ia-workspace">
+        <header class="ia-top-header" id="ia-top-header"></header>
+        <main class="ia-main">
+            <div class="ia-toast" id="ia-alert" hidden></div>
 
-    <section class="ia-admin" id="ia-admin-panel" hidden>
-        <nav class="ia-tabs" aria-label="Secciones">
-            <button type="button" data-tab="dashboard" aria-current="page">Resumen</button>
-            <button type="button" data-tab="users">Usuarios</button>
-            <button type="button" data-tab="invitations">Invitaciones</button>
-            <button type="button" data-tab="applications">Aplicaciones</button>
-            <button type="button" data-tab="modules">Modulos</button>
-            <button type="button" data-tab="roles">Roles</button>
-            <button type="button" data-tab="permissions">Permisos</button>
-        </nav>
-        <div class="ia-alert" id="ia-alert" hidden></div>
-        <section class="ia-view" id="ia-view-dashboard"></section>
-        <section class="ia-view" id="ia-view-users" hidden></section>
-        <section class="ia-view" id="ia-view-invitations" hidden></section>
-        <section class="ia-view" id="ia-view-applications" hidden></section>
-        <section class="ia-view" id="ia-view-modules" hidden></section>
-        <section class="ia-view" id="ia-view-roles" hidden></section>
-        <section class="ia-view" id="ia-view-permissions" hidden></section>
+            <section class="ia-login-card" id="ia-login-panel">
+                <div class="ia-login-copy">
+                    <span class="ia-kicker">Acceso administrador</span>
+                    <h1>Identidad y Accesos</h1>
+                    <p>Administracion corporativa de usuarios, invitaciones, aplicaciones, roles, modulos y permisos.</p>
+                </div>
+                <form id="ia-login-form" class="ia-form ia-form--login">
+                    <label>Email<input name="email" type="email" autocomplete="username" required></label>
+                    <label>Contrasena<input name="password" type="password" autocomplete="current-password" required></label>
+                    <button class="ia-btn ia-btn--primary" type="submit">
+                        Ingresar
+                    </button>
+                </form>
+            </section>
+
+            <section class="ia-denied-card" id="ia-denied-panel" hidden>
+                <h2>Acceso denegado</h2>
+                <p>No tenes permiso para ver IDENTIDAD_ACCESOS. La validacion fue realizada por el backend corporativo.</p>
+            </section>
+
+            <section class="ia-admin" id="ia-admin-panel" hidden>
+                <section class="ia-view" id="ia-view-dashboard"></section>
+                <section class="ia-view" id="ia-view-users" hidden></section>
+                <section class="ia-view" id="ia-view-placeholder" hidden></section>
+            </section>
+        </main>
     </section>
-</main>
+</div>
 
 <aside class="ia-drawer" id="ia-drawer" hidden>
     <div class="ia-drawer__panel">
@@ -69,7 +59,6 @@ require_once __DIR__ . '/../../shared/layout.php';
     </div>
 </aside>
 
-<?php lcm_footer(); ?>
 <script type="module" src="/admin/identidad-accesos/identidad-accesos.js?v=1"></script>
 </body>
 </html>

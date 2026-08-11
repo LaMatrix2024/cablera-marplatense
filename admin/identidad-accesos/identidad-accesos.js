@@ -8,25 +8,31 @@ import {
   signOut
 } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 
-const PERMS = ["puede_ver", "puede_crear", "puede_editar", "puede_eliminar", "puede_exportar", "puede_aprobar"];
-const PERM_LABELS = {
-  puede_ver: "Ver",
-  puede_crear: "Crear",
-  puede_editar: "Editar",
-  puede_eliminar: "Eliminar",
-  puede_exportar: "Exportar",
-  puede_aprobar: "Aprobar"
-};
-const CRITICAL = new Set(["BLOQUEADO", "BAJA", "deactivate-app", "deactivate-module", "revoke-invitation", "remove-superadmin"]);
+const CABLERA_APP = "CABLERAMARPLATENSE";
+const ADMIN_MODULE = "IDENTIDAD_ACCESOS";
+const SIDEBAR_KEY = "lcm.identity.sidebar.collapsed";
+
+const NAV_ITEMS = [
+  { id: "dashboard", label: "Dashboard", icon: "dashboard", section: "" },
+  { id: "users", label: "Usuarios", icon: "group", section: "GESTION" },
+  { id: "invitations", label: "Invitaciones", icon: "mail", section: "GESTION" },
+  { id: "applications", label: "Aplicaciones", icon: "apps", section: "GESTION" },
+  { id: "roles", label: "Roles", icon: "badge", section: "GESTION" },
+  { id: "modules", label: "Modulos", icon: "view_module", section: "GESTION" },
+  { id: "permissions", label: "Permisos", icon: "rule", section: "GESTION" },
+  { id: "audit", label: "Auditoria", icon: "history", section: "GESTION" }
+];
 
 const $ = (selector) => document.querySelector(selector);
 const state = {
   auth: null,
   user: null,
   idToken: "",
-  tab: "dashboard",
-  catalogs: { applications: [], roles: [], modules: [] },
-  cache: {}
+  profile: null,
+  config: null,
+  view: "dashboard",
+  catalogs: { applications: [], roles: [] },
+  users: []
 };
 
 const escapeHtml = (value) => String(value ?? "")
@@ -35,12 +41,44 @@ const escapeHtml = (value) => String(value ?? "")
   .replaceAll(">", "&gt;")
   .replaceAll('"', "&quot;");
 
-const badge = (value) => {
-  const text = String(value ?? "");
-  const tone = ["ACTIVO", "ACEPTADA", "1", "true"].includes(text) ? "ok"
-    : ["BLOQUEADO", "BAJA", "REVOCADA", "0", "false"].includes(text) ? "danger"
-    : "warn";
-  return `<span class="ia-badge ia-badge--${tone}">${escapeHtml(text)}</span>`;
+const ICONS = {
+  apps: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>',
+  badge: '<path d="M8 7a4 4 0 1 1 8 0a4 4 0 0 1-8 0Z"/><path d="M5 21a7 7 0 0 1 14 0"/>',
+  chevron_right: '<path d="m9 18 6-6-6-6"/>',
+  check: '<path d="m5 13 4 4L19 7"/>',
+  close: '<path d="m6 6 12 12M18 6 6 18"/>',
+  dashboard: '<path d="M4 13h7V4H4zM13 20h7V4h-7zM4 20h7v-5H4z"/>',
+  deployed_code: '<path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12 4.5 7.7M12 12l7.5-4.3M12 12v8.5"/>',
+  download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+  filter_list: '<path d="M4 6h16M7 12h10M10 18h4"/>',
+  group: '<path d="M16 11a4 4 0 1 0-8 0a4 4 0 0 0 8 0Z"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M19 8a3 3 0 0 1 0 6M22 21a6 6 0 0 0-3-5"/>',
+  history: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/>',
+  logout: '<path d="M10 17v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v2"/><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/>',
+  mail: '<path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/>',
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  notifications: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>',
+  pending_actions: '<path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4"/><path d="M9 13h4"/><path d="M16 18l2 2 4-5"/>',
+  person_add: '<path d="M15 8a4 4 0 1 0-8 0a4 4 0 0 0 8 0Z"/><path d="M3 21a8 8 0 0 1 14 0"/><path d="M19 8v6M16 11h6"/>',
+  refresh: '<path d="M20 6v6h-6"/><path d="M4 18v-6h6"/><path d="M19 12a7 7 0 0 0-12-5M5 12a7 7 0 0 0 12 5"/>',
+  rule: '<path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  schedule: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  view_module: '<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>'
+};
+
+const icon = (name) => `
+  <span class="ia-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24" focusable="false">${ICONS[name] || ICONS.dashboard}</svg>
+  </span>
+`;
+
+const initials = (name, fallback = "CA") => {
+  const parts = String(name || fallback).trim().split(/\s+/).filter(Boolean);
+  return (parts[0]?.[0] || "C").toUpperCase() + (parts[1]?.[0] || parts[0]?.[1] || "A").toUpperCase();
+};
+
+const fullName = (user) => {
+  const name = `${user?.nombre || ""} ${user?.apellido || ""}`.trim();
+  return name || user?.email || "Usuario";
 };
 
 const setAlert = (message, error = false) => {
@@ -48,19 +86,26 @@ const setAlert = (message, error = false) => {
   if (!message) {
     alert.hidden = true;
     alert.textContent = "";
+    alert.classList.remove("is-error");
     return;
   }
   alert.hidden = false;
   alert.textContent = message;
-  alert.style.borderColor = error ? "rgba(255,88,88,.55)" : "";
+  alert.classList.toggle("is-error", error);
+};
+
+const getToken = async () => {
+  if (!state.user) throw new Error("Sesion no iniciada.");
+  state.idToken = await state.user.getIdToken();
+  return state.idToken;
 };
 
 const api = async (path, options = {}) => {
-  if (!state.idToken) throw new Error("Sesion no iniciada.");
+  const token = await getToken();
   const response = await fetch(`${state.config.apiBaseUrl}${path}`, {
     ...options,
     headers: {
-      "Authorization": `Bearer ${state.idToken}`,
+      "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
       ...(options.headers ?? {})
     }
@@ -72,525 +117,546 @@ const api = async (path, options = {}) => {
   return body;
 };
 
-const apiJson = (method, path, payload) => api(path, { method, body: JSON.stringify(payload) });
-
-const refreshToken = async () => {
-  if (!state.user) return;
-  state.idToken = await state.user.getIdToken();
-};
-
 const loadConfig = async () => {
   const response = await fetch("/api/v1/admin/config");
-  const config = await response.json();
-  if (!config.ok || !config.firebase?.apiKey) {
-    throw new Error("Falta configurar FIREBASE_WEB_API_KEY para el administrador.");
+  const config = await response.json().catch(() => ({}));
+  if (!response.ok || !config.ok || !config.firebase?.apiKey) {
+    throw new Error("No pudimos cargar la configuracion del administrador.");
   }
   state.config = config;
-  const app = initializeApp(config.firebase);
-  state.auth = getAuth(app);
+  state.auth = getAuth(initializeApp(config.firebase));
   await setPersistence(state.auth, browserLocalPersistence);
 };
 
-const loadCatalogs = async () => {
-  state.catalogs = await api("/admin/catalogs");
+const loadProfile = async () => {
+  state.profile = await api("/auth/me");
+  return state.profile;
 };
 
-const setAuthenticated = async (user) => {
-  state.user = user;
-  await refreshToken();
-  $("#ia-login-panel").hidden = true;
-  $("#ia-admin-panel").hidden = false;
-  $("#ia-signout").hidden = false;
-  $("#ia-session-label").textContent = user.email || "Sesion activa";
-  await loadCatalogs();
-  await renderActiveTab();
+const hasAdminAccess = () => {
+  const modules = state.profile?.modules ?? [];
+  return modules.some((module) =>
+    module.aplicacion === CABLERA_APP
+    && module.codigo === ADMIN_MODULE
+    && module.permissions?.puede_ver === true
+  );
 };
 
-const setUnauthenticated = () => {
-  state.user = null;
-  state.idToken = "";
-  $("#ia-login-panel").hidden = false;
-  $("#ia-admin-panel").hidden = true;
-  $("#ia-signout").hidden = true;
-  $("#ia-session-label").textContent = "Sin sesion";
-};
-
-const table = (headers, rows) => `
-  <div class="ia-table-wrap">
-    <table class="ia-table">
-      <thead><tr>${headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("")}</tr></thead>
-      <tbody>${rows.join("") || `<tr><td colspan="${headers.length}" class="ia-muted">Sin registros.</td></tr>`}</tbody>
-    </table>
-  </div>`;
-
-const renderDashboard = async () => {
-  const data = await api("/admin/dashboard");
-  const s = data.summary;
-  $("#ia-view-dashboard").innerHTML = `
-    <div class="ia-kpi-grid">
-      ${[
-        ["Usuarios activos", s.usuarios_activos],
-        ["Usuarios pendientes", s.usuarios_pendientes],
-        ["Usuarios bloqueados", s.usuarios_bloqueados],
-        ["Invitaciones pendientes", s.invitaciones_pendientes],
-        ["Invitaciones vencidas", s.invitaciones_vencidas],
-        ["Aplicaciones activas", s.aplicaciones_activas],
-        ["Modulos activos", s.modulos_activos]
-      ].map(([label, value]) => `<article class="ia-kpi"><small>${label}</small><strong>${value}</strong></article>`).join("")}
-    </div>
-    <section class="ia-card">
-      <h2>Acciones rapidas</h2>
-      <div class="ia-actions">
-        <button class="ia-btn ia-btn--primary" data-action="quick-invite">Invitar usuario</button>
-        <button class="ia-btn" data-tab-jump="invitations">Ver pendientes</button>
-        <button class="ia-btn" data-tab-jump="modules">Administrar modulos</button>
-        <button class="ia-btn" data-tab-jump="permissions">Administrar permisos</button>
-      </div>
-    </section>`;
-};
-
-const appOptions = (selected = "") => state.catalogs.applications
-  .map((app) => `<option value="${app.id}" ${String(app.id) === String(selected) ? "selected" : ""}>${escapeHtml(app.codigo)}</option>`)
-  .join("");
-
-const renderUsers = async () => {
-  const data = await api("/admin/users");
-  state.cache.users = data.users;
-  $("#ia-view-users").innerHTML = `
-    <div class="ia-toolbar">
-      <h2>Usuarios</h2>
-      <div class="ia-filters">
-        <input id="user-q" placeholder="Buscar">
-        <select id="user-status"><option value="">Estado</option><option>ACTIVO</option><option>PENDIENTE</option><option>BLOQUEADO</option><option>BAJA</option></select>
-        <button class="ia-btn" data-action="filter-users">Filtrar</button>
-      </div>
-    </div>
-    ${usersTable(data.users)}`;
-};
-
-const usersTable = (users) => table(
-  ["Nombre", "Email", "Estado", "Apps", "Roles", "Superadmin", "Alta", ""],
-  users.map((u) => `<tr>
-    <td><strong>${escapeHtml(`${u.nombre || ""} ${u.apellido || ""}`.trim() || "-")}</strong></td>
-    <td>${escapeHtml(u.email)}</td>
-    <td>${badge(u.estado)}</td>
-    <td>${escapeHtml(u.aplicaciones || "-")}</td>
-    <td>${escapeHtml(u.roles || "-")}</td>
-    <td>${Number(u.es_superadmin) === 1 ? badge("SI") : "No"}</td>
-    <td>${escapeHtml(u.created_at)}</td>
-    <td><button class="ia-btn" data-action="open-user" data-id="${u.id}">Abrir</button></td>
-  </tr>`)
+const adminModule = () => (state.profile?.modules ?? []).find((module) =>
+  module.aplicacion === CABLERA_APP && module.codigo === ADMIN_MODULE && module.permissions?.puede_ver === true
 );
 
-const filterUsers = async () => {
-  const params = new URLSearchParams();
-  const q = $("#user-q").value.trim();
-  const estado = $("#user-status").value;
-  if (q) params.set("q", q);
-  if (estado) params.set("estado", estado);
-  const data = await api(`/admin/users?${params}`);
-  $("#ia-view-users .ia-table-wrap").outerHTML = usersTable(data.users);
+const setShellState = () => {
+  const isCollapsed = localStorage.getItem(SIDEBAR_KEY) === "1";
+  $("#ia-app-shell").classList.toggle("is-collapsed", isCollapsed);
 };
 
-const renderInvitations = async () => {
-  const data = await api("/admin/invitations");
-  $("#ia-view-invitations").innerHTML = `
-    <div class="ia-toolbar">
-      <h2>Invitaciones</h2>
-      <button class="ia-btn ia-btn--primary" data-action="new-invitation">Crear invitacion</button>
+const toggleSidebar = () => {
+  if (window.matchMedia("(max-width: 760px)").matches) {
+    $("#ia-app-shell").classList.toggle("mobile-open", true);
+    $("#ia-mobile-backdrop").hidden = false;
+    return;
+  }
+  const next = !$("#ia-app-shell").classList.contains("is-collapsed");
+  $("#ia-app-shell").classList.toggle("is-collapsed", next);
+  localStorage.setItem(SIDEBAR_KEY, next ? "1" : "0");
+};
+
+const closeMobileSidebar = () => {
+  $("#ia-app-shell").classList.remove("mobile-open");
+  $("#ia-mobile-backdrop").hidden = true;
+};
+
+const renderHeader = () => {
+  const user = state.profile?.user;
+  $("#ia-top-header").innerHTML = `
+    <div class="ia-header-left">
+      <button class="ia-icon-btn" type="button" data-action="toggle-sidebar" aria-label="Abrir navegacion">
+        ${icon("menu")}
+      </button>
+      <div class="ia-header-title">
+        <h1>Identidad y Accesos</h1>
+        <p>Administracion corporativa</p>
+      </div>
     </div>
-    ${table(["Email", "Estado", "Vence", "Creada", ""], data.invitations.map((i) => `<tr>
-      <td>${escapeHtml(i.email)}</td>
-      <td>${badge(i.estado)}</td>
-      <td>${escapeHtml(i.expires_at)}</td>
-      <td>${escapeHtml(i.created_at)}</td>
-      <td class="ia-actions">
-        <button class="ia-btn" data-action="open-invitation" data-id="${i.id}">Detalle</button>
-        ${i.estado === "PENDIENTE" ? `<button class="ia-btn ia-btn--danger" data-action="revoke-invitation" data-id="${i.id}">Revocar</button>` : ""}
-      </td>
-    </tr>`))}`;
-};
-
-const renderApplications = async () => {
-  const data = await api("/admin/applications");
-  $("#ia-view-applications").innerHTML = `
-    <div class="ia-toolbar"><h2>Aplicaciones</h2><button class="ia-btn ia-btn--primary" data-action="new-application">Crear</button></div>
-    ${table(["Codigo", "Nombre", "Estado", "Modulos", "Usuarios", ""], data.applications.map((a) => `<tr>
-      <td><strong>${escapeHtml(a.codigo)}</strong></td><td>${escapeHtml(a.nombre)}</td><td>${badge(String(a.activo))}</td>
-      <td>${a.modulos_count}</td><td>${a.usuarios_autorizados_count}</td>
-      <td class="ia-actions">
-        <button class="ia-btn" data-action="edit-application" data-id="${a.id}">Editar</button>
-        <button class="ia-btn" data-action="toggle-application" data-id="${a.id}" data-active="${a.activo}" data-updated="${escapeHtml(a.updated_at)}">${Number(a.activo) === 1 ? "Desactivar" : "Activar"}</button>
-      </td>
-    </tr>`))}`;
-};
-
-const renderModules = async () => {
-  const data = await api("/admin/modules");
-  $("#ia-view-modules").innerHTML = `
-    <div class="ia-toolbar">
-      <h2>Modulos</h2>
-      <button class="ia-btn ia-btn--primary" data-action="new-module">Crear</button>
+    <div class="ia-header-right">
+      <button class="ia-icon-btn" type="button" aria-label="Notificaciones">${icon("notifications")}</button>
+      <div class="ia-header-user" title="${escapeHtml(user?.email || "")}">
+        <span class="ia-user-avatar ia-user-avatar--small">${escapeHtml(initials(fullName(user)))}</span>
+      </div>
     </div>
-    ${table(["Aplicacion", "Codigo", "Nombre", "Orden", "Estado", "Roles", "Excepciones", ""], data.modules.map((m) => `<tr>
-      <td>${escapeHtml(m.aplicacion_codigo)}</td><td><strong>${escapeHtml(m.codigo)}</strong></td><td>${escapeHtml(m.nombre)}</td>
-      <td>${escapeHtml(m.orden)}</td><td>${badge(String(m.activo))}</td><td>${m.roles_asociados_count}</td><td>${m.usuarios_excepciones_count}</td>
-      <td class="ia-actions">
-        <button class="ia-btn" data-action="edit-module" data-id="${m.id}">Editar</button>
-        <button class="ia-btn" data-action="toggle-module" data-id="${m.id}" data-active="${m.activo}" data-updated="${escapeHtml(m.updated_at)}">${Number(m.activo) === 1 ? "Desactivar" : "Activar"}</button>
-      </td>
-    </tr>`))}`;
+  `;
 };
 
-const renderRoles = async () => {
-  const data = await api("/admin/roles");
-  $("#ia-view-roles").innerHTML = `
-    <div class="ia-toolbar"><h2>Roles</h2><button class="ia-btn ia-btn--primary" data-action="new-role">Crear</button></div>
-    ${table(["Aplicacion", "Codigo", "Nombre", "Estado", "Usuarios", "Modulos", ""], data.roles.map((r) => `<tr>
-      <td>${escapeHtml(r.aplicacion_codigo)}</td><td><strong>${escapeHtml(r.codigo)}</strong></td><td>${escapeHtml(r.nombre)}</td>
-      <td>${badge(String(r.activo))}</td><td>${r.usuarios_count}</td><td>${r.modulos_count}</td>
-      <td class="ia-actions">
-        <button class="ia-btn" data-action="edit-role" data-id="${r.id}">Editar</button>
-        <button class="ia-btn" data-action="edit-role-matrix" data-id="${r.id}">Matriz</button>
-      </td>
-    </tr>`))}`;
+const renderSidebar = () => {
+  const user = state.profile?.user;
+  const canRenderAdmin = Boolean(adminModule());
+  const items = canRenderAdmin ? NAV_ITEMS : [];
+  let lastSection = Symbol("none");
+
+  const nav = items.map((item) => {
+    const section = item.section !== lastSection && item.section
+      ? `<div class="ia-nav-section">${escapeHtml(item.section)}</div>`
+      : "";
+    lastSection = item.section;
+    return `${section}
+      <button class="ia-nav-item" type="button" data-view="${item.id}" aria-current="${state.view === item.id ? "page" : "false"}" title="${escapeHtml(item.label)}">
+        ${icon(item.icon)}
+        <span class="ia-nav-label">${escapeHtml(item.label)}</span>
+      </button>`;
+  }).join("");
+
+  $("#ia-sidebar").innerHTML = `
+    <div class="ia-brand">
+      <div class="ia-brand-mark">LCM</div>
+      <div class="ia-brand-text">
+        <strong>LA CABLERA</strong>
+        <span>MARPLATENSE</span>
+      </div>
+    </div>
+    <nav class="ia-sidebar-nav">${nav}</nav>
+    <div class="ia-sidebar-footer">
+      <div class="ia-profile">
+        <div class="ia-avatar">${escapeHtml(initials(fullName(user)))}</div>
+        <div class="ia-profile-text">
+          <strong>${escapeHtml(fullName(user))}</strong>
+          <span>${Number(user?.es_superadmin) === 1 ? "Superadministrador" : "Administrador"}</span>
+        </div>
+      </div>
+      <button class="ia-btn ia-btn--ghost" type="button" data-action="signout">
+        ${icon("logout")}
+        <span class="ia-nav-label">Cerrar sesion</span>
+      </button>
+    </div>
+  `;
 };
 
-const renderPermissions = async () => {
-  $("#ia-view-permissions").innerHTML = `
-    <section class="ia-card">
-      <h2>Permisos efectivos</h2>
-      <p class="ia-muted">Abrir un usuario desde la seccion Usuarios para diagnosticar origen SUPERADMIN, ROL o EXCEPCION_USUARIO.</p>
-    </section>`;
+const showLogin = () => {
+  state.user = null;
+  state.idToken = "";
+  state.profile = null;
+  $("#ia-login-panel").hidden = false;
+  $("#ia-denied-panel").hidden = true;
+  $("#ia-admin-panel").hidden = true;
+  renderHeader();
+  $("#ia-sidebar").innerHTML = `
+    <div class="ia-brand">
+      <div class="ia-brand-mark">LCM</div>
+      <div class="ia-brand-text"><strong>LA CABLERA</strong><span>MARPLATENSE</span></div>
+    </div>
+    <nav class="ia-sidebar-nav"></nav>
+    <div></div>
+  `;
 };
 
-const renderActiveTab = async () => {
-  setAlert("");
-  document.querySelectorAll(".ia-view").forEach((view) => { view.hidden = true; });
-  $(`#ia-view-${state.tab}`).hidden = false;
-  document.querySelectorAll(".ia-tabs button").forEach((button) => {
-    button.setAttribute("aria-current", button.dataset.tab === state.tab ? "page" : "false");
+const showDenied = () => {
+  $("#ia-login-panel").hidden = true;
+  $("#ia-admin-panel").hidden = true;
+  $("#ia-denied-panel").hidden = false;
+  renderHeader();
+  renderSidebar();
+};
+
+const showAdmin = async () => {
+  $("#ia-login-panel").hidden = true;
+  $("#ia-denied-panel").hidden = true;
+  $("#ia-admin-panel").hidden = false;
+  renderHeader();
+  renderSidebar();
+  await renderView();
+};
+
+const statusBadge = (status) => {
+  const key = String(status || "").toUpperCase();
+  const tone = key === "ACTIVO" || key === "ACEPTADA" ? "ok"
+    : key === "BLOQUEADO" || key === "BAJA" || key === "REVOCADA" ? "danger"
+    : key ? "warn" : "";
+  return `<span class="ia-badge ${tone ? `ia-badge--${tone}` : ""}">${escapeHtml(key || "-")}</span>`;
+};
+
+const countBy = (rows, field, allowed) => {
+  const counts = Object.fromEntries(allowed.map((key) => [key, 0]));
+  rows.forEach((row) => {
+    const key = String(row?.[field] || "").toUpperCase();
+    if (key in counts) counts[key] += 1;
   });
-  await refreshToken();
-  if (state.tab === "dashboard") await renderDashboard();
-  if (state.tab === "users") await renderUsers();
-  if (state.tab === "invitations") await renderInvitations();
-  if (state.tab === "applications") await renderApplications();
-  if (state.tab === "modules") await renderModules();
-  if (state.tab === "roles") await renderRoles();
-  if (state.tab === "permissions") await renderPermissions();
+  return counts;
 };
 
-const openDrawer = (title, kicker, html) => {
-  $("#ia-drawer-title").textContent = title;
-  $("#ia-drawer-kicker").textContent = kicker;
-  $("#ia-drawer-body").innerHTML = html;
-  $("#ia-drawer").hidden = false;
+const donut = (title, counts, labels) => {
+  const colors = ["#1769aa", "#219653", "#f2b84b", "#c2413b"];
+  const total = Object.values(counts).reduce((sum, value) => sum + Number(value || 0), 0);
+  let start = 0;
+  const stops = Object.keys(labels).map((key, index) => {
+    const value = total ? (counts[key] / total) * 100 : 25;
+    const segment = `${colors[index]} ${start}% ${start + value}%`;
+    start += value;
+    return segment;
+  }).join(", ");
+
+  return `
+    <article class="ia-card">
+      <h3>${escapeHtml(title)}</h3>
+      <div class="ia-donut-wrap">
+        <div class="ia-donut" style="background: conic-gradient(${stops});" aria-hidden="true"></div>
+        <div class="ia-legend">
+          ${Object.entries(labels).map(([key, label], index) => `
+            <div class="ia-legend-row">
+              <span><i style="background:${colors[index]}"></i>${escapeHtml(label)}</span>
+              <strong>${counts[key] || 0}</strong>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    </article>
+  `;
 };
 
-const closeDrawer = () => { $("#ia-drawer").hidden = true; };
+const renderDashboard = async () => {
+  $("#ia-view-dashboard").innerHTML = skeleton("Cargando dashboard...");
+  const [dashboard, invitations, users, audit, applications, modules] = await Promise.all([
+    api("/admin/dashboard"),
+    api("/admin/invitations").catch(() => ({ invitations: [] })),
+    api("/admin/users").catch(() => ({ users: [] })),
+    api("/admin/audit").catch(() => ({ audit: [] })),
+    api("/admin/applications").catch(() => ({ applications: [] })),
+    api("/admin/modules").catch(() => ({ modules: [] }))
+  ]);
+
+  const summary = dashboard.summary || {};
+  const invitationCounts = countBy(invitations.invitations || [], "estado", ["PENDIENTE", "ACEPTADA", "VENCIDA", "REVOCADA"]);
+  const userCounts = countBy(users.users || [], "estado", ["ACTIVO", "PENDIENTE", "BLOQUEADO", "BAJA"]);
+  const activeApps = (applications.applications || []).filter((app) => Number(app.activo) === 1).length || summary.aplicaciones_activas || 0;
+  const activeModules = (modules.modules || []).filter((module) => Number(module.activo) === 1).length || summary.modulos_activos || 0;
+
+  $("#ia-view-dashboard").innerHTML = `
+    <div class="ia-page-title">
+      <div>
+        <h2>Dashboard</h2>
+        <p>Resumen general del sistema</p>
+      </div>
+    </div>
+    <section class="ia-kpi-grid">
+      ${statCard("group", summary.usuarios_activos ?? userCounts.ACTIVO, "Usuarios activos", "Accesos habilitados")}
+      ${statCard("schedule", summary.invitaciones_pendientes ?? invitationCounts.PENDIENTE, "Invitaciones pendientes", "Esperando activacion")}
+      ${statCard("apps", activeApps, "Aplicaciones activas", "Disponibles para usuarios")}
+      ${statCard("deployed_code", activeModules, "Modulos activos", "Permisos operativos")}
+    </section>
+    <section class="ia-dashboard-grid">
+      ${donut("Invitaciones por estado", invitationCounts, {
+        PENDIENTE: "Pendientes",
+        ACEPTADA: "Aceptadas",
+        VENCIDA: "Vencidas",
+        REVOCADA: "Revocadas"
+      })}
+      ${donut("Usuarios por estado", userCounts, {
+        ACTIVO: "Activos",
+        PENDIENTE: "Pendientes",
+        BLOQUEADO: "Bloqueados",
+        BAJA: "Baja"
+      })}
+      ${activityCard(audit.audit || [])}
+    </section>
+    <section class="ia-quick-actions" aria-label="Acciones rapidas">
+      ${quickAction("person_add", "Invitar usuario", "invitations")}
+      ${quickAction("pending_actions", "Ver pendientes", "users", "PENDIENTE")}
+      ${quickAction("view_module", "Gestionar modulos", "modules")}
+      ${quickAction("rule", "Gestionar permisos", "permissions")}
+    </section>
+  `;
+};
+
+const statCard = (iconName, value, label, secondary) => `
+  <article class="ia-card ia-stat-card">
+    <div class="ia-stat-top">
+      <div class="ia-stat-icon">${icon(iconName)}</div>
+    </div>
+    <div>
+      <strong>${escapeHtml(value ?? 0)}</strong>
+      <span>${escapeHtml(label)}</span>
+      <small>${escapeHtml(secondary)}</small>
+    </div>
+  </article>
+`;
+
+const quickAction = (iconName, label, view, status = "") => `
+  <button class="ia-btn ia-quick-card" type="button" data-view="${escapeHtml(view)}" data-status="${escapeHtml(status)}">
+    ${icon(iconName)}
+    <span>${escapeHtml(label)}</span>
+  </button>
+`;
+
+const activityCard = (rows) => `
+  <article class="ia-card">
+    <h3>Actividad reciente</h3>
+    <div class="ia-activity-list">
+      ${rows.slice(0, 5).map((row) => `
+        <div class="ia-activity-item">
+          <div class="ia-activity-icon">${icon("history")}</div>
+          <div>
+            <strong>${escapeHtml(actionLabel(row.accion))}</strong>
+            <small>${escapeHtml(row.actor_email || "Sistema")} · ${escapeHtml(row.created_at || "")}</small>
+            <small>${escapeHtml([row.entidad_tipo, row.entidad_id].filter(Boolean).join(" #"))}</small>
+          </div>
+        </div>
+      `).join("") || `<p class="ia-muted">Sin actividad reciente.</p>`}
+    </div>
+  </article>
+`;
+
+const actionLabel = (action) => String(action || "")
+  .replaceAll(".", " ")
+  .replaceAll("_", " ")
+  .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const skeleton = (message) => `<section class="ia-card ia-skeleton">${escapeHtml(message)}</section>`;
+
+const loadCatalogs = async () => {
+  const catalogs = await api("/admin/catalogs");
+  state.catalogs = {
+    applications: catalogs.applications || [],
+    roles: catalogs.roles || []
+  };
+};
+
+const renderUsers = async (filters = {}) => {
+  $("#ia-view-users").innerHTML = skeleton("Cargando usuarios...");
+  await loadCatalogs();
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  const data = await api(`/admin/users${params.size ? `?${params}` : ""}`);
+  state.users = data.users || [];
+
+  $("#ia-view-users").innerHTML = `
+    <div class="ia-toolbar">
+      <div>
+        <h2>Usuarios</h2>
+        <p>Gestiona los usuarios del sistema</p>
+      </div>
+      <div class="ia-toolbar-actions">
+        <button class="ia-btn" type="button" data-action="export-users">${icon("download")} Exportar</button>
+        <button class="ia-btn ia-btn--primary" type="button" data-view="invitations">${icon("person_add")} Invitar usuario</button>
+      </div>
+    </div>
+    <form class="ia-filters" id="ia-user-filters">
+      <input class="ia-search" name="q" value="${escapeHtml(filters.q || "")}" placeholder="Buscar por nombre, email o cargo..." aria-label="Buscar usuarios">
+      <select name="estado" aria-label="Estado">
+        ${option("", "Estado: Todos", filters.estado)}
+        ${["ACTIVO", "PENDIENTE", "BLOQUEADO", "BAJA"].map((item) => option(item, item, filters.estado)).join("")}
+      </select>
+      <select name="aplicacion" aria-label="Aplicacion">
+        ${option("", "Aplicacion: Todas", filters.aplicacion)}
+        ${state.catalogs.applications.map((app) => option(app.codigo, app.nombre || app.codigo, filters.aplicacion)).join("")}
+      </select>
+      <select name="rol" aria-label="Rol">
+        ${option("", "Rol: Todos", filters.rol)}
+        ${state.catalogs.roles.map((role) => option(role.codigo, `${role.aplicacion_codigo} / ${role.nombre || role.codigo}`, filters.rol)).join("")}
+      </select>
+      <button class="ia-btn" type="submit">${icon("filter_list")} Filtros</button>
+    </form>
+    ${usersTable(state.users)}
+  `;
+};
+
+const option = (value, label, selected) =>
+  `<option value="${escapeHtml(value)}" ${String(value) === String(selected || "") ? "selected" : ""}>${escapeHtml(label)}</option>`;
+
+const usersTable = (users) => `
+  <section class="ia-card ia-table-card">
+    <table class="ia-table">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Estado</th>
+          <th>Aplicaciones</th>
+          <th>Rol principal</th>
+          <th>Ultimo acceso</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${users.map(userRow).join("") || `<tr><td colspan="6" class="ia-muted">Sin usuarios para estos filtros.</td></tr>`}
+      </tbody>
+    </table>
+  </section>
+`;
+
+const userRow = (user) => {
+  const name = fullName(user);
+  return `
+    <tr>
+      <td data-label="Usuario">
+        <div class="ia-user-cell">
+          <span class="ia-user-avatar">${escapeHtml(initials(name))}</span>
+          <div>
+            <strong>${escapeHtml(name)}</strong>
+            <small>${escapeHtml(user.email)}</small>
+          </div>
+        </div>
+      </td>
+      <td data-label="Estado">${statusBadge(user.estado)}</td>
+      <td data-label="Aplicaciones">${appBadges(user.aplicaciones)}</td>
+      <td data-label="Rol principal">${escapeHtml(primaryRole(user.roles))}</td>
+      <td data-label="Ultimo acceso"><span class="ia-muted">${escapeHtml(user.ultimo_acceso || "Sin registro")}</span></td>
+      <td data-label="Acciones">
+        <button class="ia-icon-btn" type="button" data-action="open-user" data-id="${escapeHtml(user.id)}" aria-label="Abrir usuario">
+          ${icon("chevron_right")}
+        </button>
+      </td>
+    </tr>
+  `;
+};
+
+const appBadges = (apps) => {
+  const values = String(apps || "").split(",").map((item) => item.trim()).filter(Boolean);
+  if (!values.length) return `<span class="ia-muted">Sin apps</span>`;
+  return `<div class="ia-app-badges">${values.map((app) => `
+    <span class="ia-mini-app" title="${escapeHtml(app)}">${escapeHtml(app.startsWith("PLANTEL") ? "P" : "C")}</span>
+  `).join("")}</div>`;
+};
+
+const primaryRole = (roles) => String(roles || "Sin rol").split(",")[0].trim() || "Sin rol";
+
+const renderPlaceholder = (item) => {
+  $("#ia-view-placeholder").innerHTML = `
+    <div class="ia-page-title">
+      <div>
+        <h2>${escapeHtml(item?.label || "Seccion")}</h2>
+        <p>Esta pantalla queda para la siguiente fase visual. La API y permisos existentes no se modificaron.</p>
+      </div>
+    </div>
+    <section class="ia-card">
+      <h3>Primera iteracion</h3>
+      <p class="ia-muted">La entrega actual se limita a Layout, Sidebar, Header, Dashboard y Usuarios.</p>
+    </section>
+  `;
+};
+
+const showViewElement = (id) => {
+  document.querySelectorAll(".ia-view").forEach((view) => { view.hidden = true; });
+  const elementId = id === "dashboard" || id === "users" ? `ia-view-${id}` : "ia-view-placeholder";
+  $(`#${elementId}`).hidden = false;
+};
+
+const renderView = async () => {
+  setAlert("");
+  showViewElement(state.view);
+  renderSidebar();
+  try {
+    if (state.view === "dashboard") await renderDashboard();
+    else if (state.view === "users") await renderUsers();
+    else renderPlaceholder(NAV_ITEMS.find((item) => item.id === state.view));
+  } catch (error) {
+    const target = state.view === "users" ? $("#ia-view-users") : $("#ia-view-dashboard");
+    target.innerHTML = `
+      <section class="ia-card">
+        <h3>${state.view === "users" ? "No pudimos cargar los usuarios." : "No pudimos cargar el dashboard."}</h3>
+        <p class="ia-muted">${escapeHtml(error.message)}</p>
+        <button class="ia-btn" type="button" data-action="retry-view">${icon("refresh")} Reintentar</button>
+      </section>
+    `;
+  }
+};
 
 const openUser = async (id) => {
   const data = await api(`/admin/users/${id}`);
-  const u = data.user;
-  openDrawer(`${u.nombre || ""} ${u.apellido || ""}`.trim() || u.email, "Usuario", `
-    <form class="ia-form" id="user-detail-form" data-id="${u.id}" data-updated="${escapeHtml(u.updated_at)}">
-      <div class="ia-grid-2">
-        <label>Nombre<input name="nombre" value="${escapeHtml(u.nombre)}"></label>
-        <label>Apellido<input name="apellido" value="${escapeHtml(u.apellido)}"></label>
-        <label>Telefono<input name="telefono" value="${escapeHtml(u.telefono)}"></label>
-        <label>Cargo<input name="cargo" value="${escapeHtml(u.cargo)}"></label>
-        <label>Sector<input name="sector" value="${escapeHtml(u.sector)}"></label>
-        <label>Foto URL<input name="foto_url" value="${escapeHtml(u.foto_url)}"></label>
-        <label>Estado<select name="estado">${["ACTIVO","PENDIENTE","BLOQUEADO","BAJA"].map((e) => `<option ${u.estado === e ? "selected" : ""}>${e}</option>`).join("")}</select></label>
-        <label>Superadmin<select name="es_superadmin"><option value="0">No</option><option value="1" ${Number(u.es_superadmin) === 1 ? "selected" : ""}>Si</option></select></label>
-      </div>
-      <button class="ia-btn ia-btn--primary" type="submit">Guardar perfil</button>
-    </form>
-    <section class="ia-card"><h3>Aplicaciones</h3><div class="ia-stack">
-      ${data.applications.map((a) => `<label class="ia-toggle"><input type="checkbox" data-user-app="${a.id}" ${Number(a.activo) === 1 ? "checked" : ""}> ${escapeHtml(a.codigo)} ${Number(a.aplicacion_activa) === 1 ? "" : "(app inactiva)"}</label>`).join("")}
-      <button class="ia-btn" data-action="save-user-apps" data-id="${u.id}">Guardar aplicaciones</button>
-    </div></section>
-    <section class="ia-card"><h3>Roles</h3><div class="ia-stack">
-      ${state.catalogs.roles.map((r) => {
-        const checked = data.roles.some((ur) => Number(ur.id) === Number(r.id) && Number(ur.activo) === 1);
-        return `<label class="ia-toggle"><input type="checkbox" data-user-role="${r.id}" ${checked ? "checked" : ""}> ${escapeHtml(r.aplicacion_codigo)} / ${escapeHtml(r.codigo)}</label>`;
-      }).join("")}
-      <button class="ia-btn" data-action="save-user-roles" data-id="${u.id}">Guardar roles</button>
-    </div></section>
-    <section class="ia-card"><h3>Modulos y permisos efectivos</h3>${effectiveModulesHtml(data.modules, u.id)}</section>
-  `);
-};
-
-const effectiveModulesHtml = (modules, userId) => `
-  <div class="ia-perm-grid">
-    ${modules.map((m) => `<div class="ia-card">
-      <strong>${escapeHtml(m.aplicacion_codigo)} / ${escapeHtml(m.codigo)}</strong>
-      <div class="ia-perm-row">
-        <span class="ia-muted">Permiso</span>
-        ${PERMS.map((p) => `<span>${PERM_LABELS[p]}</span>`).join("")}
-      </div>
-      <div class="ia-perm-row">
-        <span>Efectivo</span>
-        ${PERMS.map((p) => badge((m.effective?.permissions?.[p] ? "PERMITIDO" : "DENEGADO"))).join("")}
-      </div>
-      <div class="ia-perm-row">
-        <span>Origen</span>
-        ${PERMS.map((p) => `<span class="ia-badge">${escapeHtml(m.origins?.[p] || "SIN_PERMISO")}</span>`).join("")}
-      </div>
-      <div class="ia-perm-row">
-        <span>Excepcion</span>
-        ${PERMS.map((p) => `<select data-user-module="${m.id}" data-permission="${p}">
-          ${["HEREDADO","PERMITIR","DENEGAR"].map((v) => {
-            const raw = m[`ex_${p}`];
-            const selected = (raw === null && v === "HEREDADO") || (String(raw) === "1" && v === "PERMITIR") || (String(raw) === "0" && v === "DENEGAR");
-            return `<option ${selected ? "selected" : ""}>${v}</option>`;
-          }).join("")}
-        </select>`).join("")}
-      </div>
-    </div>`).join("")}
-    <button class="ia-btn" data-action="save-user-modules" data-id="${userId}">Guardar excepciones</button>
-  </div>`;
-
-const saveUserProfile = async (form) => {
-  const payload = Object.fromEntries(new FormData(form).entries());
-  payload.updated_at = form.dataset.updated;
-  if (CRITICAL.has(payload.estado) && !confirm(`Confirmar cambio de estado a ${payload.estado}.`)) return;
-  if (payload.es_superadmin === "0" && !confirm("Confirmar si corresponde quitar superadmin. El backend rechazara quitar el ultimo.")) return;
-  await apiJson("PATCH", `/admin/users/${form.dataset.id}`, payload);
-  setAlert("Usuario actualizado.");
-  await openUser(form.dataset.id);
-};
-
-const saveUserApps = async (id) => {
-  const applications = [...document.querySelectorAll("[data-user-app]")].map((input) => ({
-    aplicacion_id: input.dataset.userApp,
-    activo: input.checked
-  }));
-  if (!confirm("Confirmar cambios de aplicaciones del usuario.")) return;
-  await apiJson("PUT", `/admin/users/${id}/applications`, { applications });
-  setAlert("Aplicaciones actualizadas.");
-  await openUser(id);
-};
-
-const saveUserRoles = async (id) => {
-  const roles = [...document.querySelectorAll("[data-user-role]")].map((input) => ({
-    rol_id: input.dataset.userRole,
-    activo: input.checked
-  }));
-  await apiJson("PUT", `/admin/users/${id}/roles`, { roles });
-  setAlert("Roles actualizados.");
-  await openUser(id);
-};
-
-const saveUserModules = async (id) => {
-  const grouped = {};
-  document.querySelectorAll("[data-user-module][data-permission]").forEach((select) => {
-    grouped[select.dataset.userModule] ??= { modulo_id: select.dataset.userModule };
-    grouped[select.dataset.userModule][select.dataset.permission] = select.value;
-  });
-  await apiJson("PUT", `/admin/users/${id}/modules`, { modules: Object.values(grouped) });
-  setAlert("Excepciones actualizadas.");
-  await openUser(id);
-};
-
-const toggleCatalog = async (kind, id, active, updatedAt) => {
-  const next = Number(active) === 1 ? 0 : 1;
-  const label = kind === "applications" ? "aplicacion" : "modulo";
-  if (next === 0 && !confirm(`Confirmar desactivar ${label}. Las relaciones se conservan.`)) return;
-  await apiJson("PATCH", `/admin/${kind}/${id}`, { activo: next, updated_at: updatedAt });
-  setAlert(`${label} actualizado.`);
-  await loadCatalogs();
-  await renderActiveTab();
-};
-
-const findById = (items, id) => items.find((item) => Number(item.id) === Number(id));
-
-const openApplicationForm = (record = null) => {
-  openDrawer(record ? "Editar aplicacion" : "Crear aplicacion", "Aplicaciones", `
-    <form class="ia-form" id="catalog-form" data-kind="applications" data-id="${record?.id ?? ""}" data-updated="${escapeHtml(record?.updated_at ?? "")}">
-      <label>Codigo<input name="codigo" value="${escapeHtml(record?.codigo ?? "")}" ${record ? "readonly" : "required"}></label>
-      <label>Nombre<input name="nombre" value="${escapeHtml(record?.nombre ?? "")}" required></label>
-      <label>Descripcion<textarea name="descripcion">${escapeHtml(record?.descripcion ?? "")}</textarea></label>
-      <label>Activo<select name="activo"><option value="1" ${Number(record?.activo ?? 1) === 1 ? "selected" : ""}>Si</option><option value="0" ${Number(record?.activo ?? 1) === 0 ? "selected" : ""}>No</option></select></label>
-      <button class="ia-btn ia-btn--primary" type="submit">Guardar</button>
-    </form>`);
-};
-
-const openModuleForm = (record = null) => {
-  openDrawer(record ? "Editar modulo" : "Crear modulo", "Modulos", `
-    <form class="ia-form" id="catalog-form" data-kind="modules" data-id="${record?.id ?? ""}" data-updated="${escapeHtml(record?.updated_at ?? "")}">
-      <label>Aplicacion<select name="aplicacion_id" ${record ? "disabled" : ""}>${appOptions(record?.aplicacion_id)}</select></label>
-      <label>Codigo<input name="codigo" value="${escapeHtml(record?.codigo ?? "")}" ${record ? "readonly" : "required"}></label>
-      <label>Nombre<input name="nombre" value="${escapeHtml(record?.nombre ?? "")}" required></label>
-      <label>Descripcion<textarea name="descripcion">${escapeHtml(record?.descripcion ?? "")}</textarea></label>
-      <label>Orden<input name="orden" type="number" value="${escapeHtml(record?.orden ?? 0)}"></label>
-      <label>Activo<select name="activo"><option value="1" ${Number(record?.activo ?? 1) === 1 ? "selected" : ""}>Si</option><option value="0" ${Number(record?.activo ?? 1) === 0 ? "selected" : ""}>No</option></select></label>
-      <button class="ia-btn ia-btn--primary" type="submit">Guardar</button>
-    </form>`);
-};
-
-const openRoleForm = (record = null) => {
-  openDrawer(record ? "Editar rol" : "Crear rol", "Roles", `
-    <form class="ia-form" id="catalog-form" data-kind="roles" data-id="${record?.id ?? ""}" data-updated="${escapeHtml(record?.updated_at ?? "")}">
-      <label>Aplicacion<select name="aplicacion_id" ${record ? "disabled" : ""}>${appOptions(record?.aplicacion_id)}</select></label>
-      <label>Codigo<input name="codigo" value="${escapeHtml(record?.codigo ?? "")}" ${record ? "readonly" : "required"}></label>
-      <label>Nombre<input name="nombre" value="${escapeHtml(record?.nombre ?? "")}" required></label>
-      <label>Descripcion<textarea name="descripcion">${escapeHtml(record?.descripcion ?? "")}</textarea></label>
-      <label>Activo<select name="activo"><option value="1" ${Number(record?.activo ?? 1) === 1 ? "selected" : ""}>Si</option><option value="0" ${Number(record?.activo ?? 1) === 0 ? "selected" : ""}>No</option></select></label>
-      <button class="ia-btn ia-btn--primary" type="submit">Guardar</button>
-    </form>`);
-};
-
-const saveCatalogForm = async (form) => {
-  const kind = form.dataset.kind;
-  const id = form.dataset.id;
-  const payload = Object.fromEntries(new FormData(form).entries());
-  payload.activo = Number(payload.activo);
-  if (form.dataset.updated) payload.updated_at = form.dataset.updated;
-  if (id && payload.activo === 0 && !confirm("Confirmar desactivacion. Las relaciones se conservan.")) return;
-  await apiJson(id ? "PATCH" : "POST", id ? `/admin/${kind}/${id}` : `/admin/${kind}`, payload);
-  closeDrawer();
-  await loadCatalogs();
-  await renderActiveTab();
-};
-
-const openRoleMatrix = async (id) => {
-  const data = await api(`/admin/roles/${id}`);
-  openDrawer(data.role.nombre, "Matriz de permisos por rol", `
-    <section class="ia-card"><strong>${escapeHtml(data.role.codigo)}</strong></section>
-    <div class="ia-perm-grid">
-      ${data.modules.map((m) => `<div class="ia-perm-row" data-role-module-row="${m.modulo_id}">
-        <strong>${escapeHtml(m.codigo)}</strong>
-        ${PERMS.map((p) => `<label class="ia-toggle"><input type="checkbox" data-role-module="${m.modulo_id}" data-permission="${p}" ${Number(m[p]) === 1 ? "checked" : ""}> ${PERM_LABELS[p]}</label>`).join("")}
-      </div>`).join("")}
-    </div>
-    <button class="ia-btn ia-btn--primary" data-action="save-role-matrix" data-id="${id}">Guardar matriz</button>
-  `);
-};
-
-const saveRoleMatrix = async (id) => {
-  const grouped = {};
-  document.querySelectorAll("[data-role-module][data-permission]").forEach((input) => {
-    grouped[input.dataset.roleModule] ??= { modulo_id: input.dataset.roleModule };
-    grouped[input.dataset.roleModule][input.dataset.permission] = input.checked;
-  });
-  await apiJson("PUT", `/admin/roles/${id}/modules`, { modules: Object.values(grouped) });
-  setAlert("Matriz guardada.");
-  closeDrawer();
-  await renderActiveTab();
-};
-
-const revokeInvitation = async (id) => {
-  if (!confirm("Confirmar revocacion de invitacion pendiente.")) return;
-  await apiJson("POST", `/admin/invitations/${id}/revoke`, {});
-  setAlert("Invitacion revocada.");
-  await renderInvitations();
-};
-
-const openInvitationForm = () => {
-  openDrawer("Crear invitacion", "Invitaciones", `
-    <form class="ia-form" id="invitation-form">
-      <label>Email<input name="email" type="email" required></label>
-      <label>Vencimiento horas<input name="expires_in_hours" type="number" min="1" max="720" value="72"></label>
-      <section class="ia-card">
-        <h3>Aplicaciones y roles</h3>
-        <div class="ia-stack">
-          ${state.catalogs.applications.map((app) => `
-            <div class="ia-card">
-              <label class="ia-toggle"><input type="checkbox" data-invite-app="${app.codigo}"> ${escapeHtml(app.codigo)} / ${escapeHtml(app.nombre)}</label>
-              <div class="ia-stack">
-                ${state.catalogs.roles.filter((role) => Number(role.aplicacion_id) === Number(app.id)).map((role) => `
-                  <label class="ia-toggle"><input type="checkbox" data-invite-role="${app.codigo}" value="${role.codigo}"> ${escapeHtml(role.codigo)}</label>
-                `).join("")}
-              </div>
-            </div>`).join("")}
-        </div>
-      </section>
-      <button class="ia-btn ia-btn--primary" type="submit">Crear invitacion</button>
-    </form>
-  `);
-};
-
-const createInvitation = async (form) => {
-  const formData = new FormData(form);
-  const applications = [...document.querySelectorAll("[data-invite-app]:checked")].map((input) => ({
-    codigo: input.dataset.inviteApp,
-    roles: [...document.querySelectorAll(`[data-invite-role="${input.dataset.inviteApp}"]:checked`)].map((role) => role.value),
-    modules: []
-  }));
-  const created = await apiJson("POST", "/admin/invitations", {
-    email: String(formData.get("email")),
-    expires_in_hours: Number(formData.get("expires_in_hours") || 72),
-    applications
-  });
-  const link = `${location.origin}/api/v1/auth/invitation?token=${encodeURIComponent(created.activation_token)}`;
-  openDrawer("Invitacion creada", "Token visible una sola vez", `
-    <section class="ia-card">
-      <p>${escapeHtml(created.invitation.email)}</p>
-      <label>Enlace de invitacion<input id="invitation-link" readonly value="${escapeHtml(link)}"></label>
-      <div class="ia-actions">
-        <button class="ia-btn ia-btn--primary" data-action="copy-invitation-link">Copiar enlace</button>
-        <button class="ia-btn" data-action="close-drawer">Cerrar</button>
+  const user = data.user;
+  $("#ia-drawer-title").textContent = fullName(user);
+  $("#ia-drawer-kicker").textContent = "Usuario";
+  $("#ia-drawer-body").innerHTML = `
+    <section class="ia-user-detail-head">
+      <span class="ia-user-avatar ia-user-avatar--large">${escapeHtml(initials(fullName(user)))}</span>
+      <div>
+        <h3>${escapeHtml(fullName(user))}</h3>
+        <p>${escapeHtml(user.email)}</p>
+        ${statusBadge(user.estado)}
       </div>
     </section>
-  `);
-  await renderInvitations();
+    <section class="ia-card">
+      <h3>Perfil</h3>
+      <dl class="ia-detail-grid">
+        <div><dt>Telefono</dt><dd>${escapeHtml(user.telefono || "-")}</dd></div>
+        <div><dt>Cargo</dt><dd>${escapeHtml(user.cargo || "-")}</dd></div>
+        <div><dt>Sector</dt><dd>${escapeHtml(user.sector || "-")}</dd></div>
+        <div><dt>Fecha alta</dt><dd>${escapeHtml(user.created_at || "-")}</dd></div>
+        <div><dt>Ultimo acceso</dt><dd>Sin registro</dd></div>
+        <div><dt>Superadmin</dt><dd>${Number(user.es_superadmin) === 1 ? "Si" : "No"}</dd></div>
+      </dl>
+    </section>
+    <section class="ia-card">
+      <h3>Aplicaciones y roles</h3>
+      <div class="ia-app-role-list">
+        ${(data.applications || []).filter((app) => Number(app.activo) === 1).map((app) => {
+          const roles = (data.roles || []).filter((role) => Number(role.aplicacion_id) === Number(app.id) && Number(role.activo) === 1);
+          return `
+            <div class="ia-app-role-item">
+              <strong>${escapeHtml(app.codigo)}</strong>
+              <span>${escapeHtml(roles.map((role) => role.codigo).join(", ") || "Sin rol")}</span>
+              ${icon("chevron_right")}
+            </div>
+          `;
+        }).join("") || `<p class="ia-muted">Sin aplicaciones activas.</p>`}
+      </div>
+    </section>
+    <section class="ia-card">
+      <h3>Modulos</h3>
+      ${permissionMatrix(data.modules || [])}
+    </section>
+  `;
+  $("#ia-drawer").hidden = false;
 };
 
-const handleAction = async (target) => {
-  const action = target.dataset.action;
-  if (!action) return;
-  try {
-    if (action === "filter-users") await filterUsers();
-    if (action === "open-user") await openUser(target.dataset.id);
-    if (action === "save-user-apps") await saveUserApps(target.dataset.id);
-    if (action === "save-user-roles") await saveUserRoles(target.dataset.id);
-    if (action === "save-user-modules") await saveUserModules(target.dataset.id);
-    if (action === "toggle-application") await toggleCatalog("applications", target.dataset.id, target.dataset.active, target.dataset.updated);
-    if (action === "toggle-module") await toggleCatalog("modules", target.dataset.id, target.dataset.active, target.dataset.updated);
-    if (action === "edit-role-matrix") await openRoleMatrix(target.dataset.id);
-    if (action === "save-role-matrix") await saveRoleMatrix(target.dataset.id);
-    if (action === "revoke-invitation") await revokeInvitation(target.dataset.id);
-    if (action === "quick-invite" || action === "new-invitation") openInvitationForm();
-    if (action === "copy-invitation-link") {
-      const input = $("#invitation-link");
-      input.select();
-      await navigator.clipboard.writeText(input.value);
-      setAlert("Enlace copiado.");
-    }
-    if (action === "close-drawer") closeDrawer();
-    if (action === "new-application") openApplicationForm();
-    if (action === "new-module") openModuleForm();
-    if (action === "new-role") openRoleForm();
-    if (action === "edit-application") {
-      const data = await api("/admin/applications");
-      openApplicationForm(findById(data.applications, target.dataset.id));
-    }
-    if (action === "edit-module") {
-      const data = await api("/admin/modules");
-      openModuleForm(findById(data.modules, target.dataset.id));
-    }
-    if (action === "edit-role") {
-      const data = await api("/admin/roles");
-      openRoleForm(findById(data.roles, target.dataset.id));
-    }
-  } catch (error) {
-    setAlert(error.message, true);
-  }
+const permissionMatrix = (modules) => `
+  <div class="ia-permission-table">
+    <div class="ia-permission-row ia-permission-head">
+      <span>Modulo</span><span>Ver</span><span>Crear</span><span>Editar</span><span>Eliminar</span><span>Aprobar</span><span>Origen</span>
+    </div>
+    ${modules.map((module) => {
+      const permissions = module.effective?.permissions || {};
+      const origin = module.origins?.puede_ver || "SIN_PERMISO";
+      return `
+        <div class="ia-permission-row">
+          <strong>${escapeHtml(module.aplicacion_codigo)} / ${escapeHtml(module.codigo)}</strong>
+          ${["puede_ver", "puede_crear", "puede_editar", "puede_eliminar", "puede_aprobar"].map((permission) => permDot(permissions[permission])).join("")}
+          <span class="ia-badge">${escapeHtml(origin)}</span>
+        </div>
+      `;
+    }).join("") || `<p class="ia-muted">Sin modulos efectivos.</p>`}
+  </div>
+`;
+
+const permDot = (value) => `<span class="ia-perm-dot ${value ? "is-allowed" : "is-denied"}">${icon(value ? "check" : "close")}</span>`;
+
+const closeDrawer = () => {
+  $("#ia-drawer").hidden = true;
 };
 
 document.addEventListener("click", async (event) => {
-  const target = event.target.closest("[data-action], [data-tab], [data-tab-jump], #ia-drawer-close, #ia-signout");
-  if (!target) return;
-  if (target.id === "ia-drawer-close") return closeDrawer();
-  if (target.id === "ia-signout") return signOut(state.auth);
-  if (target.dataset.tab || target.dataset.tabJump) {
-    state.tab = target.dataset.tab || target.dataset.tabJump;
-    try { await renderActiveTab(); } catch (error) { setAlert(error.message, true); }
+  const actionTarget = event.target.closest("[data-action]");
+  const viewTarget = event.target.closest("[data-view]");
+  if (actionTarget) {
+    const action = actionTarget.dataset.action;
+    if (action === "toggle-sidebar") toggleSidebar();
+    if (action === "signout") await signOut(state.auth);
+    if (action === "retry-view") await renderView();
+    if (action === "open-user") await openUser(actionTarget.dataset.id).catch((error) => setAlert(error.message, true));
+    if (action === "export-users") setAlert("La exportacion se conectara en la siguiente iteracion visual.");
     return;
   }
-  await handleAction(target);
+  if (viewTarget) {
+    state.view = viewTarget.dataset.view;
+    closeMobileSidebar();
+    if (viewTarget.dataset.status) {
+      await renderUsers({ estado: viewTarget.dataset.status });
+      state.view = "users";
+      showViewElement("users");
+      renderSidebar();
+      return;
+    }
+    await renderView();
+  }
 });
 
 document.addEventListener("submit", async (event) => {
@@ -601,34 +667,48 @@ document.addEventListener("submit", async (event) => {
       await signInWithEmailAndPassword(state.auth, String(form.get("email")), String(form.get("password")));
       return;
     }
-    if (event.target.id === "user-detail-form") {
-      await saveUserProfile(event.target);
-    }
-    if (event.target.id === "invitation-form") {
-      await createInvitation(event.target);
-    }
-    if (event.target.id === "catalog-form") {
-      await saveCatalogForm(event.target);
+    if (event.target.id === "ia-user-filters") {
+      const form = new FormData(event.target);
+      await renderUsers({
+        q: String(form.get("q") || "").trim(),
+        estado: String(form.get("estado") || ""),
+        aplicacion: String(form.get("aplicacion") || ""),
+        rol: String(form.get("rol") || "")
+      });
     }
   } catch (error) {
     setAlert(error.message, true);
   }
 });
 
+$("#ia-drawer-close").addEventListener("click", closeDrawer);
+$("#ia-mobile-backdrop").addEventListener("click", closeMobileSidebar);
+
 const boot = async () => {
   try {
+    setShellState();
+    renderHeader();
     await loadConfig();
     onAuthStateChanged(state.auth, async (user) => {
       try {
-        if (user) await setAuthenticated(user);
-        else setUnauthenticated();
+        if (!user) {
+          showLogin();
+          return;
+        }
+        state.user = user;
+        await loadProfile();
+        if (!hasAdminAccess()) {
+          showDenied();
+          return;
+        }
+        await showAdmin();
       } catch (error) {
         setAlert(error.message, true);
-        setUnauthenticated();
+        showLogin();
       }
     });
   } catch (error) {
-    $("#ia-login-panel").innerHTML = `<div class="ia-alert">${escapeHtml(error.message)}</div>`;
+    $("#ia-login-panel").innerHTML = `<section class="ia-card"><h2>No pudimos iniciar el administrador.</h2><p>${escapeHtml(error.message)}</p></section>`;
   }
 };
 
