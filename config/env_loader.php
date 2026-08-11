@@ -45,6 +45,31 @@ function lcm_local_env_path(): string
     return 'C:\\plantel\\DATOS_LOCALES\\plantel.env';
 }
 
+function lcm_env_paths(): array
+{
+    $paths = [];
+    $explicitPath = getenv('LCM_ENV_FILE');
+    if (is_string($explicitPath) && trim($explicitPath) !== '') {
+        $paths[] = trim($explicitPath);
+    }
+
+    $paths[] = lcm_local_env_path();
+    $paths[] = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'plantel.env';
+
+    return array_values(array_unique($paths));
+}
+
+function lcm_existing_env_path(): ?string
+{
+    foreach (lcm_env_paths() as $path) {
+        if (is_file($path)) {
+            return $path;
+        }
+    }
+
+    return null;
+}
+
 function lcm_config_value(string $key, ?string $default = null): ?string
 {
     $env = getenv($key);
@@ -52,8 +77,8 @@ function lcm_config_value(string $key, ?string $default = null): ?string
         return trim($env);
     }
 
-    $path = lcm_local_env_path();
-    if (!is_file($path)) {
+    $path = lcm_existing_env_path();
+    if ($path === null) {
         return $default;
     }
 
@@ -63,8 +88,8 @@ function lcm_config_value(string $key, ?string $default = null): ?string
 
 function lcm_load_dotenv_to_process(): void
 {
-    $path = lcm_local_env_path();
-    if (!is_file($path)) {
+    $path = lcm_existing_env_path();
+    if ($path === null) {
         return;
     }
 
@@ -84,7 +109,7 @@ function lcm_load_database_config(): void
         return;
     }
 
-    $envPath = lcm_local_env_path();
+    $envPath = lcm_existing_env_path() ?? lcm_local_env_path();
     $values = lcm_read_dotenv_file($envPath);
     lcm_load_dotenv_to_process();
 
