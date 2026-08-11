@@ -218,7 +218,10 @@ const renderApplications = async () => {
     ${table(["Codigo", "Nombre", "Estado", "Modulos", "Usuarios", ""], data.applications.map((a) => `<tr>
       <td><strong>${escapeHtml(a.codigo)}</strong></td><td>${escapeHtml(a.nombre)}</td><td>${badge(String(a.activo))}</td>
       <td>${a.modulos_count}</td><td>${a.usuarios_autorizados_count}</td>
-      <td><button class="ia-btn" data-action="toggle-application" data-id="${a.id}" data-active="${a.activo}" data-updated="${escapeHtml(a.updated_at)}">${Number(a.activo) === 1 ? "Desactivar" : "Activar"}</button></td>
+      <td class="ia-actions">
+        <button class="ia-btn" data-action="edit-application" data-id="${a.id}">Editar</button>
+        <button class="ia-btn" data-action="toggle-application" data-id="${a.id}" data-active="${a.activo}" data-updated="${escapeHtml(a.updated_at)}">${Number(a.activo) === 1 ? "Desactivar" : "Activar"}</button>
+      </td>
     </tr>`))}`;
 };
 
@@ -232,7 +235,10 @@ const renderModules = async () => {
     ${table(["Aplicacion", "Codigo", "Nombre", "Orden", "Estado", "Roles", "Excepciones", ""], data.modules.map((m) => `<tr>
       <td>${escapeHtml(m.aplicacion_codigo)}</td><td><strong>${escapeHtml(m.codigo)}</strong></td><td>${escapeHtml(m.nombre)}</td>
       <td>${escapeHtml(m.orden)}</td><td>${badge(String(m.activo))}</td><td>${m.roles_asociados_count}</td><td>${m.usuarios_excepciones_count}</td>
-      <td><button class="ia-btn" data-action="toggle-module" data-id="${m.id}" data-active="${m.activo}" data-updated="${escapeHtml(m.updated_at)}">${Number(m.activo) === 1 ? "Desactivar" : "Activar"}</button></td>
+      <td class="ia-actions">
+        <button class="ia-btn" data-action="edit-module" data-id="${m.id}">Editar</button>
+        <button class="ia-btn" data-action="toggle-module" data-id="${m.id}" data-active="${m.activo}" data-updated="${escapeHtml(m.updated_at)}">${Number(m.activo) === 1 ? "Desactivar" : "Activar"}</button>
+      </td>
     </tr>`))}`;
 };
 
@@ -243,7 +249,10 @@ const renderRoles = async () => {
     ${table(["Aplicacion", "Codigo", "Nombre", "Estado", "Usuarios", "Modulos", ""], data.roles.map((r) => `<tr>
       <td>${escapeHtml(r.aplicacion_codigo)}</td><td><strong>${escapeHtml(r.codigo)}</strong></td><td>${escapeHtml(r.nombre)}</td>
       <td>${badge(String(r.activo))}</td><td>${r.usuarios_count}</td><td>${r.modulos_count}</td>
-      <td><button class="ia-btn" data-action="edit-role-matrix" data-id="${r.id}">Matriz</button></td>
+      <td class="ia-actions">
+        <button class="ia-btn" data-action="edit-role" data-id="${r.id}">Editar</button>
+        <button class="ia-btn" data-action="edit-role-matrix" data-id="${r.id}">Matriz</button>
+      </td>
     </tr>`))}`;
 };
 
@@ -395,6 +404,57 @@ const toggleCatalog = async (kind, id, active, updatedAt) => {
   await renderActiveTab();
 };
 
+const findById = (items, id) => items.find((item) => Number(item.id) === Number(id));
+
+const openApplicationForm = (record = null) => {
+  openDrawer(record ? "Editar aplicacion" : "Crear aplicacion", "Aplicaciones", `
+    <form class="ia-form" id="catalog-form" data-kind="applications" data-id="${record?.id ?? ""}" data-updated="${escapeHtml(record?.updated_at ?? "")}">
+      <label>Codigo<input name="codigo" value="${escapeHtml(record?.codigo ?? "")}" ${record ? "readonly" : "required"}></label>
+      <label>Nombre<input name="nombre" value="${escapeHtml(record?.nombre ?? "")}" required></label>
+      <label>Descripcion<textarea name="descripcion">${escapeHtml(record?.descripcion ?? "")}</textarea></label>
+      <label>Activo<select name="activo"><option value="1" ${Number(record?.activo ?? 1) === 1 ? "selected" : ""}>Si</option><option value="0" ${Number(record?.activo ?? 1) === 0 ? "selected" : ""}>No</option></select></label>
+      <button class="ia-btn ia-btn--primary" type="submit">Guardar</button>
+    </form>`);
+};
+
+const openModuleForm = (record = null) => {
+  openDrawer(record ? "Editar modulo" : "Crear modulo", "Modulos", `
+    <form class="ia-form" id="catalog-form" data-kind="modules" data-id="${record?.id ?? ""}" data-updated="${escapeHtml(record?.updated_at ?? "")}">
+      <label>Aplicacion<select name="aplicacion_id" ${record ? "disabled" : ""}>${appOptions(record?.aplicacion_id)}</select></label>
+      <label>Codigo<input name="codigo" value="${escapeHtml(record?.codigo ?? "")}" ${record ? "readonly" : "required"}></label>
+      <label>Nombre<input name="nombre" value="${escapeHtml(record?.nombre ?? "")}" required></label>
+      <label>Descripcion<textarea name="descripcion">${escapeHtml(record?.descripcion ?? "")}</textarea></label>
+      <label>Orden<input name="orden" type="number" value="${escapeHtml(record?.orden ?? 0)}"></label>
+      <label>Activo<select name="activo"><option value="1" ${Number(record?.activo ?? 1) === 1 ? "selected" : ""}>Si</option><option value="0" ${Number(record?.activo ?? 1) === 0 ? "selected" : ""}>No</option></select></label>
+      <button class="ia-btn ia-btn--primary" type="submit">Guardar</button>
+    </form>`);
+};
+
+const openRoleForm = (record = null) => {
+  openDrawer(record ? "Editar rol" : "Crear rol", "Roles", `
+    <form class="ia-form" id="catalog-form" data-kind="roles" data-id="${record?.id ?? ""}" data-updated="${escapeHtml(record?.updated_at ?? "")}">
+      <label>Aplicacion<select name="aplicacion_id" ${record ? "disabled" : ""}>${appOptions(record?.aplicacion_id)}</select></label>
+      <label>Codigo<input name="codigo" value="${escapeHtml(record?.codigo ?? "")}" ${record ? "readonly" : "required"}></label>
+      <label>Nombre<input name="nombre" value="${escapeHtml(record?.nombre ?? "")}" required></label>
+      <label>Descripcion<textarea name="descripcion">${escapeHtml(record?.descripcion ?? "")}</textarea></label>
+      <label>Activo<select name="activo"><option value="1" ${Number(record?.activo ?? 1) === 1 ? "selected" : ""}>Si</option><option value="0" ${Number(record?.activo ?? 1) === 0 ? "selected" : ""}>No</option></select></label>
+      <button class="ia-btn ia-btn--primary" type="submit">Guardar</button>
+    </form>`);
+};
+
+const saveCatalogForm = async (form) => {
+  const kind = form.dataset.kind;
+  const id = form.dataset.id;
+  const payload = Object.fromEntries(new FormData(form).entries());
+  payload.activo = Number(payload.activo);
+  if (form.dataset.updated) payload.updated_at = form.dataset.updated;
+  if (id && payload.activo === 0 && !confirm("Confirmar desactivacion. Las relaciones se conservan.")) return;
+  await apiJson(id ? "PATCH" : "POST", id ? `/admin/${kind}/${id}` : `/admin/${kind}`, payload);
+  closeDrawer();
+  await loadCatalogs();
+  await renderActiveTab();
+};
+
 const openRoleMatrix = async (id) => {
   const data = await api(`/admin/roles/${id}`);
   openDrawer(data.role.nombre, "Matriz de permisos por rol", `
@@ -500,7 +560,21 @@ const handleAction = async (target) => {
       setAlert("Enlace copiado.");
     }
     if (action === "close-drawer") closeDrawer();
-    if (action === "new-application" || action === "new-module" || action === "new-role") setAlert("Alta disponible por API. La edicion visual completa se agregara en la siguiente iteracion.", false);
+    if (action === "new-application") openApplicationForm();
+    if (action === "new-module") openModuleForm();
+    if (action === "new-role") openRoleForm();
+    if (action === "edit-application") {
+      const data = await api("/admin/applications");
+      openApplicationForm(findById(data.applications, target.dataset.id));
+    }
+    if (action === "edit-module") {
+      const data = await api("/admin/modules");
+      openModuleForm(findById(data.modules, target.dataset.id));
+    }
+    if (action === "edit-role") {
+      const data = await api("/admin/roles");
+      openRoleForm(findById(data.roles, target.dataset.id));
+    }
   } catch (error) {
     setAlert(error.message, true);
   }
@@ -532,6 +606,9 @@ document.addEventListener("submit", async (event) => {
     }
     if (event.target.id === "invitation-form") {
       await createInvitation(event.target);
+    }
+    if (event.target.id === "catalog-form") {
+      await saveCatalogForm(event.target);
     }
   } catch (error) {
     setAlert(error.message, true);
