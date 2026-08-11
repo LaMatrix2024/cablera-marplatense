@@ -39,6 +39,7 @@ $projectId = (string)lcm_config_value('FIREBASE_PROJECT_ID', 'mis-appspwa-claudi
     <input id="password" type="password" autocomplete="current-password">
 
     <button id="login" type="button">Ingresar</button>
+    <button id="reset" class="secondary" type="button">Restablecer contraseña</button>
     <button id="again" class="secondary" type="button" disabled>Consultar /api/v1/auth/me otra vez</button>
 
     <h2>Resultado</h2>
@@ -102,6 +103,42 @@ document.getElementById("login").addEventListener("click", async () => {
   }
 });
 
+document.getElementById("reset").addEventListener("click", async () => {
+  try {
+    if (!firebaseApiKey) {
+      write("Falta FIREBASE_WEB_API_KEY en plantel.env.", true);
+      return;
+    }
+
+    const email = document.getElementById("email").value.trim().toLowerCase();
+    if (!email) {
+      write("Ingresá el correo antes de solicitar el restablecimiento.", true);
+      return;
+    }
+
+    write("Solicitando correo oficial de restablecimiento a Firebase...");
+    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${encodeURIComponent(firebaseApiKey)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ requestType: "PASSWORD_RESET", email })
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      write({ firebase: "RESET_ERROR", status: response.status, code: body?.error?.message || "password_reset_failed" }, true);
+      return;
+    }
+
+    document.getElementById("password").value = "";
+    write({
+      firebase: "RESET_EMAIL_SENT",
+      email,
+      message: "Revisá el correo oficial de Firebase y definí la nueva contraseña desde ese enlace. Después volvé a esta pantalla e intentá ingresar."
+    });
+  } catch (error) {
+    write(String(error), true);
+  }
+});
+
 document.getElementById("again").addEventListener("click", async () => {
   try {
     write(await callMe());
@@ -112,4 +149,3 @@ document.getElementById("again").addEventListener("click", async () => {
 </script>
 </body>
 </html>
-
