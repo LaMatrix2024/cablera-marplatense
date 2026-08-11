@@ -104,7 +104,8 @@ function lcm_load_dotenv_to_process(): void
 function lcm_load_database_config(): void
 {
     $legacyPath = __DIR__ . '/env.php';
-    if (is_file($legacyPath)) {
+    $ignoreLegacy = in_array(strtolower((string)getenv('LCM_IGNORE_LEGACY_ENV')), ['1', 'true', 'yes'], true);
+    if (!$ignoreLegacy && is_file($legacyPath)) {
         require_once $legacyPath;
         return;
     }
@@ -113,14 +114,14 @@ function lcm_load_database_config(): void
     $values = lcm_read_dotenv_file($envPath);
     lcm_load_dotenv_to_process();
 
-    lcm_define_if_missing('DB_HOST', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_HOST', 'DB_LOCAL_HOST', 'DB_HOST']));
-    lcm_define_if_missing('DB_PORT', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_PORT', 'DB_LOCAL_PORT', 'DB_PORT'], '3306'));
+    lcm_define_if_missing('DB_HOST', lcm_config_value('DB_HOST', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_HOST', 'DB_LOCAL_HOST', 'DB_HOST'])));
+    lcm_define_if_missing('DB_PORT', lcm_config_value('DB_PORT', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_PORT', 'DB_LOCAL_PORT', 'DB_PORT'], '3306')));
     lcm_define_if_missing('DB_NAME', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_DATABASE', 'DB_LOCAL_DATABASE', 'DB_DATABASE']));
     lcm_define_if_missing('DB_USER', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_USER', 'DB_LOCAL_USER', 'DB_USERNAME']));
     lcm_define_if_missing('DB_PASS', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_PASSWORD', 'DB_LOCAL_PASSWORD', 'DB_PASSWORD'], ''));
 
-    lcm_define_if_missing('LAB_DB_HOST', lcm_env_value($values, ['DB_HOSTINGER_LAB_HOST', 'LAB_DB_HOST'], DB_HOST));
-    lcm_define_if_missing('LAB_DB_PORT', lcm_env_value($values, ['DB_HOSTINGER_LAB_PORT', 'LAB_DB_PORT'], '3306'));
+    lcm_define_if_missing('LAB_DB_HOST', lcm_config_value('LAB_DB_HOST', lcm_env_value($values, ['DB_HOSTINGER_LAB_HOST', 'LAB_DB_HOST'], DB_HOST)));
+    lcm_define_if_missing('LAB_DB_PORT', lcm_config_value('LAB_DB_PORT', lcm_env_value($values, ['DB_HOSTINGER_LAB_PORT', 'LAB_DB_PORT'], '3306')));
     lcm_define_if_missing('LAB_DB_NAME', lcm_env_value($values, ['DB_HOSTINGER_LAB_DATABASE', 'LAB_DB_NAME']));
     lcm_define_if_missing('LAB_DB_USER', lcm_env_value($values, ['DB_HOSTINGER_LAB_USER', 'LAB_DB_USER']));
     lcm_define_if_missing('LAB_DB_PASS', lcm_env_value($values, ['DB_HOSTINGER_LAB_PASSWORD', 'LAB_DB_PASS'], ''));

@@ -46,7 +46,7 @@ if ($missing !== []) {
 }
 
 echo json_encode([
-        'ok' => true,
-        'firebase' => $firebase,
-        'apiBaseUrl' => '/api/v1',
+    'ok' => true,
+    'firebase' => $firebase,
+    'apiBaseUrl' => '/api/v1',
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

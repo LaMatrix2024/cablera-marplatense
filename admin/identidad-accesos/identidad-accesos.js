@@ -113,7 +113,10 @@ const api = async (path, options = {}) => {
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body.ok === false) {
-    throw new Error(body.message || body.error || `HTTP ${response.status}`);
+    const error = new Error(body.message || body.error || `HTTP ${response.status}`);
+    error.status = response.status;
+    error.code = body.error || null;
+    throw error;
   }
   return body;
 };
@@ -130,8 +133,45 @@ const loadConfig = async () => {
 };
 
 const loadProfile = async () => {
-  state.profile = await api("/auth/me");
+  const token = await getToken();
+  const response = await fetch(`${state.config.apiBaseUrl}/auth/me`, {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    }
+  });
+  const body = await response.json().catch(() => null);
+  logAuthMeDiagnostic(response.status, body);
+  if (!response.ok || body?.ok !== true) {
+    const error = new Error(body?.message || body?.error || (body === null ? "Respuesta invalida de /auth/me." : `HTTP ${response.status}`));
+    error.status = response.status;
+    error.code = body?.error || null;
+    throw error;
+  }
+  state.profile = body;
   return state.profile;
+};
+
+const logAuthMeDiagnostic = (status, body) => {
+  const modules = body?.modules ?? [];
+  const applications = body?.applications ?? [];
+  const identityModule = modules.find((module) =>
+    module.aplicacion === CABLERA_APP && module.codigo === ADMIN_MODULE
+  );
+  const uid = state.user?.uid || "";
+  console.info("LCM auth/me diagnostico", {
+    email_autenticado: state.user?.email || null,
+    uid_parcial: uid ? `${uid.slice(0, 8)}...${uid.slice(-4)}` : null,
+    status_http: status,
+    error: body?.error || null,
+    message: body?.message || null,
+    user_id: body?.user?.id ?? null,
+    user_estado: body?.user?.estado ?? null,
+    user_es_superadmin: body?.user?.es_superadmin ?? null,
+    tiene_cablera: applications.some((app) => app.codigo === CABLERA_APP),
+    tiene_identidad_accesos: Boolean(identityModule),
+    identidad_puede_ver: identityModule?.permissions?.puede_ver ?? null
+  });
 };
 
 const hasAdminAccess = () => {
@@ -271,12 +311,27 @@ const showLogin = () => {
   `;
 };
 
-const showDenied = () => {
+const showDenied = (
+  title = "Acceso denegado",
+  message = "No tenes permiso para ver IDENTIDAD_ACCESOS. La validacion fue realizada por el backend corporativo."
+) => {
   $("#ia-login-panel").hidden = true;
   $("#ia-admin-panel").hidden = true;
   $("#ia-denied-panel").hidden = false;
+  $("#ia-denied-panel h2").textContent = title;
+  $("#ia-denied-panel p").textContent = message;
   renderHeader();
   renderSidebar();
+};
+
+const showAuthValidationError = (error) => {
+  const status = error?.status || "error";
+  const code = error?.code ? ` ${error.code}` : "";
+  const message = error?.message || "Revisar Network/Console.";
+  showDenied(
+    "No pudimos validar tu sesion",
+    `GET /api/v1/auth/me fallo con ${status}${code}. ${message}`
+  );
 };
 
 const showAdmin = async () => {
@@ -286,6 +341,21 @@ const showAdmin = async () => {
   renderHeader();
   renderSidebar();
   await renderView();
+};
+
+const handleAuthenticatedUser = async (user) => {
+  state.user = user;
+  try {
+    await loadProfile();
+  } catch (error) {
+    showAuthValidationError(error);
+    return;
+  }
+  if (!hasAdminAccess()) {
+    showDenied();
+    return;
+  }
+  await showAdmin();
 };
 
 const statusBadge = (status) => {
@@ -717,7 +787,8 @@ document.addEventListener("submit", async (event) => {
   try {
     if (event.target.id === "ia-login-form") {
       const form = new FormData(event.target);
-      await signInWithEmailAndPassword(state.auth, String(form.get("email")), String(form.get("password")));
+      const credential = await signInWithEmailAndPassword(state.auth, String(form.get("email")), String(form.get("password")));
+      await handleAuthenticatedUser(credential.user);
       return;
     }
     if (event.target.id === "ia-user-filters") {
@@ -731,7 +802,7 @@ document.addEventListener("submit", async (event) => {
       closeUserFilters();
     }
   } catch (error) {
-    setAlert(error.message, true);
+    setAlert(firebaseErrorMessage(error), true);
   }
 });
 
@@ -752,13 +823,7 @@ const boot = async () => {
           showLogin();
           return;
         }
-        state.user = user;
-        await loadProfile();
-        if (!hasAdminAccess()) {
-          showDenied();
-          return;
-        }
-        await showAdmin();
+        await handleAuthenticatedUser(user);
       } catch (error) {
         setAlert(error.message, true);
         showLogin();
@@ -767,6 +832,13 @@ const boot = async () => {
   } catch (error) {
     $("#ia-login-panel").innerHTML = `<section class="ia-card"><h2>No pudimos iniciar el administrador.</h2><p>${escapeHtml(error.message)}</p></section>`;
   }
+};
+
+const firebaseErrorMessage = (error) => {
+  if (error?.code === "auth/invalid-credential") {
+    return "Firebase rechazo las credenciales: auth/invalid-credential.";
+  }
+  return error?.message || "No pudimos iniciar sesion.";
 };
 
 void boot();
