@@ -31,6 +31,7 @@ const state = {
   profile: null,
   config: null,
   view: "dashboard",
+  userFilters: {},
   catalogs: { applications: [], roles: [] },
   users: []
 };
@@ -155,6 +156,7 @@ const toggleSidebar = () => {
   if (window.matchMedia("(max-width: 760px)").matches) {
     $("#ia-app-shell").classList.toggle("mobile-open", true);
     $("#ia-mobile-backdrop").hidden = false;
+    syncBodyScrollLock();
     return;
   }
   const next = !$("#ia-app-shell").classList.contains("is-collapsed");
@@ -164,7 +166,27 @@ const toggleSidebar = () => {
 
 const closeMobileSidebar = () => {
   $("#ia-app-shell").classList.remove("mobile-open");
-  $("#ia-mobile-backdrop").hidden = true;
+  $("#ia-mobile-backdrop").hidden = !document.body.classList.contains("ia-filters-open");
+  syncBodyScrollLock();
+};
+
+const openUserFilters = () => {
+  document.body.classList.add("ia-filters-open");
+  $("#ia-mobile-backdrop").hidden = false;
+  syncBodyScrollLock();
+};
+
+const closeUserFilters = () => {
+  document.body.classList.remove("ia-filters-open");
+  $("#ia-mobile-backdrop").hidden = !$("#ia-app-shell").classList.contains("mobile-open");
+  syncBodyScrollLock();
+};
+
+const syncBodyScrollLock = () => {
+  const locked = $("#ia-app-shell")?.classList.contains("mobile-open")
+    || document.body.classList.contains("ia-filters-open")
+    || $("#ia-drawer")?.hidden === false;
+  document.body.classList.toggle("ia-scroll-locked", Boolean(locked));
 };
 
 const renderHeader = () => {
@@ -420,6 +442,7 @@ const loadCatalogs = async () => {
 };
 
 const renderUsers = async (filters = {}) => {
+  state.userFilters = filters;
   $("#ia-view-users").innerHTML = skeleton("Cargando usuarios...");
   await loadCatalogs();
   const params = new URLSearchParams();
@@ -436,11 +459,16 @@ const renderUsers = async (filters = {}) => {
         <p>Gestiona los usuarios del sistema</p>
       </div>
       <div class="ia-toolbar-actions">
+        <button class="ia-btn ia-mobile-filter-trigger" type="button" data-action="open-user-filters">${icon("filter_list")} Filtros</button>
         <button class="ia-btn" type="button" data-action="export-users">${icon("download")} Exportar</button>
         <button class="ia-btn ia-btn--primary" type="button" data-view="invitations">${icon("person_add")} Invitar usuario</button>
       </div>
     </div>
     <form class="ia-filters" id="ia-user-filters">
+      <div class="ia-filter-panel-head">
+        <strong>Filtros</strong>
+        <button class="ia-icon-btn" type="button" data-action="close-user-filters" aria-label="Cerrar filtros">${icon("close")}</button>
+      </div>
       <input class="ia-search" name="q" value="${escapeHtml(filters.q || "")}" placeholder="Buscar por nombre, email o cargo..." aria-label="Buscar usuarios">
       <select name="estado" aria-label="Estado">
         ${option("", "Estado: Todos", filters.estado)}
@@ -454,7 +482,10 @@ const renderUsers = async (filters = {}) => {
         ${option("", "Rol: Todos", filters.rol)}
         ${state.catalogs.roles.map((role) => option(role.codigo, `${role.aplicacion_codigo} / ${role.nombre || role.codigo}`, filters.rol)).join("")}
       </select>
-      <button class="ia-btn" type="submit">${icon("filter_list")} Filtros</button>
+      <div class="ia-filter-actions">
+        <button class="ia-btn" type="button" data-action="close-user-filters">Cancelar</button>
+        <button class="ia-btn ia-btn--primary" type="submit">${icon("filter_list")} Aplicar</button>
+      </div>
     </form>
     ${usersTable(state.users)}
   `;
@@ -485,20 +516,29 @@ const usersTable = (users) => `
 
 const userRow = (user) => {
   const name = fullName(user);
+  const role = primaryRole(user.roles);
   return `
     <tr>
       <td data-label="Usuario">
         <div class="ia-user-cell">
           <span class="ia-user-avatar">${escapeHtml(initials(name))}</span>
           <div>
-            <strong>${escapeHtml(name)}</strong>
+            <div class="ia-user-mobile-head">
+              <strong>${escapeHtml(name)}</strong>
+              ${statusBadge(user.estado)}
+            </div>
             <small>${escapeHtml(user.email)}</small>
+            <div class="ia-user-mobile-meta">
+              <span>${appBadges(user.aplicaciones)}</span>
+              <span>${escapeHtml(role)}</span>
+              <span>${escapeHtml(user.ultimo_acceso || "Sin registro")}</span>
+            </div>
           </div>
         </div>
       </td>
       <td data-label="Estado">${statusBadge(user.estado)}</td>
       <td data-label="Aplicaciones">${appBadges(user.aplicaciones)}</td>
-      <td data-label="Rol principal">${escapeHtml(primaryRole(user.roles))}</td>
+      <td data-label="Rol principal">${escapeHtml(role)}</td>
       <td data-label="Ultimo acceso"><span class="ia-muted">${escapeHtml(user.ultimo_acceso || "Sin registro")}</span></td>
       <td data-label="Acciones">
         <button class="ia-icon-btn" type="button" data-action="open-user" data-id="${escapeHtml(user.id)}" aria-label="Abrir usuario">
@@ -517,7 +557,15 @@ const appBadges = (apps) => {
   `).join("")}</div>`;
 };
 
-const primaryRole = (roles) => String(roles || "Sin rol").split(",")[0].trim() || "Sin rol";
+const roleLabel = (code) => {
+  const raw = String(code || "").trim();
+  if (!raw) return "Sin rol";
+  const found = state.catalogs.roles.find((role) => role.codigo === raw);
+  if (found?.nombre) return found.nombre;
+  return raw.toLowerCase().replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
+const primaryRole = (roles) => roleLabel(String(roles || "").split(",")[0]);
 
 const renderPlaceholder = (item) => {
   $("#ia-view-placeholder").innerHTML = `
@@ -606,6 +654,7 @@ const openUser = async (id) => {
     </section>
   `;
   $("#ia-drawer").hidden = false;
+  syncBodyScrollLock();
 };
 
 const permissionMatrix = (modules) => `
@@ -631,6 +680,7 @@ const permDot = (value) => `<span class="ia-perm-dot ${value ? "is-allowed" : "i
 
 const closeDrawer = () => {
   $("#ia-drawer").hidden = true;
+  syncBodyScrollLock();
 };
 
 document.addEventListener("click", async (event) => {
@@ -641,6 +691,8 @@ document.addEventListener("click", async (event) => {
     if (action === "toggle-sidebar") toggleSidebar();
     if (action === "signout") await signOut(state.auth);
     if (action === "retry-view") await renderView();
+    if (action === "open-user-filters") openUserFilters();
+    if (action === "close-user-filters") closeUserFilters();
     if (action === "open-user") await openUser(actionTarget.dataset.id).catch((error) => setAlert(error.message, true));
     if (action === "export-users") setAlert("La exportacion se conectara en la siguiente iteracion visual.");
     return;
@@ -648,6 +700,7 @@ document.addEventListener("click", async (event) => {
   if (viewTarget) {
     state.view = viewTarget.dataset.view;
     closeMobileSidebar();
+    closeUserFilters();
     if (viewTarget.dataset.status) {
       await renderUsers({ estado: viewTarget.dataset.status });
       state.view = "users";
@@ -675,6 +728,7 @@ document.addEventListener("submit", async (event) => {
         aplicacion: String(form.get("aplicacion") || ""),
         rol: String(form.get("rol") || "")
       });
+      closeUserFilters();
     }
   } catch (error) {
     setAlert(error.message, true);
@@ -682,7 +736,10 @@ document.addEventListener("submit", async (event) => {
 });
 
 $("#ia-drawer-close").addEventListener("click", closeDrawer);
-$("#ia-mobile-backdrop").addEventListener("click", closeMobileSidebar);
+$("#ia-mobile-backdrop").addEventListener("click", () => {
+  closeMobileSidebar();
+  closeUserFilters();
+});
 
 const boot = async () => {
   try {

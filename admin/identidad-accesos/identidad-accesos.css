@@ -31,6 +31,10 @@ body.ia-page {
     font-family: "DM Sans", Arial, sans-serif;
 }
 
+body.ia-scroll-locked {
+    overflow: hidden;
+}
+
 .ia-page a { color: inherit; }
 
 .ia-icon {
@@ -563,6 +567,15 @@ body.ia-page {
     flex-wrap: wrap;
 }
 
+.ia-mobile-filter-trigger,
+.ia-filter-panel-head {
+    display: none;
+}
+
+.ia-filter-actions {
+    display: contents;
+}
+
 .ia-filters {
     width: 100%;
     margin-bottom: 16px;
@@ -616,6 +629,15 @@ body.ia-page {
 .ia-user-cell small {
     color: var(--ia-muted);
     margin-top: 2px;
+}
+
+.ia-user-mobile-head {
+    display: block;
+}
+
+.ia-user-mobile-head .ia-badge,
+.ia-user-mobile-meta {
+    display: none;
 }
 
 .ia-user-avatar,
@@ -884,11 +906,13 @@ body.ia-page {
         z-index: 50;
         width: min(286px, 84vw);
         transform: translateX(-105%);
+        visibility: hidden;
         transition: transform .22s ease;
     }
 
     .ia-app-shell.mobile-open .ia-sidebar {
         transform: translateX(0);
+        visibility: visible;
     }
 
     .ia-top-header {
@@ -927,6 +951,63 @@ body.ia-page {
         flex-direction: column;
     }
 
+    .ia-toolbar {
+        gap: 14px;
+    }
+
+    .ia-toolbar-actions {
+        display: grid;
+        grid-template-columns: 1fr 1.25fr;
+    }
+
+    .ia-toolbar-actions .ia-btn {
+        min-width: 0;
+        padding-inline: 12px;
+    }
+
+    .ia-mobile-filter-trigger {
+        display: inline-flex;
+        grid-column: 1 / -1;
+    }
+
+    .ia-filters {
+        position: fixed;
+        inset: auto 0 0;
+        z-index: 52;
+        display: grid;
+        gap: 10px;
+        max-height: 82vh;
+        margin: 0;
+        padding: 16px 14px calc(18px + env(safe-area-inset-bottom));
+        border-radius: 18px 18px 0 0;
+        box-shadow: 0 -22px 48px rgba(16, 24, 40, .18);
+        overflow: auto;
+        transform: translateY(105%);
+        transition: transform .22s ease;
+    }
+
+    body.ia-filters-open .ia-filters {
+        transform: translateY(0);
+    }
+
+    .ia-filter-panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+
+    .ia-filter-panel-head strong {
+        font-size: 18px;
+    }
+
+    .ia-filter-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 4px;
+    }
+
     .ia-table thead {
         display: none;
     }
@@ -940,23 +1021,114 @@ body.ia-page {
     }
 
     .ia-table tr {
-        padding: 12px;
+        position: relative;
+        padding: 14px 18px;
         border-bottom: 1px solid var(--ia-border);
+    }
+
+    .ia-table tr:last-child {
+        border-bottom: 0;
     }
 
     .ia-table td {
         border: 0;
-        padding: 8px 0;
+        padding: 0;
+    }
+
+    .ia-table td[data-label="Estado"],
+    .ia-table td[data-label="Aplicaciones"],
+    .ia-table td[data-label="Rol principal"],
+    .ia-table td[data-label="Ultimo acceso"] {
+        display: none;
     }
 
     .ia-table td::before {
-        content: attr(data-label);
-        display: block;
-        margin-bottom: 5px;
-        color: var(--ia-muted);
+        display: none;
+    }
+
+    .ia-user-cell {
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .ia-user-cell > div {
+        min-width: 0;
+        flex: 1;
+        padding-right: 42px;
+    }
+
+    .ia-user-avatar {
+        width: 34px;
+        height: 34px;
+        font-size: 13px;
+    }
+
+    .ia-user-mobile-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .ia-user-mobile-head .ia-badge {
+        display: inline-flex;
+        min-height: 22px;
+        padding: 3px 8px;
         font-size: 11px;
-        font-weight: 900;
-        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .ia-user-cell strong {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .ia-user-cell small {
+        overflow-wrap: anywhere;
+    }
+
+    .ia-user-mobile-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 9px;
+        color: var(--ia-muted);
+        font-size: 12px;
+    }
+
+    .ia-user-mobile-meta > span {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+    }
+
+    .ia-user-mobile-meta > span:not(:first-child)::before {
+        content: "";
+        width: 4px;
+        height: 4px;
+        margin-right: 8px;
+        border-radius: 999px;
+        background: #b8c6d6;
+    }
+
+    .ia-table td[data-label="Acciones"] {
+        position: absolute;
+        right: 18px;
+        bottom: 14px;
+        width: auto;
+    }
+
+    .ia-table td[data-label="Acciones"]::before {
+        display: none;
+    }
+
+    .ia-table td[data-label="Acciones"] .ia-icon-btn {
+        width: 36px;
+        height: 36px;
+        min-height: 36px;
     }
 
     .ia-donut-wrap {
