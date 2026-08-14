@@ -55,13 +55,19 @@ try {
 
 } catch (PDOException $e) {
 
-    error_log(
-        date('Y-m-d H:i:s') .
-        ' | ERROR DB | ' .
-        $e->getMessage() . PHP_EOL,
-        3,
-        __DIR__ . '/../logs/errores.log'
-    );
+    $logDir = __DIR__ . '/../logs';
+    if (is_dir($logDir) || @mkdir($logDir, 0775, true)) {
+        $logFile = $logDir . '/errores.log';
+        if (!file_exists($logFile) || is_writable($logFile)) {
+            @error_log(
+                date('Y-m-d H:i:s') .
+                ' | ERROR DB | ' .
+                $e->getMessage() . PHP_EOL,
+                3,
+                $logFile
+            );
+        }
+    }
 
     die('Error de conexión.');
 }

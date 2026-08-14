@@ -19,6 +19,11 @@ final class CorporateAuth
     public function requireAuthenticatedUser(?string $authorizationHeader): array
     {
         $identity = $this->verifier->verifyBearer($authorizationHeader);
+        return $this->requireAuthenticatedIdentity($identity);
+    }
+
+    public function requireAuthenticatedIdentity(array $identity): array
+    {
         $user = $this->resolveAndLinkUser($identity);
 
         if ($user === null) {

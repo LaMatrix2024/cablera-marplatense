@@ -17,21 +17,39 @@ html.lcm-auth-booting body.lcm-page--with-nav > footer {
 }
 
 body.lcm-page--with-nav {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "sidebar header"
+        "sidebar content"
+        "sidebar footer";
     padding-top: 0;
-    padding-left: 248px;
+    padding-left: 0;
     background: var(--lcm-shell-bg);
     color: var(--lcm-shell-text);
-    transition: padding-left .22s ease;
+    overflow-x: hidden;
+    transition: grid-template-columns .22s ease;
 }
 
-body.lcm-page--with-nav.lcm-sidebar-collapsed { padding-left: 76px; }
+body.lcm-page--with-nav.lcm-sidebar-collapsed {
+    grid-template-columns: 76px minmax(0, 1fr);
+    padding-left: 0;
+}
 body.lcm-scroll-locked { overflow: hidden; }
 
 .lcm-global-sidebar {
-    position: fixed;
-    inset: 0 auto 0 0;
+    grid-area: sidebar;
+    position: sticky;
+    top: 0;
+    align-self: start;
     z-index: 70;
-    width: 248px;
+    width: 100%;
+    min-width: 0;
+    height: 100vh;
+    max-height: 100vh;
+    box-sizing: border-box;
     display: grid;
     grid-template-rows: auto 1fr auto;
     gap: 18px;
@@ -42,7 +60,7 @@ body.lcm-scroll-locked { overflow: hidden; }
     transition: width .22s ease, transform .22s ease;
 }
 
-body.lcm-sidebar-collapsed .lcm-global-sidebar { width: 76px; }
+body.lcm-sidebar-collapsed .lcm-global-sidebar { width: 100%; }
 
 .lcm-global-brand,
 .lcm-global-profile {
@@ -167,6 +185,10 @@ body.lcm-sidebar-collapsed .lcm-global-nav-section {
 }
 
 .lcm-global-header {
+    grid-area: header;
+    position: sticky;
+    top: 0;
+    z-index: 60;
     min-height: 76px;
     display: flex;
     align-items: center;
@@ -326,9 +348,53 @@ body.lcm-sidebar-collapsed .lcm-global-nav-section {
     color: var(--lcm-shell-red);
 }
 
+.lcm-login-status {
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--lcm-shell-border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: #fff;
+    color: var(--lcm-shell-muted);
+    font-weight: 800;
+}
+
+.lcm-login-status[hidden] {
+    display: none;
+}
+
+.lcm-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #c9d6e4;
+    border-top-color: var(--lcm-shell-blue);
+    border-radius: 50%;
+    animation: lcm-spin .8s linear infinite;
+}
+
+@keyframes lcm-spin {
+    to { transform: rotate(360deg); }
+}
+
 .lcm-shell {
-    width: min(1180px, calc(100% - 32px));
-    padding-top: 28px;
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 72px;
+    box-sizing: border-box;
+}
+
+body.lcm-page--with-nav > main {
+    grid-area: content;
+    min-width: 0;
+    width: 100%;
+}
+
+body.lcm-page--with-nav > .lcm-footer {
+    grid-area: footer;
+    min-width: 0;
 }
 
 body.lcm-page--with-nav .lcm-page-head,
@@ -339,6 +405,29 @@ body.lcm-page--with-nav .lcm-kpi {
     color: var(--lcm-shell-text);
     border-color: var(--lcm-shell-border);
     box-shadow: 0 1px 2px rgba(16,24,40,.04);
+}
+
+body.lcm-page--with-nav .lcm-grid,
+body.lcm-page--with-nav .lcm-module-grid,
+body.lcm-page--with-nav .lcm-kpi-grid {
+    min-width: 0;
+}
+
+body.lcm-page--with-nav .lcm-module-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    align-items: stretch;
+}
+
+body.lcm-page--with-nav .lcm-card {
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+body.lcm-page--with-nav .lcm-card strong,
+body.lcm-page--with-nav .lcm-card small {
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 body.lcm-page--with-nav .lcm-muted,
@@ -357,7 +446,9 @@ body.lcm-page--with-nav .lcm-chip {
 
 body.lcm-page--with-nav .lcm-footer {
     position: static;
-    margin-top: 24px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 56px;
     background: transparent;
     border: 0;
     box-shadow: none;
@@ -389,11 +480,17 @@ body.lcm-page--with-nav .lcm-footer {
 
 @media (max-width: 900px) {
     body.lcm-page--with-nav,
-    body.lcm-page--with-nav.lcm-sidebar-collapsed { padding-left: 0; }
+    body.lcm-page--with-nav.lcm-sidebar-collapsed {
+        display: block;
+        padding-left: 0;
+    }
 
     .lcm-global-sidebar,
     body.lcm-sidebar-collapsed .lcm-global-sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
         width: min(286px, 84vw);
+        height: 100vh;
         transform: translateX(-105%);
         visibility: hidden;
     }
@@ -404,6 +501,9 @@ body.lcm-page--with-nav .lcm-footer {
     }
 
     .lcm-global-header {
+        position: sticky;
+        top: 0;
+        z-index: 60;
         min-height: 68px;
         padding: 12px 16px;
     }

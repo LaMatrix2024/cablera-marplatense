@@ -72,6 +72,17 @@ function lcm_existing_env_path(): ?string
 
 function lcm_config_value(string $key, ?string $default = null): ?string
 {
+    $ignoreLegacy = in_array(strtolower((string)getenv('LCM_IGNORE_LEGACY_ENV')), ['1', 'true', 'yes'], true);
+    if ($ignoreLegacy && preg_match('/^(DB|LAB_DB)_/', $key)) {
+        $path = lcm_existing_env_path();
+        if ($path === null) {
+            return $default;
+        }
+
+        $values = lcm_read_dotenv_file($path);
+        return lcm_env_value($values, [$key], $default);
+    }
+
     $env = getenv($key);
     if (is_string($env) && trim($env) !== '') {
         return trim($env);
@@ -114,8 +125,8 @@ function lcm_load_database_config(): void
     $values = lcm_read_dotenv_file($envPath);
     lcm_load_dotenv_to_process();
 
-    lcm_define_if_missing('DB_HOST', lcm_config_value('DB_HOST', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_HOST', 'DB_LOCAL_HOST', 'DB_HOST'])));
-    lcm_define_if_missing('DB_PORT', lcm_config_value('DB_PORT', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_PORT', 'DB_LOCAL_PORT', 'DB_PORT'], '3306')));
+    lcm_define_if_missing('DB_HOST', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_HOST', 'DB_HOST', 'DB_LOCAL_HOST']));
+    lcm_define_if_missing('DB_PORT', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_PORT', 'DB_PORT', 'DB_LOCAL_PORT'], '3306'));
     lcm_define_if_missing('DB_NAME', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_DATABASE', 'DB_LOCAL_DATABASE', 'DB_DATABASE']));
     lcm_define_if_missing('DB_USER', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_USER', 'DB_LOCAL_USER', 'DB_USERNAME']));
     lcm_define_if_missing('DB_PASS', lcm_env_value($values, ['DB_HOSTINGER_PLANTEL_PASSWORD', 'DB_LOCAL_PASSWORD', 'DB_PASSWORD'], ''));

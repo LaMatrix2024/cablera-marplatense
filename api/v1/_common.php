@@ -10,11 +10,45 @@ header('Cache-Control: no-store');
 api_apply_cors();
 api_require_https_in_production();
 
-require_once __DIR__ . '/../../config/conexion.php';
 require_once __DIR__ . '/../../shared/auth/CorporateAuth.php';
 require_once __DIR__ . '/../../shared/auth/CorporateInvitationService.php';
 require_once __DIR__ . '/../../shared/auth/IdentityAdminService.php';
 require_once __DIR__ . '/../../shared/auth/HttpError.php';
+
+function api_database(): PDO
+{
+    static $pdo = null;
+    if ($pdo instanceof PDO) {
+        return $pdo;
+    }
+
+    require_once __DIR__ . '/../../config/env_loader.php';
+    lcm_load_database_config();
+    $pdo = api_crear_conexion_pdo(
+        DB_HOST,
+        DB_PORT,
+        DB_NAME,
+        DB_USER,
+        DB_PASS
+    );
+    return $pdo;
+}
+
+function api_crear_conexion_pdo(string $host, string $port, string $db, string $user, string $pass): PDO
+{
+    $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $host, $port, $db);
+
+    return new PDO(
+        $dsn,
+        $user,
+        $pass,
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ]
+    );
+}
 
 function api_json(array $payload, int $status = 200): never
 {
@@ -101,12 +135,28 @@ function api_handle(callable $callback): never
             'details' => $error->details(),
         ], $error->status());
     } catch (Throwable $exception) {
+        $logDir = __DIR__ . '/../../logs';
+        if (is_dir($logDir) || @mkdir($logDir, 0775, true)) {
+            @error_log(
+                date('Y-m-d H:i:s') . ' | API v1 | ' . $exception::class . ' | ' . $exception->getMessage() . PHP_EOL,
+                3,
+                $logDir . '/api-v1-error.log'
+            );
+        }
         error_log('API v1 | ' . $exception->getMessage());
-        api_json([
+        $payload = [
             'ok' => false,
             'error' => 'internal_error',
             'message' => 'Error interno.',
-        ], 500);
+        ];
+        $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+        if (str_starts_with($host, '127.0.0.1') || str_starts_with($host, 'localhost')) {
+            $payload['details'] = [
+                'type' => $exception::class,
+                'message' => $exception->getMessage(),
+            ];
+        }
+        api_json($payload, 500);
     }
 }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../_common.php';
 
-api_handle(function () use ($pdo_lacablera): void {
+api_handle(function (): void {
     $resource = (string)($_GET['resource'] ?? '');
     $action = (string)($_GET['action'] ?? '');
     $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
@@ -12,7 +12,7 @@ api_handle(function () use ($pdo_lacablera): void {
     $input = in_array($method, ['POST', 'PUT', 'PATCH'], true) ? api_input() : [];
 
     $readOnly = $method === 'GET';
-    $service = api_admin_service($pdo_lacablera, $readOnly ? 'puede_ver' : 'puede_editar');
+    $service = api_admin_service(api_database(), $readOnly ? 'puede_ver' : 'puede_editar');
 
     if ($resource === 'dashboard' && $method === 'GET') {
         api_json(['ok' => true] + $service->dashboard());

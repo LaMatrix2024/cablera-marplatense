@@ -22,6 +22,7 @@ require_once __DIR__ . '/../shared/layout.php';
     </div>
 
     <div class="lcm-login-alert" id="lcm-login-alert" hidden></div>
+    <div class="lcm-login-status" id="lcm-login-status" hidden></div>
 
     <form class="lcm-login-form" id="lcm-login-form">
         <label>Correo

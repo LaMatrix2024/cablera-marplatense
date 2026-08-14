@@ -1,16 +1,18 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import {
-  getAuth,
+  CABLERA_APP,
+  fetchAuthMe,
+  fetchWithTimeout,
+  firebaseErrorMessage,
+  getSharedAuth,
+  logAuthMeDiagnostic,
   onAuthStateChanged,
-  setPersistence,
-  browserLocalPersistence,
   signInWithEmailAndPassword,
   signOut
-} from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+} from "/assets/js/lcm-auth-core.js";
 
-const CABLERA_APP = "CABLERAMARPLATENSE";
 const ADMIN_MODULE = "IDENTIDAD_ACCESOS";
 const SIDEBAR_KEY = "lcm.identity.sidebar.collapsed";
+const loginUrl = () => `/login/?returnTo=${encodeURIComponent(window.location.pathname + window.location.search + window.location.hash)}`;
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard", section: "" },
@@ -103,14 +105,14 @@ const getToken = async () => {
 
 const api = async (path, options = {}) => {
   const token = await getToken();
-  const response = await fetch(`${state.config.apiBaseUrl}${path}`, {
+  const response = await fetchWithTimeout(`${state.config.apiBaseUrl}${path}`, {
     ...options,
     headers: {
       "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
       ...(options.headers ?? {})
     }
-  });
+  }, 15000);
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body.ok === false) {
     const error = new Error(body.message || body.error || `HTTP ${response.status}`);
@@ -122,56 +124,25 @@ const api = async (path, options = {}) => {
 };
 
 const loadConfig = async () => {
-  const response = await fetch("/api/v1/admin/config");
-  const config = await response.json().catch(() => ({}));
-  if (!response.ok || !config.ok || !config.firebase?.apiKey) {
-    throw new Error("No pudimos cargar la configuracion del administrador.");
-  }
-  state.config = config;
-  state.auth = getAuth(initializeApp(config.firebase));
-  await setPersistence(state.auth, browserLocalPersistence);
+  const shared = await getSharedAuth("/api/v1/admin/config");
+  state.config = shared.config;
+  state.auth = shared.auth;
 };
 
 const loadProfile = async () => {
-  const token = await getToken();
-  const response = await fetch(`${state.config.apiBaseUrl}/auth/me`, {
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json"
-    }
+  const result = await fetchAuthMe({
+    auth: state.auth,
+    config: state.config,
+    user: state.user
   });
-  const body = await response.json().catch(() => null);
-  logAuthMeDiagnostic(response.status, body);
-  if (!response.ok || body?.ok !== true) {
-    const error = new Error(body?.message || body?.error || (body === null ? "Respuesta invalida de /auth/me." : `HTTP ${response.status}`));
-    error.status = response.status;
-    error.code = body?.error || null;
-    throw error;
-  }
-  state.profile = body;
+  logAuthMeDiagnostic({
+    firebaseUser: state.user,
+    status: result.status,
+    body: result.body,
+    requiredModule: ADMIN_MODULE
+  });
+  state.profile = result.body;
   return state.profile;
-};
-
-const logAuthMeDiagnostic = (status, body) => {
-  const modules = body?.modules ?? [];
-  const applications = body?.applications ?? [];
-  const identityModule = modules.find((module) =>
-    module.aplicacion === CABLERA_APP && module.codigo === ADMIN_MODULE
-  );
-  const uid = state.user?.uid || "";
-  console.info("LCM auth/me diagnostico", {
-    email_autenticado: state.user?.email || null,
-    uid_parcial: uid ? `${uid.slice(0, 8)}...${uid.slice(-4)}` : null,
-    status_http: status,
-    error: body?.error || null,
-    message: body?.message || null,
-    user_id: body?.user?.id ?? null,
-    user_estado: body?.user?.estado ?? null,
-    user_es_superadmin: body?.user?.es_superadmin ?? null,
-    tiene_cablera: applications.some((app) => app.codigo === CABLERA_APP),
-    tiene_identidad_accesos: Boolean(identityModule),
-    identidad_puede_ver: identityModule?.permissions?.puede_ver ?? null
-  });
 };
 
 const hasAdminAccess = () => {
@@ -297,7 +268,8 @@ const showLogin = () => {
   state.user = null;
   state.idToken = "";
   state.profile = null;
-  $("#ia-login-panel").hidden = false;
+  window.location.href = loginUrl();
+  $("#ia-login-panel").hidden = true;
   $("#ia-denied-panel").hidden = true;
   $("#ia-admin-panel").hidden = true;
   renderHeader();
@@ -311,17 +283,37 @@ const showLogin = () => {
   `;
 };
 
+const clearSessionState = () => {
+  state.user = null;
+  state.idToken = "";
+  state.profile = null;
+  state.users = [];
+  state.catalogs = { applications: [], roles: [] };
+  setAlert("");
+  $("#ia-sidebar").innerHTML = "";
+  $("#ia-top-header").innerHTML = "";
+  $("#ia-admin-panel").hidden = true;
+  $("#ia-denied-panel").hidden = true;
+  $("#ia-login-panel").hidden = true;
+};
+
 const showDenied = (
   title = "Acceso denegado",
   message = "No tenes permiso para ver IDENTIDAD_ACCESOS. La validacion fue realizada por el backend corporativo."
 ) => {
+  document.documentElement.classList.remove("lcm-auth-booting");
   $("#ia-login-panel").hidden = true;
   $("#ia-admin-panel").hidden = true;
   $("#ia-denied-panel").hidden = false;
   $("#ia-denied-panel h2").textContent = title;
   $("#ia-denied-panel p").textContent = message;
-  renderHeader();
-  renderSidebar();
+  if (state.profile?.user) {
+    renderHeader();
+    renderSidebar();
+  } else {
+    $("#ia-sidebar").innerHTML = "";
+    $("#ia-top-header").innerHTML = "";
+  }
 };
 
 const showAuthValidationError = (error) => {
@@ -335,6 +327,7 @@ const showAuthValidationError = (error) => {
 };
 
 const showAdmin = async () => {
+  document.documentElement.classList.remove("lcm-auth-booting");
   $("#ia-login-panel").hidden = true;
   $("#ia-denied-panel").hidden = true;
   $("#ia-admin-panel").hidden = false;
@@ -759,7 +752,11 @@ document.addEventListener("click", async (event) => {
   if (actionTarget) {
     const action = actionTarget.dataset.action;
     if (action === "toggle-sidebar") toggleSidebar();
-    if (action === "signout") await signOut(state.auth);
+    if (action === "signout") {
+      clearSessionState();
+      await signOut(state.auth);
+      window.location.href = loginUrl();
+    }
     if (action === "retry-view") await renderView();
     if (action === "open-user-filters") openUserFilters();
     if (action === "close-user-filters") closeUserFilters();
@@ -815,30 +812,23 @@ $("#ia-mobile-backdrop").addEventListener("click", () => {
 const boot = async () => {
   try {
     setShellState();
-    renderHeader();
     await loadConfig();
     onAuthStateChanged(state.auth, async (user) => {
       try {
         if (!user) {
-          showLogin();
+          window.location.href = loginUrl();
           return;
         }
         await handleAuthenticatedUser(user);
       } catch (error) {
         setAlert(error.message, true);
-        showLogin();
+        showAuthValidationError(error);
       }
     });
   } catch (error) {
+    document.documentElement.classList.remove("lcm-auth-booting");
     $("#ia-login-panel").innerHTML = `<section class="ia-card"><h2>No pudimos iniciar el administrador.</h2><p>${escapeHtml(error.message)}</p></section>`;
   }
-};
-
-const firebaseErrorMessage = (error) => {
-  if (error?.code === "auth/invalid-credential") {
-    return "Firebase rechazo las credenciales: auth/invalid-credential.";
-  }
-  return error?.message || "No pudimos iniciar sesion.";
 };
 
 void boot();

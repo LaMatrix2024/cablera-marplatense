@@ -95,6 +95,7 @@ final class FirebaseTokenVerifier
             return $cache;
         }
 
+        $staleCache = $this->cachedCertificates(true);
         $headers = [];
         $context = stream_context_create([
             'http' => [
@@ -108,6 +109,10 @@ final class FirebaseTokenVerifier
         }
         $decoded = is_string($raw) ? json_decode($raw, true) : null;
         if (!is_array($decoded)) {
+            if ($staleCache !== null) {
+                return $staleCache;
+            }
+
             throw new HttpError(401, 'No se pudieron obtener certificados Firebase.', 'firebase_certs_unavailable');
         }
 
@@ -116,7 +121,7 @@ final class FirebaseTokenVerifier
         return $decoded;
     }
 
-    private function cachedCertificates(): ?array
+    private function cachedCertificates(bool $allowExpired = false): ?array
     {
         $path = $this->cachePath();
         if (!is_file($path)) {
@@ -124,7 +129,11 @@ final class FirebaseTokenVerifier
         }
 
         $payload = json_decode((string)file_get_contents($path), true);
-        if (!is_array($payload) || (int)($payload['expires_at'] ?? 0) <= time()) {
+        if (!is_array($payload)) {
+            return null;
+        }
+
+        if (!$allowExpired && (int)($payload['expires_at'] ?? 0) <= time()) {
             return null;
         }
 

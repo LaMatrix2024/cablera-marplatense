@@ -1,15 +1,16 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import {
-  browserLocalPersistence,
-  getAuth,
+  AUTH_STATE,
+  CABLERA_APP,
+  fetchAuthMe as fetchCorporateProfile,
+  firebaseErrorMessage,
+  getSharedAuth,
+  logAuthMeDiagnostic,
   onAuthStateChanged,
   sendPasswordResetEmail,
-  setPersistence,
   signInWithEmailAndPassword,
   signOut
-} from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+} from "./lcm-auth-core.js";
 
-const CABLERA_APP = "CABLERAMARPLATENSE";
 const SIDEBAR_KEY = "lcm.global.sidebar.collapsed";
 
 const ICONS = {
@@ -29,7 +30,7 @@ const ICONS = {
 
 const MODULE_REGISTRY = {
   GERENCIA: { label: "Gerencia", route: "/gerencia/", icon: "chart", section: "GESTION" },
-  TELEFONIA: { label: "Telefonia", route: "/telefonia/menu.php", icon: "phone", section: "GESTION" },
+  TELEFONIA: { label: "Telefonia", route: "/telefonia/", icon: "phone", section: "GESTION" },
   TELEFONIA_PRODUCCION_PLANTA: { label: "Produccion Planta", route: "/telefonia/produccion_planta/", icon: "chart", section: "TELEFONIA" },
   TELEFONIA_PRODUCCION_B2B: { label: "Produccion B2B", route: "/telefonia/produccion_b2b/", icon: "chart", section: "TELEFONIA" },
   TELEFONIA_PRODUCCION_INSTALACIONES: { label: "Produccion Instalaciones", route: "/telefonia/produccion_instalaciones/", icon: "chart", section: "TELEFONIA" },
@@ -64,7 +65,7 @@ const ROUTE_GUARDS = [
   ["/licitaciones/", "LICITACIONES"]
 ];
 
-const state = { app: null, auth: null, config: null, profile: null, user: null };
+const state = { auth: null, config: null, profile: null, user: null, authState: AUTH_STATE.BOOTSTRAPPING };
 const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 const icon = (name) => `<span class="lcm-global-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false">${ICONS[name] || ICONS.dashboard}</svg></span>`;
@@ -91,31 +92,36 @@ const showStatus = (title, message) => {
 };
 const hideStatus = () => { const panel = $("#lcm-global-status"); if (panel) panel.hidden = true; };
 
+const setAuthState = (next) => {
+  state.authState = next;
+  document.body?.setAttribute("data-auth-state", next);
+};
+
+const clearCorporateState = () => {
+  state.user = null;
+  state.profile = null;
+  const sidebar = $("#lcm-global-sidebar");
+  const header = $("#lcm-global-header");
+  if (sidebar) sidebar.innerHTML = "";
+  if (header) header.innerHTML = "";
+};
+
 const loadConfig = async () => {
-  const response = await fetch("/api/v1/auth/config", { headers: { "Accept": "application/json" } });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok || body.ok === false || !body.firebase?.apiKey) throw new Error(body.message || "No pudimos cargar la configuracion de acceso.");
-  state.config = body;
-  state.app = initializeApp(body.firebase, "lcm-global");
-  state.auth = getAuth(state.app);
-  await setPersistence(state.auth, browserLocalPersistence);
+  const shared = await getSharedAuth("/api/v1/auth/config");
+  state.config = shared.config;
+  state.auth = shared.auth;
 };
 
 const fetchAuthMe = async (forceRefresh = false) => {
-  const token = await state.user.getIdToken(forceRefresh);
-  const response = await fetch(`${state.config.apiBaseUrl}/auth/me`, {
-    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" }
+  const result = await fetchCorporateProfile({ auth: state.auth, config: state.config, user: state.user, forceRefresh });
+  logAuthMeDiagnostic({
+    firebaseUser: state.user,
+    status: result.status,
+    body: result.body,
+    requiredModule: requiredModuleForPath(window.location.pathname)
   });
-  const body = await response.json().catch(() => null);
-  if (response.status === 401 && !forceRefresh) return fetchAuthMe(true);
-  if (!response.ok || body?.ok !== true) {
-    const error = new Error(body?.message || (body === null ? "Respuesta invalida de /auth/me." : `HTTP ${response.status}`));
-    error.status = response.status;
-    error.code = body?.error || null;
-    throw error;
-  }
-  state.profile = body;
-  return body;
+  state.profile = result.body;
+  return result.body;
 };
 
 const cableraModules = () => (state.profile?.modules || []).filter((module) =>
@@ -156,6 +162,26 @@ const renderSidebar = () => {
   header.innerHTML = `
     <div class="lcm-global-header-left"><button class="lcm-global-icon-btn" type="button" data-lcm-action="toggle-sidebar" aria-label="Abrir navegacion">${icon("menu")}</button><div class="lcm-global-header-title"><strong>La Cablera Marplatense</strong><span>Plataforma corporativa</span></div></div>
     <div class="lcm-global-header-right"><span class="lcm-global-avatar">${escapeHtml(initials(fullName(user)))}</span></div>`;
+};
+
+const setLoginUi = (next, message = "", isError = false) => {
+  setAuthState(next);
+  const form = $("#lcm-login-form");
+  const links = $(".lcm-login-links");
+  const alert = $("#lcm-login-alert");
+  const status = $("#lcm-login-status");
+  const showForm = next === AUTH_STATE.UNAUTHENTICATED || next === AUTH_STATE.ERROR;
+  if (form) form.hidden = !showForm;
+  if (links) links.hidden = !showForm;
+  if (alert) {
+    alert.hidden = !isError || !message;
+    alert.textContent = isError ? message : "";
+  }
+  if (status) {
+    status.hidden = showForm || !message || isError;
+    status.innerHTML = showForm || !message || isError ? "" : `<span class="lcm-spinner" aria-hidden="true"></span><span>${escapeHtml(message)}</span>`;
+  }
+  document.documentElement.classList.toggle("lcm-auth-booting", next === AUTH_STATE.BOOTSTRAPPING);
 };
 
 const renderHome = () => {
@@ -200,18 +226,13 @@ const initShellEvents = () => {
     const action = event.target.closest("[data-lcm-action]")?.dataset.lcmAction;
     if (action === "toggle-sidebar") toggleSidebar();
     if (action === "signout") {
+      clearCorporateState();
       await signOut(state.auth);
       window.location.href = loginUrl();
     }
     if (event.target.closest(".lcm-global-nav-link")) closeMobileSidebar();
   });
   $("#lcm-global-backdrop")?.addEventListener("click", closeMobileSidebar);
-};
-
-const firebaseErrorMessage = (error) => {
-  if (error?.code === "auth/invalid-credential") return "Firebase rechazo las credenciales: auth/invalid-credential.";
-  if (error?.code === "auth/too-many-requests") return "Demasiados intentos. Proba nuevamente mas tarde.";
-  return error?.message || "No pudimos iniciar sesion.";
 };
 
 const initLoginPage = async () => {
@@ -222,15 +243,23 @@ const initLoginPage = async () => {
     alert.hidden = !message;
     alert.textContent = message || "";
   };
+  setLoginUi(AUTH_STATE.BOOTSTRAPPING, "Cargando sesion...");
   await loadConfig();
   onAuthStateChanged(state.auth, async (user) => {
-    if (!user) return;
+    if (!user) {
+      clearCorporateState();
+      setLoginUi(AUTH_STATE.UNAUTHENTICATED);
+      document.documentElement.classList.remove("lcm-auth-booting");
+      return;
+    }
     state.user = user;
     try {
+      setLoginUi(AUTH_STATE.AUTHENTICATED_LOADING_PROFILE, "Validando acceso...");
       await fetchAuthMe();
+      setLoginUi(AUTH_STATE.AUTHORIZED, "Ingresando...");
       window.location.href = returnTo();
     } catch (error) {
-      setAlert(error.status ? `Sesion autenticada, pero /auth/me fallo con HTTP ${error.status}.` : error.message);
+      setLoginUi(AUTH_STATE.ERROR, error.status ? `Sesion autenticada, pero /auth/me fallo con HTTP ${error.status}.` : error.message, true);
     }
   });
   form?.addEventListener("submit", async (event) => {
@@ -238,12 +267,15 @@ const initLoginPage = async () => {
     setAlert("");
     const data = new FormData(form);
     try {
+      setLoginUi(AUTH_STATE.AUTHENTICATING, "Autenticando...");
       const credential = await signInWithEmailAndPassword(state.auth, String(data.get("email")), String(data.get("password")));
       state.user = credential.user;
+      setLoginUi(AUTH_STATE.AUTHENTICATED_LOADING_PROFILE, "Validando acceso...");
       await fetchAuthMe();
+      setLoginUi(AUTH_STATE.AUTHORIZED, "Ingresando...");
       window.location.href = returnTo();
     } catch (error) {
-      setAlert(firebaseErrorMessage(error));
+      setLoginUi(AUTH_STATE.ERROR, firebaseErrorMessage(error), true);
     }
   });
   $("#lcm-reset-password")?.addEventListener("click", async () => {
@@ -262,32 +294,40 @@ const initLoginPage = async () => {
 };
 
 const initProtectedPage = async () => {
+  setAuthState(AUTH_STATE.BOOTSTRAPPING);
   showStatus("Cargando sesion", "Estamos validando tu acceso corporativo.");
   if (localStorage.getItem(SIDEBAR_KEY) === "1") document.body.classList.add("lcm-sidebar-collapsed");
   initShellEvents();
   await loadConfig();
   onAuthStateChanged(state.auth, async (user) => {
     if (!user) {
+      clearCorporateState();
+      setAuthState(AUTH_STATE.UNAUTHENTICATED);
       window.location.href = loginUrl();
       return;
     }
     state.user = user;
     try {
+      setAuthState(AUTH_STATE.AUTHENTICATED_LOADING_PROFILE);
       showStatus("Validando permisos", "Consultando el perfil corporativo.");
       await fetchAuthMe();
       renderSidebar();
       if (!canViewModule(requiredModuleForPath(window.location.pathname))) {
+        setAuthState(AUTH_STATE.DENIED);
         showDenied();
         return;
       }
       renderHome();
+      setAuthState(AUTH_STATE.AUTHORIZED);
       hideStatus();
       document.documentElement.classList.remove("lcm-auth-booting");
     } catch (error) {
+      setAuthState(AUTH_STATE.ERROR);
       const message = error.message === "Respuesta invalida de /auth/me."
         ? "GET /api/v1/auth/me no devolvio un perfil corporativo valido."
         : (error.status ? `GET /api/v1/auth/me fallo con HTTP ${error.status}.` : "No pudimos conectar con el servicio de autenticacion.");
       showStatus("No pudimos validar tu sesion", message);
+      document.documentElement.classList.remove("lcm-auth-booting");
     }
   });
 };

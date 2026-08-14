@@ -17,7 +17,7 @@ require_once __DIR__ . '/../../shared/layout.php';
         <main class="ia-main">
             <div class="ia-toast" id="ia-alert" hidden></div>
 
-            <section class="ia-login-card" id="ia-login-panel">
+            <section class="ia-login-card" id="ia-login-panel" hidden>
                 <div class="ia-login-copy">
                     <span class="ia-kicker">Acceso administrador</span>
                     <h1>Identidad y Accesos</h1>
