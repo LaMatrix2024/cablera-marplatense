@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La Cablera Marplatense</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/branding/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="assets/branding/favicon-48.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="assets/branding/favicon-96.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/branding/favicon-192.png">
+  <link rel="stylesheet" href="assets/css/lcm-erp.css">
+  <link rel="stylesheet" href="assets/css/lcm-ui.css">
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: var(--lcm-bg);
+    }
+  </style>
+</head>
+<body>
+  <div class="lcm-shell">
+    <header class="lcm-header">
+      <div class="lcm-header-left">
+        <button class="lcm-icon-button" id="lcmMenuButton" type="button" aria-label="Abrir menú">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+        </button>
+        <a class="lcm-brand" id="lcmBrandHome" href="homepage.php" target="lcmFrame" aria-label="Inicio La Cablera Marplatense">
+          <img class="lcm-brand-logo" src="assets/branding/logo-horizontal.png" alt="La Cablera Marplatense">
+        </a>
+        <div class="lcm-page-context">
+          <strong id="lcmPageTitle">Inicio</strong>
+          <span id="lcmPageSubtitle">Panel general</span>
+        </div>
+      </div>
+      <div class="lcm-header-actions">
+        <button class="lcm-icon-button" id="lcmHomeButton" type="button" aria-label="Inicio">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg>
+        </button>
+        <button class="lcm-icon-button" id="lcmUserButton" type="button" aria-label="Usuario">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="8" r="4"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="lcm-content">
+      <iframe class="lcm-frame" id="lcmFrame" name="lcmFrame" src="homepage.php" title="Inicio"></iframe>
+    </main>
+  </div>
+
+  <div class="lcm-menu-backdrop" id="lcmMenuBackdrop"></div>
+  <aside class="lcm-menu" id="lcmMenu" aria-label="Navegación principal" aria-hidden="true">
+    <div class="lcm-menu-head">
+      <img class="lcm-menu-logo" src="assets/branding/logo-horizontal-white.png" alt="La Cablera Marplatense">
+      <button class="lcm-menu-close" id="lcmMenuClose" type="button" aria-label="Cerrar menú">×</button>
+    </div>
+    <nav class="lcm-nav" id="lcmNav" aria-label="Módulos"></nav>
+    <div class="lcm-menu-foot">Accesos sujetos a permisos del usuario.</div>
+  </aside>
+
+  <script src="assets/js/lcm-shell.js"></script>
+</body>
+</html>

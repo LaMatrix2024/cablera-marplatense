@@ -1,0 +1,31 @@
+:root {
+  --lcm-primary-dark: #0B1D3A;
+  --lcm-primary: #1155CC;
+  --lcm-primary-soft: #E8F2FF;
+  --lcm-active: #2D8CFF;
+  --lcm-accent: #00C2A8;
+  --lcm-accent-strong: #21E2A8;
+  --lcm-bg: #F2F5F9;
+  --lcm-surface: #ffffff;
+  --lcm-surface-alt: #F7FAFD;
+  --lcm-border: #E1E6ED;
+  --lcm-text: #162238;
+  --lcm-text-muted: #66738A;
+  --lcm-success: #12805C;
+  --lcm-warning: #B7791F;
+  --lcm-danger: #C93636;
+  --lcm-radius-sm: 6px;
+  --lcm-radius: 8px;
+  --lcm-radius-lg: 12px;
+  --lcm-shadow: 0 8px 22px rgba(11, 29, 58, .07);
+  --lcm-shadow-strong: 0 18px 42px rgba(11, 29, 58, .24);
+  --lcm-font: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--lcm-font);
+}

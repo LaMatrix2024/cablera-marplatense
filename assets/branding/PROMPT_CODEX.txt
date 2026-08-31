@@ -1,0 +1,44 @@
+IMPLEMENTACIÓN FINAL — LA CABLERA MARPLATENSE
+
+Usar exclusivamente los assets de assets/branding/:
+logo-horizontal.png
+logo-horizontal-white.png
+isotipo.png
+app-icon-512.png
+favicon-192.png
+favicon-96.png
+favicon-48.png
+favicon-32.png
+hero-mar-del-plata.webp
+
+Objetivo: aplicar la identidad visual aprobada a index.html, homepage.php y cablera-marplatense/tma_instalaciones/control_tecnicos.php.
+
+REGLA INVIOLABLE:
+No modificar lógica funcional, PHP de negocio, SQL, APIs, endpoints, autenticación, Firebase, permisos, sesiones, rutas, parámetros GET/POST, filtros, cálculos, exportaciones ni fuentes de datos. Es exclusivamente un cambio UI/UX.
+
+NAVEGACIÓN:
+Header blanco compacto, 58–64 px. Menú lateral overlay bajo demanda. No sidebar fijo. No rail colapsado de iconos. Cerrado = desaparece por completo. Abierto = 280–310 px sobre el contenido. Cerrar con botón, clic exterior, Escape o navegación.
+
+HOMEPAGE.PHP:
+Reproducir la composición aprobada: hero horizontal compacto con texto a la izquierda y hero-mar-del-plata.webp a la derecha. Debajo, accesos compactos a módulos reales. No inventar módulos ni datos. Debe sentirse como portada de una plataforma empresarial, no como landing comercial.
+
+CONTROL_TECNICOS.PHP:
+Título/contexto; filtros compactos en una línea cuando sea posible; acciones existentes; KPI reales compactos; tabla como protagonista; paginación. Mantener exactamente datos, filtros, exportación y comportamiento actual.
+
+ESTÉTICA:
+ERP moderno, profesional y denso. Navy #0B1D3A, azul #1155CC, azul brillante #2D8CFF, cyan #00C2A8, fondo #F2F5F9, superficies blancas, borde #E1E6ED, texto #162238, muted #66738A. Tipografía Inter o equivalente ya disponible.
+
+ASSETS:
+logo-horizontal.png: header claro.
+logo-horizontal-white.png: menú overlay oscuro.
+isotipo.png: usos compactos.
+app-icon-512.png y favicons: PWA/favicon.
+hero-mar-del-plata.webp: hero de homepage.php.
+
+Centralizar estilos compartidos, preferentemente en assets/css/lcm-ui.css, y JS puramente visual del shell en assets/js/lcm-shell.js si hace falta.
+
+No borrar recursos antiguos hasta comprobar que otras páginas no dependan de ellos.
+
+Validar antes/después: login, permisos, navegación, filtros, limpiar, Excel, paginación, links, APIs, consola JS y errores PHP.
+
+No extender todavía a otros módulos sin aprobación.
