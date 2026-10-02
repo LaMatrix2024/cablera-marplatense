@@ -53,7 +53,10 @@ if (!$visorLocalProxy) {
 $localAuth = $visorLocalProxy ? new LocalAuthSession() : null;
 $GLOBALS['localAuth'] = $localAuth;
 $localSnapshot = $visorLocalProxy ? $localAuth->snapshot() : ['profile' => $centralProfile, 'token' => $centralToken];
-if (!is_array($localSnapshot)) api_json(['ok' => false, 'error' => ['code' => 'unauthenticated', 'message' => 'Sesión no iniciada.']], 401);
+if (!is_array($localSnapshot)) {
+    api_json(['ok' => false, 'error' => ['code' => 'unauthenticated', 'message' => 'Sesión no iniciada.']], 401);
+}
+$centralToken = (string)($localSnapshot['token'] ?? $centralToken);
 $centralProfile = (array)$localSnapshot['profile'];
 $centralSession = (array)($centralProfile['user'] ?? []);
 $centralUser = [
