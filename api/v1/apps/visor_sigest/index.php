@@ -35,6 +35,8 @@ if (!$visorLocalProxy) {
         $hash = (string)($stmt->fetchColumn() ?: '');
         return $hash !== '' && hash_equals($hash, hash('sha256', $provided));
     };
+} else {
+    require_once dirname(__DIR__, 4) . DIRECTORY_SEPARATOR . 'shared' . DIRECTORY_SEPARATOR . 'auth' . DIRECTORY_SEPARATOR . 'LocalAuthSession.php';
 }
 
 $localAuth = $visorLocalProxy ? new LocalAuthSession() : null;
