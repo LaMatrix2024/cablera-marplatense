@@ -29,7 +29,7 @@ final class HostingerTokenService
         $stmt->execute(['token' => hash('sha256', $token)]); $row = $stmt->fetch();
         if (!is_array($row) || (int)$row['session_version'] !== (int)$row['user_session_version'] || ($row['estado'] ?? '') !== 'ACTIVO') throw new HttpError(401, 'Sesión no válida.', 'INVALID_TOKEN');
         $this->pdo->prepare('UPDATE auth_sesiones SET last_used_at = NOW() WHERE id = :id')->execute(['id' => $row['id']]);
-        return ['profile' => (new CorporateInvitationService($this->pdo))->authenticatedProfile((int)$row['user_id']), 'expires_at' => $row['expires_at']];
+        return ['profile' => $this->profileWithPermissions((int)$row['user_id']), 'expires_at' => $row['expires_at']];
     }
 
     public function logout(string $token): void
@@ -43,7 +43,14 @@ final class HostingerTokenService
         $stmt = $this->pdo->prepare('INSERT INTO auth_sesiones (usuario_id, token_hash, csrf_hash, sesion_version, expires_at, ip_address, user_agent) VALUES (:uid, :token, :csrf, :version, DATE_ADD(NOW(), INTERVAL ' . self::TTL_HOURS . ' HOUR), :ip, :ua)');
         $stmt->execute(['uid' => (int)$user['id'], 'token' => hash('sha256', $token), 'csrf' => hash('sha256', bin2hex(random_bytes(32))), 'version' => $version, 'ip' => substr((string)($_SERVER['REMOTE_ADDR'] ?? ''), 0, 45) ?: null, 'ua' => substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 500) ?: null]);
         $expires = $this->pdo->query('SELECT DATE_FORMAT(DATE_ADD(NOW(), INTERVAL ' . self::TTL_HOURS . ' HOUR), "%Y-%m-%dT%H:%i:%sZ")')->fetchColumn();
-        return ['token' => $token, 'expires_at' => (string)$expires, 'profile' => (new CorporateInvitationService($this->pdo))->authenticatedProfile((int)$user['id'])];
+        return ['token' => $token, 'expires_at' => (string)$expires, 'profile' => $this->profileWithPermissions((int)$user['id'])];
+    }
+
+    private function profileWithPermissions(int $userId): array
+    {
+        $profile = (new CorporateInvitationService($this->pdo))->authenticatedProfile($userId);
+        $profile['permissions'] = array_values(array_map(static fn(array $module): array => ['aplicacion' => $module['aplicacion'] ?? null, 'modulo' => $module['codigo'] ?? null, 'permissions' => $module['permissions'] ?? []], $profile['modules'] ?? []));
+        return $profile;
     }
 
     private function rateLimit(string $email): void
