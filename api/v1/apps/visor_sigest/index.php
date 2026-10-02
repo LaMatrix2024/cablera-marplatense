@@ -5,6 +5,17 @@ require_once dirname(__DIR__, 4) . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPAR
 require_once dirname(__DIR__, 4) . DIRECTORY_SEPARATOR . 'shared' . DIRECTORY_SEPARATOR . 'visor_sigest' . DIRECTORY_SEPARATOR . 'responsables_nexo.php';
 require_once dirname(__DIR__, 4) . DIRECTORY_SEPARATOR . 'shared' . DIRECTORY_SEPARATOR . 'visor_sigest' . DIRECTORY_SEPARATOR . 'legacy_operational.php';
 
+// El _common.php productivo anterior no conoce el helper local; el visor
+// define una compatibilidad mínima sin modificar la autenticación central.
+if (!function_exists('lcm_auth_local_proxy_request')) {
+    function lcm_auth_local_proxy_request(): bool
+    {
+        $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+        $host = preg_replace('/:\d+$/', '', $host) ?: $host;
+        return in_array($host, ['127.0.0.1', 'localhost', '25.41.63.207'], true);
+    }
+}
+
 // El mismo endpoint funciona en dos contextos: proxy local (sesión lcm_local)
 // y ejecución remota en Hostinger (Bearer validado contra la base local del hosting).
 $visorLocalProxy = lcm_auth_local_proxy_request();
