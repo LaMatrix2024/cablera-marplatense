@@ -34,6 +34,13 @@ function api_database(): PDO
     return $pdo;
 }
 
+function lcm_auth_local_proxy_request(): bool
+{
+    $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+    $host = preg_replace('/:\d+$/', '', $host) ?: $host;
+    return in_array($host, ['127.0.0.1', 'localhost', '25.41.63.207'], true);
+}
+
 function api_crear_conexion_pdo(string $host, string $port, string $db, string $user, string $pass): PDO
 {
     $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $host, $port, $db);
@@ -46,6 +53,7 @@ function api_crear_conexion_pdo(string $host, string $port, string $db, string $
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::ATTR_TIMEOUT => 3,
         ]
     );
 }
@@ -130,9 +138,10 @@ function api_handle(callable $callback): never
     } catch (HttpError $error) {
         api_json([
             'ok' => false,
-            'error' => $error->errorCode(),
-            'message' => $error->getMessage(),
-            'details' => $error->details(),
+            'error' => [
+                'code' => $error->errorCode(),
+                'message' => $error->getMessage(),
+            ],
         ], $error->status());
     } catch (Throwable $exception) {
         $logDir = __DIR__ . '/../../logs';
@@ -149,13 +158,6 @@ function api_handle(callable $callback): never
             'error' => 'internal_error',
             'message' => 'Error interno.',
         ];
-        $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
-        if (str_starts_with($host, '127.0.0.1') || str_starts_with($host, 'localhost')) {
-            $payload['details'] = [
-                'type' => $exception::class,
-                'message' => $exception->getMessage(),
-            ];
-        }
         api_json($payload, 500);
     }
 }

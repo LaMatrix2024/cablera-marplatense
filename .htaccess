@@ -5,11 +5,17 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
 # PWA publicas: URL oficial /apps/{nombre-app}/
 # Ruta fisica interna: /public/apps/{nombre-app}/
+RewriteCond %{DOCUMENT_ROOT}/apps/$1 -d
+RewriteRule ^apps/([^/]+)(/.*)?$ - [L]
 RewriteRule ^apps/([^/]+)/(.*\.(?:png|ico|json|js|css))$ public/apps/$1/$2 [L,QSA,NC]
 RewriteRule ^apps/(.*)$ public/apps/$1 [L,QSA]
 
 # API v1 corporativa
+RewriteRule ^api/v1/health/?$ api/v1/health/index.php [L,QSA,NC]
+RewriteRule ^api/v1/auth/login/?$ api/v1/auth/login.php [L,QSA,NC]
+RewriteRule ^api/v1/auth/logout/?$ api/v1/auth/logout.php [L,QSA,NC]
 RewriteRule ^api/v1/auth/me/?$ api/v1/auth/me.php [L,QSA,NC]
+RewriteRule ^api/v1/auth/session/?$ api/v1/auth/session.php [L,QSA,NC]
 RewriteRule ^api/v1/admin/config/?$ api/v1/admin/config.php [L,QSA,NC]
 RewriteRule ^api/v1/admin/dashboard/?$ api/v1/admin/identity.php?resource=dashboard [L,QSA,NC]
 RewriteRule ^api/v1/admin/catalogs/?$ api/v1/admin/identity.php?resource=catalogs [L,QSA,NC]

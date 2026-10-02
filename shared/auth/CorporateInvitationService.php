@@ -275,17 +275,17 @@ final class CorporateInvitationService
 
         if ($isSuperadmin) {
             $appsRows = $this->pdo->query(
-                'SELECT codigo, nombre, activo
+                'SELECT codigo, nombre, descripcion, activo
                  FROM aplicaciones
                  WHERE activo = 1
                  ORDER BY codigo'
             )->fetchAll();
         } else {
             $apps = $this->pdo->prepare(
-                'SELECT a.codigo, a.nombre, ua.activo
+                'SELECT a.codigo, a.nombre, a.descripcion, a.activo, ua.activo AS asignacion_activa
                  FROM usuario_aplicacion ua
                  INNER JOIN aplicaciones a ON a.id = ua.aplicacion_id
-                 WHERE ua.usuario_id = :usuario_id
+                 WHERE ua.usuario_id = :usuario_id AND ua.activo = 1 AND a.activo = 1
                  ORDER BY a.codigo'
             );
             $apps->execute(['usuario_id' => $usuarioId]);
@@ -304,7 +304,7 @@ final class CorporateInvitationService
 
         if ($isSuperadmin) {
             $moduleRows = $this->pdo->query(
-                'SELECT a.codigo AS aplicacion, m.codigo, m.nombre, m.orden
+                'SELECT a.codigo AS aplicacion, m.codigo, m.nombre, m.descripcion, m.ruta, m.icono, m.color, m.grupo, m.orden
                  FROM modulos m
                  INNER JOIN aplicaciones a ON a.id = m.aplicacion_id
                  WHERE m.activo = 1 AND a.activo = 1
@@ -312,7 +312,7 @@ final class CorporateInvitationService
             )->fetchAll();
         } else {
             $modules = $this->pdo->prepare(
-                'SELECT a.codigo AS aplicacion, m.codigo, m.nombre, m.orden
+                'SELECT a.codigo AS aplicacion, m.codigo, m.nombre, m.descripcion, m.ruta, m.icono, m.color, m.grupo, m.orden
                  FROM modulos m
                  INNER JOIN aplicaciones a ON a.id = m.aplicacion_id
                  INNER JOIN usuario_aplicacion ua ON ua.aplicacion_id = a.id AND ua.usuario_id = :usuario_id AND ua.activo = 1
@@ -324,9 +324,13 @@ final class CorporateInvitationService
         }
 
         $repo = new CorporateAccessRepository($this->pdo);
+        $authorizedModules = [];
         foreach ($moduleRows as &$module) {
             $permissions = $repo->effectivePermissions($usuarioId, $module['aplicacion'], $module['codigo']);
             $module['permissions'] = $permissions['permissions'];
+            if ($permissions['permissions']['puede_ver'] === true) {
+                $authorizedModules[] = $module;
+            }
         }
         unset($module);
 
@@ -334,7 +338,7 @@ final class CorporateInvitationService
             'user' => $user,
             'applications' => $appsRows,
             'roles' => $roles->fetchAll(),
-            'modules' => $moduleRows,
+            'modules' => $authorizedModules,
         ];
     }
 
