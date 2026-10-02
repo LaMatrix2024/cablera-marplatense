@@ -78,9 +78,10 @@ html,body{height:100%;overflow:hidden}
 .visor .filter-clear.is-inactive{opacity:.58}
 .visor .rn-select{width:34px;min-width:34px;text-align:center}.visor .rn-select input{width:16px;height:16px}.visor .rn-badge{display:inline-block;margin-left:4px;padding:2px 5px;border-radius:999px;background:#e7f6f8;color:#087f8c;font-size:10px;font-weight:700;vertical-align:middle}.visor .rn-action{border:0;background:transparent;color:#087f8c;cursor:pointer;font-size:11px;padding:2px}.visor .rn-action:hover{text-decoration:underline}.visor .rn-modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:18px;background:#15304799}.visor .rn-modal[hidden]{display:none}.visor .rn-dialog{width:min(460px,100%);background:#fff;border-radius:12px;padding:16px;box-shadow:0 20px 50px #0004}.visor .rn-dialog-head,.visor .rn-dialog-actions{display:flex;align-items:center;justify-content:space-between;gap:8px}.visor .rn-dialog h2{margin:0;font-size:18px}.visor .rn-dialog form{display:grid;gap:10px;margin-top:12px}.visor .rn-dialog label{display:grid;gap:4px;font-weight:700}.visor .rn-dialog select,.visor .rn-dialog textarea{width:100%;border:1px solid #b7ccd7;border-radius:7px;padding:8px;font:inherit}.visor .rn-dialog .button{border:1px solid #087f8c;background:#087f8c;color:#fff;border-radius:7px;padding:8px 12px;font-weight:700;cursor:pointer}.visor .rn-remove{border:1px solid #efb3ad;background:#fff3f2;color:#b74747;border-radius:7px;padding:7px 10px;cursor:pointer}.visor .rn-status{font-size:12px;color:#b74747;min-height:18px}
 </style>
+<style>body.lcm-page--with-nav{padding-top:0}</style>
 </head>
 <body class="lcm-page--with-nav" data-direct-module="visor_sigest"><div class="lcm-global-backdrop" id="lcm-global-backdrop" hidden></div><aside class="lcm-global-sidebar" id="lcm-global-sidebar" aria-label="Navegación principal"></aside><header class="lcm-global-header" id="lcm-global-header"></header><div class="lcm-global-status" id="lcm-global-status" hidden></div>
-<main class="visor filters-mode">
+<div class="visor filters-mode">
  <style>.view-switch{display:inline-flex;gap:0;border:1px solid #b7ccd7;border-radius:7px;overflow:hidden}.view-switch#obraViewSwitch{margin-bottom:10px}.view-switch-button{border:0;background:#fff;color:#315b70;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}.view-switch-button+ .view-switch-button{border-left:1px solid #b7ccd7}.view-switch-button.active{background:#087f8c;color:#fff}.view-switch-button:focus-visible{outline:2px solid #a7dbe3;outline-offset:-2px}</style>
  <div class="view-switch" id="obraViewSwitch" role="group" aria-label="Vista de obras"><?php if (!$visorIsAdmin): ?><button id="myWorksView" class="view-switch-button" type="button" aria-pressed="false">MIS OBRAS</button><?php endif; ?><button id="allWorksView" class="view-switch-button" type="button" aria-pressed="false">TODAS</button></div>
  <header class="visor-head"><div><h1>VISOR SIGEST</h1><p>Seguimiento de obras en construcción</p></div><button class="button secondary" id="exportBtn" type="button">EXPORTAR EXCEL</button></header>
@@ -121,12 +122,32 @@ html,body{height:100%;overflow:hidden}
  .visor .selection-head,.visor .action-head{z-index:7!important;background:#dcecf1!important}
  </style>
  <section class="table-wrap" id="tableWrap"><div class="status">Cargando universo base…</div></section>
-</main>
+</div>
 <div id="detailBack" class="modal-back" hidden><section class="modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><header class="modal-head"><h2 id="detailTitle">Detalle de obra</h2><button class="modal-close" id="detailClose" type="button">Cerrar</button></header><div class="modal-body" id="detailBody"></div></section></div>
 <div id="bitacoraBack" class="modal-back" hidden><section class="modal bitacora-modal" role="dialog" aria-modal="true" aria-labelledby="bitacoraTitle"><header class="modal-head"><h2 id="bitacoraTitle">BITÁCORA DE OBRA</h2><button class="modal-close" id="bitacoraClose" type="button">Cerrar</button></header><div class="modal-body"><div id="bitacoraSummary" class="bitacora-summary"></div><div id="bitacoraList" class="bitacora-list"></div><button id="bitacoraAdd" class="bitacora-float" type="button" title="Agregar comentario" aria-label="Agregar comentario">+</button><form id="commentForm" class="comment-form" hidden><label for="commentText">COMENTARIO *</label><textarea id="commentText" maxlength="10000" placeholder="Ingrese el comentario de la bitácora..."></textarea><div class="bitacora-actions"><span id="commentStatus" class="comment-status"></span><button id="commentCancel" class="secondary" type="button">CANCELAR</button><button id="commentSave" class="button" type="submit">GUARDAR</button></div></form></div></section></div>
 <?php if ($visorCanManageResponsible): ?>
 <div id="rnModal" class="rn-modal" hidden><section class="rn-dialog" role="dialog" aria-modal="true" aria-labelledby="rnTitle"><div class="rn-dialog-head"><h2 id="rnTitle">Asignar Responsable NEXO</h2><button id="rnClose" class="modal-close" type="button">Cerrar</button></div><p id="rnCount" class="summary"></p><form id="rnForm"><input type="hidden" name="csrf" value="<?= visor_h(nexo_csrf_token()) ?>"><input type="hidden" name="sigest" id="rnSigest"><label>Responsable NEXO<select name="usuario_nexo_id" id="rnUser" required><option value="">Seleccionar usuario activo</option><?php foreach (rn_active_users() as $user): ?><option value="<?= visor_h($user['id']) ?>"><?= visor_h($user['nombre']) ?></option><?php endforeach; ?></select></label><label>Motivo (opcional)<textarea name="motivo" maxlength="500" rows="3"></textarea></label><p id="rnStatus" class="rn-status" role="status"></p><div class="rn-dialog-actions"><button id="rnCancel" class="secondary" type="button">Cancelar</button><button id="rnSave" class="button" type="submit">Asignar</button></div></form><div id="rnRestoreWrap" hidden><button id="rnRestore" class="rn-remove" type="button">RESTABLECER RESPONSABLE SIGEST</button></div></section></div>
 <?php endif; ?>
+<script>
+(() => {
+  const sidebar = document.getElementById('lcm-global-sidebar');
+  const header = document.getElementById('lcm-global-header');
+  const status = document.getElementById('lcm-global-status');
+  const visor = document.querySelector('.visor');
+  if (!sidebar || !header || !visor || document.querySelector('.lcm-shell-layout')) return;
+  const layout = document.createElement('div');
+  layout.className = 'lcm-shell-layout';
+  const main = document.createElement('main');
+  main.className = 'lcm-main';
+  const content = document.createElement('div');
+  content.className = 'lcm-content';
+  sidebar.before(layout);
+  layout.append(sidebar, main);
+  main.append(header, content);
+  if (status) content.append(status);
+  content.append(visor);
+})();
+</script>
 <script>window.visorIsAdmin=<?= $visorIsAdmin ? 'true' : 'false' ?>;window.visorIsCoordinator=<?= $visorIsCoordinator ? 'true' : 'false' ?>;window.visorCanViewAll=<?= $visorCanViewAll ? 'true' : 'false' ?>;window.visorCanManageResponsible=<?= $visorCanManageResponsible ? 'true' : 'false' ?>;window.visorUser=<?= json_encode(['id'=>(string)($visorUser['id']??''),'nombre'=>(string)($visorUser['nombre']??'')], JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) ?>;</script>
 <script>
 (() => {
