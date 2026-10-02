@@ -192,7 +192,9 @@ function visor_pdo(array $env): PDO
 function visor_pdo_plantel(array $env): PDO
 {
     if (!(bool)($GLOBALS['visorLocalProxy'] ?? false)) {
-        $shared = $GLOBALS['pdo'] ?? null;
+        // En Hostinger, la conexión central ya apunta a u767019378_plantel.
+        // Reutilizarla evita resolver la base SIGEST (laboratorio) como base de bitácora.
+        $shared = $GLOBALS['centralPdo'] ?? ($GLOBALS['pdo'] ?? null);
         if ($shared instanceof PDO) return $shared;
     }
     $host = visor_env_value($env, 'DB_HOSTINGER_PLANTEL_HOST');
