@@ -52,9 +52,21 @@ $serverShellProfile = is_array($frontendProfile) ? $frontendProfile : null;
 <style>.modal-back[hidden]{display:none!important}</style>
 <style>
 html,body{height:100%;overflow:hidden}
+/* El módulo se entrega ya compuesto por PHP; no se espera a JavaScript para crear el shell. */
+body.lcm-page--with-nav{display:grid;grid-template-columns:var(--lcm-sidebar-width,270px) minmax(0,1fr);grid-template-rows:52px minmax(0,1fr);min-height:100vh}
+body.lcm-page--with-nav>.lcm-global-sidebar{grid-column:1;grid-row:1 / 3}
+body.lcm-page--with-nav>.lcm-global-header{grid-column:2;grid-row:1}
+body.lcm-page--with-nav>.visor{grid-column:2;grid-row:2;min-width:0;min-height:0;overflow:auto}
 .visor{height:100%;display:flex;flex-direction:column;min-height:0}
 .table-wrap{flex:1 1 auto;min-height:0;max-height:none}
 .action-col{position:sticky;left:0;z-index:3;width:40px;min-width:40px;max-width:40px;text-align:center;background:#fff;padding:4px}.action-head{z-index:7!important;background:#dcecf1!important}.bitacora-btn{width:27px;height:27px;border:1px solid #1686ba;background:#fff;color:#087f8c;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.bitacora-btn:hover,.bitacora-btn:focus-visible{background:#e7f6f8;outline:2px solid #a7dbe3}.bitacora-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.estado-badge{display:inline-block;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:700}.estado-ejecucion{background:#dff3e5;color:#23733a}.estado-demorada{background:#fff0c7;color:#8a6500}.bitacora-modal{max-width:620px}.bitacora-summary{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;background:#edf7fa;border:1px solid #d4e8ee;border-radius:8px;padding:10px;margin-bottom:12px}.bitacora-summary strong{font-size:12px;color:#315b70}.bitacora-list{max-height:48vh;overflow:auto;padding:4px 2px 4px 16px;border-left:2px solid #c4e2e8}.bitacora-entry{position:relative;padding:0 0 13px 14px}.bitacora-entry:before{content:"";position:absolute;left:-22px;top:3px;width:9px;height:9px;border-radius:50%;background:#1686ba;border:2px solid #fff;box-shadow:0 0 0 1px #1686ba}.bitacora-entry time{font-size:12px;color:#607a8b}.bitacora-entry .entry-user{font-weight:700;margin:2px 0;color:#17324d}.bitacora-entry .entry-comment{white-space:pre-wrap;background:#f7fafb;border:1px solid #e0eaee;border-radius:7px;padding:8px}.bitacora-empty{padding:22px 8px;text-align:center;color:#607a8b}.bitacora-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}.bitacora-float{position:sticky;float:right;bottom:8px;width:44px;height:44px;border:0;border-radius:50%;background:#1686ba;color:#fff;font-size:27px;line-height:1;box-shadow:0 4px 12px #17324d44;cursor:pointer}.comment-form{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}.comment-form[hidden]{display:none}.comment-form label{display:block;font-weight:700;margin-bottom:4px}.comment-form textarea{width:100%;min-height:110px;border:1px solid #b7ccd7;border-radius:7px;padding:9px;resize:vertical;font:inherit}.comment-status{font-size:12px;color:#23733a;margin-right:auto;align-self:center}@media(max-width:700px){.bitacora-summary{grid-template-columns:90px 1fr}.bitacora-list{max-height:42vh}}
+</style>
+<style>
+.bitacora-list{position:relative;padding-left:28px;border-left:0;overflow:auto}
+.bitacora-list::before{content:"";position:absolute;left:10px;top:0;bottom:0;width:2px;background:#c4e2e8}
+.bitacora-entry{padding-left:0}
+.bitacora-entry:before{left:-24px}
+@media(max-width:900px){body.lcm-page--with-nav{display:block;overflow:auto}body.lcm-page--with-nav>.visor{display:block;min-height:calc(100vh - 56px);overflow:visible}}
 </style>
 <style>.visor .cash-summary{font-weight:700;color:#17324d;white-space:nowrap}.visor .numeric-cell{text-align:right}.visor .date-cell{text-align:center}.visor th.numeric-cell{text-align:right}.visor th.date-cell{text-align:center}</style>
 <style>
@@ -135,26 +147,7 @@ html,body{height:100%;overflow:hidden}
 <?php if ($visorCanManageResponsible): ?>
 <div id="rnModal" class="rn-modal" hidden><section class="rn-dialog" role="dialog" aria-modal="true" aria-labelledby="rnTitle"><div class="rn-dialog-head"><h2 id="rnTitle">Asignar Responsable NEXO</h2><button id="rnClose" class="modal-close" type="button">Cerrar</button></div><p id="rnCount" class="summary"></p><form id="rnForm"><input type="hidden" name="csrf" value="<?= visor_h(nexo_csrf_token()) ?>"><input type="hidden" name="sigest" id="rnSigest"><label>Responsable NEXO<select name="usuario_nexo_id" id="rnUser" required><option value="">Seleccionar usuario activo</option><?php foreach (rn_active_users() as $user): ?><option value="<?= visor_h($user['id']) ?>"><?= visor_h($user['nombre']) ?></option><?php endforeach; ?></select></label><label>Motivo (opcional)<textarea name="motivo" maxlength="500" rows="3"></textarea></label><p id="rnStatus" class="rn-status" role="status"></p><div class="rn-dialog-actions"><button id="rnCancel" class="secondary" type="button">Cancelar</button><button id="rnSave" class="button" type="submit">Asignar</button></div></form><div id="rnRestoreWrap" hidden><button id="rnRestore" class="rn-remove" type="button">RESTABLECER RESPONSABLE SIGEST</button></div></section></div>
 <?php endif; ?>
-<script>
-(() => {
-  const sidebar = document.getElementById('lcm-global-sidebar');
-  const header = document.getElementById('lcm-global-header');
-  const status = document.getElementById('lcm-global-status');
-  const visor = document.querySelector('.visor');
-  if (!sidebar || !header || !visor || document.querySelector('.lcm-shell-layout')) return;
-  const layout = document.createElement('div');
-  layout.className = 'lcm-shell-layout';
-  const main = document.createElement('main');
-  main.className = 'lcm-main';
-  const content = document.createElement('div');
-  content.className = 'lcm-content';
-  sidebar.before(layout);
-  layout.append(sidebar, main);
-  main.append(header, content);
-  if (status) content.append(status);
-  content.append(visor);
-})();
-</script>
+<!-- El shell ya se entrega compuesto por PHP; no se reconstruye después del primer render. -->
 <script>window.visorIsAdmin=<?= $visorIsAdmin ? 'true' : 'false' ?>;window.visorIsCoordinator=<?= $visorIsCoordinator ? 'true' : 'false' ?>;window.visorCanViewAll=<?= $visorCanViewAll ? 'true' : 'false' ?>;window.visorCanManageResponsible=<?= $visorCanManageResponsible ? 'true' : 'false' ?>;window.visorUser=<?= json_encode(['id'=>(string)($visorUser['id']??''),'nombre'=>(string)($visorUser['nombre']??'')], JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) ?>;</script>
 <script>
 (() => {
@@ -272,7 +265,7 @@ async function load(){try{await window.NexoLoading.run(async()=>{const response=
   // La respuesta del proxy conserva el contrato estandarizado dentro de data.
   // El resumen se pinta con la fila ya cargada, sin esperar otra consulta.
   let currentBitacoraObra={};
-  const bitacoraDateLocal=function(value){const raw=String(value||'').trim();if(!raw)return '';const iso=/[zZ]|[+-]\d{2}:?\d{2}$/.test(raw)?raw:raw.replace(' ','T')+'Z';const parsed=new Date(iso);return Number.isNaN(parsed.getTime())?raw:parsed.toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short',timeZone:'America/Argentina/Buenos_Aires'})};
+  const bitacoraDateLocal=function(value){const raw=String(value||'').trim();if(!raw)return '';const iso=/[zZ]|[+-]\d{2}:?\d{2}$/.test(raw)?raw:raw.replace(' ','T')+'Z';const parsed=new Date(iso);return Number.isNaN(parsed.getTime())?raw:parsed.toLocaleString('es-AR',{dateStyle:'short',timeStyle:'short',hour12:false,hourCycle:'h23',timeZone:'America/Argentina/Buenos_Aires'})};
   const bitacoraText=function(obra,key){const value=obra&&obra[key];return value===null||value===undefined?'':String(value).trim()};
   const renderBitacoraHeaderLocal=function(obra){$('bitacoraSummary').innerHTML=`<strong>SIGEST</strong><span>${esc(bitacoraText(obra,'sisvadi'))}</span><strong>TÍTULO</strong><span>${esc(bitacoraText(obra,'titulo'))}</span><strong>CENTRAL</strong><span>${esc(bitacoraText(obra,'central'))}</span><strong>ESTADO</strong><span>${esc(bitacoraText(obra,'bandeja_estado'))}</span>`};
   renderBitacora=function(payload){const apiObra=payload?.obra||payload?.data?.obra||{};const obra={...apiObra,...currentBitacoraObra};renderBitacoraHeaderLocal(obra);const entries=Array.isArray(payload?.entries)?payload.entries:(Array.isArray(payload?.data?.entries)?payload.data.entries:[]);$('bitacoraList').innerHTML=entries.length?entries.map(entry=>`<article class="bitacora-entry"><time>${esc(bitacoraDateLocal(entry.fecha))}</time><div class="entry-user">${esc(entry.usuario||'')}</div><div class="entry-comment">${esc(entry.comentario||'')}</div></article>`).join(''):'<div class="bitacora-empty">Todavía no hay comentarios para esta obra.</div>';};
