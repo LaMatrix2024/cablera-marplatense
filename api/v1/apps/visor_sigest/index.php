@@ -545,7 +545,9 @@ if ($action !== '') {
             $user = nexo_current_user();
             $nombre = trim((string) ($user['nombre'] ?? $user['email'] ?? $user['id'] ?? 'Usuario NEXO'));
             $plantel = visor_pdo_plantel($env);
-            $fecha = (new DateTimeImmutable('now'))->format('Y-m-d H:i:s');
+            // Las fechas se almacenan siempre en UTC; la interfaz las presenta
+            // explícitamente en America/Argentina/Buenos_Aires.
+            $fecha = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Y-m-d H:i:s');
             $stmt = $plantel->prepare('INSERT INTO bitacora_obras (sigest, fecha, usuario, comentario) VALUES (:sigest, :fecha, :usuario, :comentario)');
             $stmt->execute(['sigest' => $sigest, 'fecha' => $fecha, 'usuario' => $nombre, 'comentario' => $comentario]);
             visor_json(['ok' => true, 'entry' => ['id' => (int) $plantel->lastInsertId(), 'sigest' => $sigest, 'fecha' => $fecha, 'usuario' => $nombre, 'comentario' => $comentario]]);
