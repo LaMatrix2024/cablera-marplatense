@@ -36,7 +36,8 @@ try {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="csrf-token" content="">
+<meta name="csrf-token" content="<?= visor_h(nexo_csrf_token()) ?>">
+<script>(function(){const token=document.querySelector('meta[name="csrf-token"]')?.content||'';if(token)sessionStorage.setItem('lcm.csrf',token)})();</script>
 <title>Visor SIGEST</title>
 <link rel="stylesheet" href="/assets/css/brand.css"><link rel="stylesheet" href="/assets/css/atlantica.css?v=7"><link rel="stylesheet" href="/assets/css/global-shell.css?v=ux-20261002-1"><script src="/assets/js/visor-loading.js"></script><script type="module" src="/assets/js/global-auth.js?v=ux-20261002-1"></script>
 <style>

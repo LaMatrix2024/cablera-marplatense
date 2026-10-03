@@ -57,7 +57,11 @@ function nexo_csrf_token(): string
 {
     // El token efímero se entrega al iniciar sesión y permanece en sessionStorage;
     // nunca se genera ni se persiste un token nuevo desde la vista.
-    return '';
+    if (!class_exists('LocalAuthSession')) {
+        $path = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'shared' . DIRECTORY_SEPARATOR . 'auth' . DIRECTORY_SEPARATOR . 'LocalAuthSession.php';
+        if (is_readable($path)) require_once $path;
+    }
+    return class_exists('LocalAuthSession') ? (new LocalAuthSession())->csrfToken() : '';
 }
 
 function nexo_legacy_user_for_email(string $email): array
@@ -67,6 +71,18 @@ function nexo_legacy_user_for_email(string $email): array
 
 function nexo_check_csrf(?string $token): void
 {
+    // El proxy local valida el CSRF contra lcm_local y envía una prueba HMAC
+    // ligada al Bearer. La API remota no compara contra otra sesión PHP, pero
+    // tampoco acepta un CSRF vacío o sin firma.
+    if (($GLOBALS['visorLocalProxy'] ?? false) !== true) {
+        $provided = (string)($token ?? '');
+        $signature = (string)($_SERVER['HTTP_X_LCM_PROXY_CSRF'] ?? '');
+        $centralToken = (string)($GLOBALS['centralToken'] ?? '');
+        if (!preg_match('/^[a-f0-9]{64}$/', $provided) || !preg_match('/^[a-f0-9]{64}$/', $signature) || $centralToken === '' || !hash_equals(hash_hmac('sha256', $provided, $centralToken), $signature)) {
+            throw new RuntimeException('CSRF inválido.');
+        }
+        return;
+    }
     $validator = $GLOBALS['visorCsrfValidator'] ?? null;
     if (is_callable($validator)) {
         if (!$validator((string)$token)) throw new RuntimeException('CSRF inválido.');

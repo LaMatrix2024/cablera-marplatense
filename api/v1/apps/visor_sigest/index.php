@@ -98,6 +98,9 @@ function visor_proxy_to_hostinger(string $token): never
         foreach ($allowedPost as $key) if (array_key_exists($key, $_POST)) $form[$key] = (string)$_POST[$key];
         $body = http_build_query($form, '', '&', PHP_QUERY_RFC3986);
         $headers[] = 'Content-Type: application/x-www-form-urlencoded; charset=UTF-8';
+        if (isset($form['csrf']) && $form['csrf'] !== '') {
+            $headers[] = 'X-LCM-Proxy-CSRF: ' . hash_hmac('sha256', $form['csrf'], $token);
+        }
     }
     $curl = curl_init($url);
     if ($curl === false) api_json(['ok' => false, 'error' => ['code' => 'proxy_unavailable', 'message' => 'No se pudo contactar la API de Visor SIGEST.']], 503);
