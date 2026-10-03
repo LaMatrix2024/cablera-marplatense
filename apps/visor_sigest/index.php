@@ -5,6 +5,7 @@ require_once dirname(__DIR__, 2) . '/shared/visor_sigest/responsables_nexo.php';
 require_once dirname(__DIR__, 2) . '/config/env_loader.php';
 require_once dirname(__DIR__, 2) . '/shared/auth/CentralSessionService.php';
 require_once dirname(__DIR__, 2) . '/shared/auth/CorporateAccessRepository.php';
+require_once dirname(__DIR__, 2) . '/shared/server_shell.php';
 function visor_h(mixed $value): string { return htmlspecialchars((string)($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 $visorUser = [];
 $visorIsAdmin = false;
@@ -30,6 +31,10 @@ try {
 } catch (Throwable) {
     // La autenticación dinámica del shell y la autorización de la API siguen siendo obligatorias.
 }
+$serverShell = is_array($frontendProfile) && is_array($frontendProfile['user'] ?? null)
+    ? lcm_server_shell_markup($frontendProfile, (string)($_SERVER['REQUEST_URI'] ?? '/apps/visor_sigest/'))
+    : ['sidebar' => '', 'header' => '', 'modules' => []];
+$serverShellProfile = is_array($frontendProfile) ? $frontendProfile : null;
 ?>
 <!doctype html>
 <html lang="es">
@@ -81,7 +86,8 @@ html,body{height:100%;overflow:hidden}
 </style>
 <style>body.lcm-page--with-nav{padding-top:0}</style>
 </head>
-<body class="lcm-page--with-nav" data-direct-module="visor_sigest" data-server-authenticated="<?= $frontendSession ? '1' : '0' ?>"><div class="lcm-global-backdrop" id="lcm-global-backdrop" hidden></div><aside class="lcm-global-sidebar" id="lcm-global-sidebar" aria-label="Navegación principal"></aside><header class="lcm-global-header" id="lcm-global-header"></header><?php if (!$frontendSession): ?><div class="lcm-global-status" id="lcm-global-status" hidden></div><?php endif; ?>
+<body class="lcm-page--with-nav" data-direct-module="visor_sigest" data-server-authenticated="<?= $frontendSession ? '1' : '0' ?>"><div class="lcm-global-backdrop" id="lcm-global-backdrop" hidden></div><aside class="lcm-global-sidebar" id="lcm-global-sidebar" aria-label="Navegación principal"><?= $serverShell['sidebar'] ?></aside><header class="lcm-global-header" id="lcm-global-header"><?= $serverShell['header'] ?></header><?php if (!$frontendSession): ?><div class="lcm-global-status" id="lcm-global-status" hidden></div><?php endif; ?>
+<?php if ($serverShellProfile !== null): ?><script type="application/json" id="lcm-server-profile"><?= json_encode($serverShellProfile, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script><?php endif; ?>
 <div class="visor filters-mode">
  <style>.view-switch{display:inline-flex;gap:0;border:1px solid #b7ccd7;border-radius:7px;overflow:hidden}.view-switch#obraViewSwitch{margin-bottom:10px}.view-switch-button{border:0;background:#fff;color:#315b70;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}.view-switch-button+ .view-switch-button{border-left:1px solid #b7ccd7}.view-switch-button.active{background:#087f8c;color:#fff}.view-switch-button:focus-visible{outline:2px solid #a7dbe3;outline-offset:-2px}</style>
  <div class="view-switch" id="obraViewSwitch" role="group" aria-label="Vista de obras"><?php if (!$visorIsAdmin): ?><button id="myWorksView" class="view-switch-button" type="button" aria-pressed="false">MIS OBRAS</button><?php endif; ?><button id="allWorksView" class="view-switch-button" type="button" aria-pressed="false">TODAS</button></div>
