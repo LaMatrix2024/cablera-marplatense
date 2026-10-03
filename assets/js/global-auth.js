@@ -1,339 +1,71 @@
-import {
-  AUTH_STATE,
-  CABLERA_APP,
-  fetchAuthMe as fetchCorporateProfile,
-  firebaseErrorMessage,
-  getSharedAuth,
-  logAuthMeDiagnostic,
-  onAuthStateChanged,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signOut
-} from "./lcm-auth-core.js";
+import { AUTH_STATE, CABLERA_APP, fetchAuthMe as fetchCorporateProfile, firebaseErrorMessage, getSharedAuth, logAuthMeDiagnostic, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, signOut } from './lcm-auth-core.js?v=central-auth-20261002-6';
 
-const SIDEBAR_KEY = "lcm.global.sidebar.collapsed";
-
+const SIDEBAR_KEY = 'lcm.sidebar.collapsed';
+const GROUP_KEY = 'lcm.menu.openGroup';
+const state = { auth: null, config: null, profile: null, user: null, authState: AUTH_STATE.BOOTSTRAPPING, activeRoute: '/' };
+const $ = (s) => document.querySelector(s);
+const escapeHtml = (v) => String(v ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+const fullName = (u) => `${u?.nombre || ''} ${u?.apellido || ''}`.trim() || u?.email || 'Usuario';
+const initials = (name) => { const p = String(name || 'US').trim().split(/\s+/).filter(Boolean); return ((p[0]?.[0] || 'U') + (p[1]?.[0] || p[0]?.[1] || 'S')).toUpperCase(); };
+const normalize = (v) => String(v || '').toLocaleLowerCase('es-AR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const ICONS = {
-  apps: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>',
-  badge: '<path d="M8 7a4 4 0 1 1 8 0a4 4 0 0 1-8 0Z"/><path d="M5 21a7 7 0 0 1 14 0"/>',
-  chart: '<path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5M12 16V8M16 16v-8"/>',
-  dashboard: '<path d="M4 13h7V4H4zM13 20h7V4h-7zM4 20h7v-5H4z"/>',
-  file: '<path d="M6 3h9l3 3v15H6z"/><path d="M14 3v4h4"/>',
-  group: '<path d="M16 11a4 4 0 1 0-8 0a4 4 0 0 0 8 0Z"/><path d="M4 21a8 8 0 0 1 16 0"/>',
-  home: '<path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10"/><path d="M10 21v-6h4v6"/>',
-  logout: '<path d="M10 17v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v2"/><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/>',
-  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
-  phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.7 2.6a2 2 0 0 1-.5 2.1L8.1 9.6a16 16 0 0 0 6.3 6.3l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7A2 2 0 0 1 22 16.9Z"/>',
-  settings: '<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 1 1 4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1A2 2 0 1 1 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1h.1a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
-  wrench: '<path d="m14.7 6.3 3 3"/><path d="M7 21l10.6-10.6a4 4 0 0 0-5.7-5.7L11 5.6l2.8 2.8-.9.9L10.1 6.5 3 13.6V21z"/>'
+  apps:'<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>', home:'<path d="m3 11 9-8 9 8"/><path d="M5 10v11h14V10M10 21v-6h4v6"/>', dashboard:'<path d="M4 13h7V4H4zM13 20h7V4h-7zM4 20h7v-5H4z"/>', menu:'<path d="M4 6h16M4 12h16M4 18h16"/>', logout:'<path d="M10 17v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v2M15 17l5-5-5-5M20 12H9"/>', settings:'<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 1 1 4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9 2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1h.1a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>'
 };
-
-const MODULE_REGISTRY = {
-  GERENCIA: { label: "Gerencia", route: "/gerencia/", icon: "chart", section: "GESTION" },
-  TELEFONIA: { label: "Telefonia", route: "/telefonia/", icon: "phone", section: "GESTION" },
-  TELEFONIA_PRODUCCION_PLANTA: { label: "Produccion Planta", route: "/telefonia/produccion_planta/", icon: "chart", section: "TELEFONIA" },
-  TELEFONIA_PRODUCCION_B2B: { label: "Produccion B2B", route: "/telefonia/produccion_b2b/", icon: "chart", section: "TELEFONIA" },
-  TELEFONIA_PRODUCCION_INSTALACIONES: { label: "Produccion Instalaciones", route: "/telefonia/produccion_instalaciones/", icon: "chart", section: "TELEFONIA" },
-  TELEFONIA_ECONOMICO: { label: "Informe economico", route: "/telefonia/economico/", icon: "file", section: "TELEFONIA" },
-  TELEFONIA_PRECIARIO_TMA: { label: "Preciario TMA", route: "/telefonia/preciario_tma/", icon: "file", section: "TELEFONIA" },
-  TELEFONIA_CONTROL_LOGICAS: { label: "Control Logicas", route: "/telefonia/control_logicas/", icon: "settings", section: "TELEFONIA" },
-  TELEFONIA_TRACKING_TIRONES: { label: "Tracking Tirones", route: "/telefonia/tracking_tirones/", icon: "chart", section: "TELEFONIA" },
-  OBRAS: { label: "Obras", route: "/obras/", icon: "wrench", section: "GESTION" },
-  RRHH: { label: "RRHH", route: "/rrhh/", icon: "group", section: "GESTION" },
-  CONTABLE: { label: "Contable", route: "/contable/", icon: "file", section: "GESTION" },
-  MANTENIMIENTO: { label: "Mantenimiento", route: "/mantenimiento/", icon: "wrench", section: "GESTION" },
-  LICITACIONES: { label: "Licitaciones", route: "/licitaciones/", icon: "file", section: "GESTION" },
-  IDENTIDAD_ACCESOS: { label: "Identidad y Accesos", route: "/admin/identidad-accesos/", icon: "badge", section: "ADMINISTRACION" }
-};
-
-const ROUTE_GUARDS = [
-  ["/admin/identidad-accesos/", "IDENTIDAD_ACCESOS"],
-  ["/telefonia/produccion_planta", "TELEFONIA_PRODUCCION_PLANTA"],
-  ["/telefonia/produccion_b2b", "TELEFONIA_PRODUCCION_B2B"],
-  ["/telefonia/produccion_instalaciones", "TELEFONIA_PRODUCCION_INSTALACIONES"],
-  ["/telefonia/economico", "TELEFONIA_ECONOMICO"],
-  ["/telefonia/preciario_tma", "TELEFONIA_PRECIARIO_TMA"],
-  ["/telefonia/control_logicas", "TELEFONIA_CONTROL_LOGICAS"],
-  ["/telefonia/tracking_tirones", "TELEFONIA_TRACKING_TIRONES"],
-  ["/telefonia/menu.php", "TELEFONIA"],
-  ["/telefonia/", "TELEFONIA"],
-  ["/gerencia/", "GERENCIA"],
-  ["/obras/", "OBRAS"],
-  ["/rrhh/", "RRHH"],
-  ["/contable/", "CONTABLE"],
-  ["/mantenimiento/", "MANTENIMIENTO"],
-  ["/licitaciones/", "LICITACIONES"]
-];
-
-const state = { auth: null, config: null, profile: null, user: null, authState: AUTH_STATE.BOOTSTRAPPING };
-const $ = (selector) => document.querySelector(selector);
-const escapeHtml = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
-const icon = (name) => `<span class="lcm-global-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false">${ICONS[name] || ICONS.dashboard}</svg></span>`;
-const fullName = (user) => `${user?.nombre || ""} ${user?.apellido || ""}`.trim() || user?.email || "Usuario";
-const initials = (name) => {
-  const parts = String(name || "US").trim().split(/\s+/).filter(Boolean);
-  return ((parts[0]?.[0] || "U") + (parts[1]?.[0] || parts[0]?.[1] || "S")).toUpperCase();
-};
-const loginUrl = () => `/login/?returnTo=${encodeURIComponent(window.location.pathname + window.location.search + window.location.hash)}`;
-const returnTo = () => new URLSearchParams(window.location.search).get("returnTo") || "/";
-
-const requiredModuleForPath = (path) => {
-  const normalized = path === "/telefonia" ? "/telefonia/" : path;
-  const match = [...ROUTE_GUARDS].sort((a, b) => b[0].length - a[0].length)
-    .find(([prefix]) => normalized === prefix || normalized.startsWith(prefix));
-  return match?.[1] || null;
-};
-
-const showStatus = (title, message) => {
-  const panel = $("#lcm-global-status");
-  if (!panel) return;
-  panel.hidden = false;
-  panel.innerHTML = `<section class="lcm-global-status-card"><h2>${escapeHtml(title)}</h2><p>${escapeHtml(message)}</p></section>`;
-};
-const hideStatus = () => { const panel = $("#lcm-global-status"); if (panel) panel.hidden = true; };
-
-const setAuthState = (next) => {
-  state.authState = next;
-  document.body?.setAttribute("data-auth-state", next);
-};
-
-const clearCorporateState = () => {
-  state.user = null;
-  state.profile = null;
-  const sidebar = $("#lcm-global-sidebar");
-  const header = $("#lcm-global-header");
-  if (sidebar) sidebar.innerHTML = "";
-  if (header) header.innerHTML = "";
-};
-
-const loadConfig = async () => {
-  const shared = await getSharedAuth("/api/v1/auth/config");
-  state.config = shared.config;
-  state.auth = shared.auth;
-};
-
-const fetchAuthMe = async (forceRefresh = false) => {
-  const result = await fetchCorporateProfile({ auth: state.auth, config: state.config, user: state.user, forceRefresh });
-  logAuthMeDiagnostic({
-    firebaseUser: state.user,
-    status: result.status,
-    body: result.body,
-    requiredModule: requiredModuleForPath(window.location.pathname)
-  });
-  state.profile = result.body;
-  return result.body;
-};
-
-const cableraModules = () => (state.profile?.modules || []).filter((module) =>
-  module.aplicacion === CABLERA_APP && module.permissions?.puede_ver === true
-);
-const canViewModule = (code) => !code || cableraModules().some((module) => module.codigo === code);
-
-const renderSidebar = () => {
-  const sidebar = $("#lcm-global-sidebar");
-  const header = $("#lcm-global-header");
-  if (!sidebar || !header) return;
-  const user = state.profile?.user || {};
-  const items = [
-    { codigo: "HOME", label: "Dashboard", route: "/", icon: "home", section: "INICIO" },
-    ...cableraModules().map((module) => ({
-      codigo: module.codigo,
-      label: MODULE_REGISTRY[module.codigo]?.label || module.nombre || module.codigo,
-      route: MODULE_REGISTRY[module.codigo]?.route || "/",
-      icon: MODULE_REGISTRY[module.codigo]?.icon || "apps",
-      section: MODULE_REGISTRY[module.codigo]?.section || "GESTION"
-    }))
-  ];
-  let lastSection = "";
-  const nav = items.map((item) => {
-    const section = item.section !== lastSection ? `<div class="lcm-global-nav-section">${escapeHtml(item.section)}</div>` : "";
-    lastSection = item.section;
-    const current = window.location.pathname === item.route || (item.route !== "/" && window.location.pathname.startsWith(item.route));
-    return `${section}<a class="lcm-global-nav-link" href="${escapeHtml(item.route)}" ${current ? 'aria-current="page"' : ""} title="${escapeHtml(item.label)}">${icon(item.icon)}<span class="lcm-global-nav-label">${escapeHtml(item.label)}</span></a>`;
-  }).join("");
-
-  sidebar.innerHTML = `
-    <div class="lcm-global-brand"><div class="lcm-global-mark">LCM</div><div class="lcm-global-brand-text"><strong>LA CABLERA</strong><span>MARPLATENSE</span></div></div>
-    <nav class="lcm-global-nav" aria-label="Navegacion principal">${nav}</nav>
-    <div class="lcm-global-footer">
-      <div class="lcm-global-profile"><div class="lcm-global-avatar">${escapeHtml(initials(fullName(user)))}</div><div class="lcm-global-profile-text"><strong>${escapeHtml(fullName(user))}</strong><span>${Number(user.es_superadmin) === 1 ? "Superadministrador" : "Usuario corporativo"}</span></div></div>
-      <button class="lcm-global-signout" type="button" data-lcm-action="signout">${icon("logout")}<span class="lcm-global-nav-label">Cerrar sesion</span></button>
-    </div>`;
-  header.innerHTML = `
-    <div class="lcm-global-header-left"><button class="lcm-global-icon-btn" type="button" data-lcm-action="toggle-sidebar" aria-label="Abrir navegacion">${icon("menu")}</button><div class="lcm-global-header-title"><strong>La Cablera Marplatense</strong><span>Plataforma corporativa</span></div></div>
-    <div class="lcm-global-header-right"><span class="lcm-global-avatar">${escapeHtml(initials(fullName(user)))}</span></div>`;
-};
-
-const setLoginUi = (next, message = "", isError = false) => {
-  setAuthState(next);
-  const form = $("#lcm-login-form");
-  const links = $(".lcm-login-links");
-  const alert = $("#lcm-login-alert");
-  const status = $("#lcm-login-status");
-  const showForm = next === AUTH_STATE.UNAUTHENTICATED || next === AUTH_STATE.ERROR;
-  if (form) form.hidden = !showForm;
-  if (links) links.hidden = !showForm;
-  if (alert) {
-    alert.hidden = !isError || !message;
-    alert.textContent = isError ? message : "";
-  }
-  if (status) {
-    status.hidden = showForm || !message || isError;
-    status.innerHTML = showForm || !message || isError ? "" : `<span class="lcm-spinner" aria-hidden="true"></span><span>${escapeHtml(message)}</span>`;
-  }
-  document.documentElement.classList.toggle("lcm-auth-booting", next === AUTH_STATE.BOOTSTRAPPING);
-};
+const icon = (name) => `<span class="lcm-global-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false">${ICONS[name] || ICONS.apps}</svg></span>`;
+const safeReturnPath = (value) => { const path = String(value || '/'); return path.startsWith('/') && !path.startsWith('//') && !/[\\\u0000-\u001f]/.test(path) && !/^(?:https?:)?\/\//i.test(path) ? path : '/'; };
+const requestedReturnPath = () => safeReturnPath(new URLSearchParams(location.search).get('returnTo') || new URLSearchParams(location.search).get('return') || '/');
+const loginUrl = () => `/login/?return=${encodeURIComponent(safeReturnPath(location.pathname + location.search + location.hash))}`;
+const cableraModules = () => (state.profile?.modules || []).filter((m) => m.aplicacion === CABLERA_APP && m.permissions?.puede_ver === true && m.estado !== false).sort((a,b) => Number(a.orden || 0) - Number(b.orden || 0) || String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
+const moduleForPath = (path) => cableraModules().filter((m) => m.ruta && m.ruta !== '/').sort((a,b) => String(b.ruta).length - String(a.ruta).length).find((m) => path === m.ruta || path.startsWith(`${m.ruta.replace(/\/$/, '')}/`) || path === m.ruta.replace(/\/$/, '')) || null;
+const showStatus = (title, message) => { if (document.body?.dataset.serverAuthenticated === '1' && /cargando sesión|validando permisos/i.test(String(title))) return; const p = $('#lcm-global-status'); if (!p) return; p.hidden = false; const retry = /no pudimos|error|conectar/i.test(title) ? '<button type="button" data-lcm-action="retry-auth">Reintentar</button>' : ''; p.innerHTML = `<section class="lcm-global-status-card"><h2>${escapeHtml(title)}</h2><p>${escapeHtml(message)}</p>${retry}</section>`; };
+const hideStatus = () => { const p = $('#lcm-global-status'); if (p) p.hidden = true; };
+const setAuthState = (s) => { state.authState = s; document.body?.setAttribute('data-auth-state', s); };
+const clearCorporateState = () => { state.profile = null; state.user = null; $('#lcm-global-sidebar')?.replaceChildren(); $('#lcm-global-header')?.replaceChildren(); };
+const loadConfig = async () => { const r = await getSharedAuth('/api/v1/auth/config'); state.config = r.config; state.auth = r.auth; };
+const fetchAuthMe = async (refresh = false) => { const r = await fetchCorporateProfile({ auth: state.auth, config: state.config, user: state.user, forceRefresh: refresh }); logAuthMeDiagnostic({ firebaseUser: state.user, status: r.status, body: r.body, requiredModule: moduleForPath(location.pathname)?.codigo || null }); state.profile = r.body; return r.body; };
+const canView = (code) => !code || cableraModules().some((m) => m.codigo === code);
 
 const renderHome = () => {
-  const target = $("#lcm-home-authorized");
-  if (!target) return;
-  const modules = cableraModules().map((module) => ({
-    label: MODULE_REGISTRY[module.codigo]?.label || module.nombre || module.codigo,
-    route: MODULE_REGISTRY[module.codigo]?.route || "/",
-    description: module.descripcion || "Modulo autorizado.",
-    icon: MODULE_REGISTRY[module.codigo]?.icon || "apps"
-  })).filter((module) => module.route !== "/");
-  target.innerHTML = modules.map((module) => `<a class="lcm-home-card" href="${escapeHtml(module.route)}">${icon(module.icon)}<strong>${escapeHtml(module.label)}</strong><p>${escapeHtml(module.description)}</p></a>`).join("")
-    || `<section class="lcm-home-card"><strong>Sin modulos</strong><p>No tenes modulos autorizados para La Cablera.</p></section>`;
-};
-
-const showDenied = () => {
-  const main = $("main");
-  if (main) main.innerHTML = `<section class="lcm-denied-card"><h1>No tenes acceso a este modulo.</h1><p>Tu usuario esta autenticado, pero Cablera no autoriza esta ruta.</p><a class="lcm-denied-btn" href="/">Volver al inicio</a></section>`;
-  hideStatus();
-  document.documentElement.classList.remove("lcm-auth-booting");
-};
-
-const closeMobileSidebar = () => {
-  document.body.classList.remove("lcm-mobile-sidebar-open", "lcm-scroll-locked");
-  const backdrop = $("#lcm-global-backdrop");
-  if (backdrop) backdrop.hidden = true;
-};
-
-const toggleSidebar = () => {
-  if (window.matchMedia("(max-width: 900px)").matches) {
-    document.body.classList.add("lcm-mobile-sidebar-open", "lcm-scroll-locked");
-    $("#lcm-global-backdrop").hidden = false;
-    return;
-  }
-  const collapsed = !document.body.classList.contains("lcm-sidebar-collapsed");
-  document.body.classList.toggle("lcm-sidebar-collapsed", collapsed);
-  localStorage.setItem(SIDEBAR_KEY, collapsed ? "1" : "0");
-};
-
-const initShellEvents = () => {
-  document.addEventListener("click", async (event) => {
-    const action = event.target.closest("[data-lcm-action]")?.dataset.lcmAction;
-    if (action === "toggle-sidebar") toggleSidebar();
-    if (action === "signout") {
-      clearCorporateState();
-      await signOut(state.auth);
-      window.location.href = loginUrl();
-    }
-    if (event.target.closest(".lcm-global-nav-link")) closeMobileSidebar();
-  });
-  $("#lcm-global-backdrop")?.addEventListener("click", closeMobileSidebar);
-};
-
-const initLoginPage = async () => {
-  const alert = $("#lcm-login-alert");
-  const form = $("#lcm-login-form");
-  const setAlert = (message) => {
-    if (!alert) return;
-    alert.hidden = !message;
-    alert.textContent = message || "";
+  const host = $('#lcm-home-apps'); const greeting = $('#lcm-home-greeting');
+  if (!host) return;
+  const user = state.profile?.user || {}; const name = fullName(user).split(/\s+/)[0] || 'equipo';
+  if (greeting) greeting.textContent = `Hola, ${name}`;
+  const render = (query = '') => {
+    const q = normalize(query); const modules = cableraModules().filter((m) => !q || normalize(`${m.nombre || ''} ${m.descripcion || ''}`).includes(q));
+    host.innerHTML = modules.length ? modules.map((m) => `<a class="lcm-app-card" href="${escapeHtml(m.ruta || '#')}" data-route="${escapeHtml(m.ruta || '#')}" data-app-name="${escapeHtml(m.nombre || m.codigo)}"><span class="lcm-app-icon">${icon(m.icono)}</span><span><h3>${escapeHtml(m.nombre || m.codigo)}</h3><p>${escapeHtml(m.descripcion || 'Herramienta de gestión corporativa')}</p></span></a>`).join('') : '<div class="lcm-app-empty">No tenés aplicaciones habilitadas para mostrar.</div>';
+    host.querySelectorAll('[data-route]').forEach((link) => link.addEventListener('click', (event) => { if (link.dataset.route === '#') return; event.preventDefault(); navigate(link.dataset.route); }));
   };
-  setLoginUi(AUTH_STATE.BOOTSTRAPPING, "Cargando sesion...");
-  await loadConfig();
-  onAuthStateChanged(state.auth, async (user) => {
-    if (!user) {
-      clearCorporateState();
-      setLoginUi(AUTH_STATE.UNAUTHENTICATED);
-      document.documentElement.classList.remove("lcm-auth-booting");
-      return;
-    }
-    state.user = user;
-    try {
-      setLoginUi(AUTH_STATE.AUTHENTICATED_LOADING_PROFILE, "Validando acceso...");
-      await fetchAuthMe();
-      setLoginUi(AUTH_STATE.AUTHORIZED, "Ingresando...");
-      window.location.href = returnTo();
-    } catch (error) {
-      setLoginUi(AUTH_STATE.ERROR, error.status ? `Sesion autenticada, pero /auth/me fallo con HTTP ${error.status}.` : error.message, true);
-    }
-  });
-  form?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    setAlert("");
-    const data = new FormData(form);
-    try {
-      setLoginUi(AUTH_STATE.AUTHENTICATING, "Autenticando...");
-      const credential = await signInWithEmailAndPassword(state.auth, String(data.get("email")), String(data.get("password")));
-      state.user = credential.user;
-      setLoginUi(AUTH_STATE.AUTHENTICATED_LOADING_PROFILE, "Validando acceso...");
-      await fetchAuthMe();
-      setLoginUi(AUTH_STATE.AUTHORIZED, "Ingresando...");
-      window.location.href = returnTo();
-    } catch (error) {
-      setLoginUi(AUTH_STATE.ERROR, firebaseErrorMessage(error), true);
-    }
-  });
-  $("#lcm-reset-password")?.addEventListener("click", async () => {
-    const email = String(new FormData(form).get("email") || "").trim();
-    if (!email) {
-      setAlert("Ingresa tu correo para enviar el restablecimiento.");
-      return;
-    }
-    try {
-      await sendPasswordResetEmail(state.auth, email);
-      setAlert("Te enviamos un correo para restablecer la contrasena.");
-    } catch (error) {
-      setAlert(firebaseErrorMessage(error));
-    }
-  });
+  render();
+  const search = $('#lcm-home-search-input'); if (search && !search.dataset.ready) { search.dataset.ready = '1'; search.addEventListener('input', () => render(search.value)); }
 };
 
-const initProtectedPage = async () => {
-  setAuthState(AUTH_STATE.BOOTSTRAPPING);
-  showStatus("Cargando sesion", "Estamos validando tu acceso corporativo.");
-  if (localStorage.getItem(SIDEBAR_KEY) === "1") document.body.classList.add("lcm-sidebar-collapsed");
-  initShellEvents();
-  await loadConfig();
-  onAuthStateChanged(state.auth, async (user) => {
-    if (!user) {
-      clearCorporateState();
-      setAuthState(AUTH_STATE.UNAUTHENTICATED);
-      window.location.href = loginUrl();
-      return;
-    }
-    state.user = user;
-    try {
-      setAuthState(AUTH_STATE.AUTHENTICATED_LOADING_PROFILE);
-      showStatus("Validando permisos", "Consultando el perfil corporativo.");
-      await fetchAuthMe();
-      renderSidebar();
-      if (!canViewModule(requiredModuleForPath(window.location.pathname))) {
-        setAuthState(AUTH_STATE.DENIED);
-        showDenied();
-        return;
-      }
-      renderHome();
-      setAuthState(AUTH_STATE.AUTHORIZED);
-      hideStatus();
-      document.documentElement.classList.remove("lcm-auth-booting");
-    } catch (error) {
-      setAuthState(AUTH_STATE.ERROR);
-      const message = error.message === "Respuesta invalida de /auth/me."
-        ? "GET /api/v1/auth/me no devolvio un perfil corporativo valido."
-        : (error.status ? `GET /api/v1/auth/me fallo con HTTP ${error.status}.` : "No pudimos conectar con el servicio de autenticacion.");
-      showStatus("No pudimos validar tu sesion", message);
-      document.documentElement.classList.remove("lcm-auth-booting");
-    }
-  });
+const renderSidebar = () => {
+  const sidebar = $('#lcm-global-sidebar'); if (!sidebar) return;
+  const groups = new Map(); cableraModules().forEach((m) => { const key = m.grupo || 'Aplicaciones'; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(m); });
+  const active = moduleForPath(location.pathname); const activeGroup = active?.grupo || localStorage.getItem(GROUP_KEY) || '';
+  const groupHtml = [...groups.entries()].map(([group, modules], i) => `<section class="lcm-nav-group" data-nav-group="${escapeHtml(group)}"><button type="button" class="lcm-nav-group-toggle" aria-expanded="${activeGroup === group ? 'true' : 'false'}" title="${escapeHtml(group)}">${icon('apps')}<span class="lcm-nav-label">${escapeHtml(group)}</span><span class="lcm-nav-chevron" aria-hidden="true">⌄</span></button><div class="lcm-nav-group-items" ${activeGroup === group ? '' : 'hidden'}>${modules.map((m) => { const current = active?.codigo === m.codigo; return `<a class="lcm-global-nav-link${current ? ' active' : ''}" data-app-name="${escapeHtml(m.nombre || m.codigo)}" data-route="${escapeHtml(m.ruta || '/') }" href="${escapeHtml(m.ruta || '/') }" ${current ? 'aria-current="page"' : ''} title="${escapeHtml(m.nombre || m.codigo)}">${icon(m.icono)}<span class="lcm-nav-label">${escapeHtml(m.nombre || m.codigo)}</span></a>`; }).join('')}</div></section>`).join('');
+  const user = state.profile?.user || {}; const name = fullName(user);
+  sidebar.innerHTML = `<div class="lcm-global-brand"><div class="lcm-global-mark">LCM</div><div class="lcm-global-brand-text"><strong>LA CABLERA</strong><span>MARPLATENSE</span></div></div><label class="lcm-global-search"><span class="sr-only">Buscar aplicaciones</span><span class="lcm-search-icon">⌕</span><input id="lcm-global-search-input" type="search" placeholder="Buscar aplicaciones" autocomplete="off"></label><nav class="lcm-global-nav" aria-label="Navegación principal"><a class="lcm-global-nav-link lcm-home-link${!active ? ' active' : ''}" href="/" title="Inicio">${icon('home')}<span class="lcm-nav-label">Inicio</span></a>${groupHtml}<p class="lcm-nav-empty" hidden>No hay aplicaciones para mostrar.</p></nav><div class="lcm-global-footer"><div class="lcm-global-profile"><div class="lcm-global-avatar">${escapeHtml(initials(name))}</div><div class="lcm-global-profile-text"><strong>${escapeHtml(name)}</strong><span>${Number(user.es_superadmin) === 1 ? 'Administrador' : 'Usuario corporativo'}</span></div></div><button class="lcm-global-signout" type="button" data-lcm-action="signout" title="Cerrar sesión">${icon('logout')}<span class="lcm-nav-label">Cerrar sesión</span></button></div>`;
+  sidebar.querySelectorAll('.lcm-nav-group-toggle').forEach((button) => button.addEventListener('click', () => { const group = button.closest('.lcm-nav-group'); const open = !group.classList.contains('open'); sidebar.querySelectorAll('.lcm-nav-group').forEach((g) => { g.classList.toggle('open', g === group && open); g.querySelector('.lcm-nav-group-items')?.toggleAttribute('hidden', !(g === group && open)); g.querySelector('.lcm-nav-group-toggle')?.setAttribute('aria-expanded', g === group && open ? 'true' : 'false'); }); if (open) localStorage.setItem(GROUP_KEY, group.dataset.navGroup); else localStorage.removeItem(GROUP_KEY); }));
+  sidebar.querySelectorAll('.lcm-nav-group').forEach((g) => { if (!g.querySelector('.lcm-nav-group-items[hidden]')) g.classList.add('open'); });
+  const search = $('#lcm-global-search-input'); search?.addEventListener('input', () => { const q = normalize(search.value.trim()); let visible = 0; sidebar.querySelectorAll('.lcm-nav-group').forEach((g) => { let count = 0; g.querySelectorAll('.lcm-global-nav-link').forEach((a) => { const yes = !q || normalize(a.dataset.appName).includes(q); a.hidden = !yes; if (yes) count++; }); g.hidden = Boolean(q) && !count; if (q && count) { g.classList.add('open'); g.querySelector('.lcm-nav-group-items')?.removeAttribute('hidden'); } visible += count; }); const empty = sidebar.querySelector('.lcm-nav-empty'); if (empty) empty.hidden = !q || visible > 0; });
 };
 
-if (document.body.classList.contains("lcm-login-page") && $("#lcm-login-form")) {
-  void initLoginPage();
-} else if (document.body.classList.contains("lcm-page--with-nav")) {
-  void initProtectedPage();
-}
+const renderHeader = () => { const h = $('#lcm-global-header'); if (!h) return; const user = state.profile?.user || {}; const active = moduleForPath(location.pathname); const name = fullName(user); h.innerHTML = `<div class="lcm-global-header-left"><button class="lcm-global-icon-btn" type="button" data-lcm-action="toggle-sidebar" aria-label="Abrir navegación">${icon('menu')}</button><div class="lcm-global-header-title"><strong>${escapeHtml(active?.nombre || 'La Cablera Marplatense')}</strong><span>${escapeHtml(active?.descripcion || 'Plataforma corporativa')}</span></div></div><div class="lcm-global-header-right"><button class="lcm-global-user-btn" type="button" data-lcm-action="toggle-user-menu" aria-expanded="false"><span class="lcm-global-avatar">${escapeHtml(initials(name))}</span><span class="lcm-user-name">${escapeHtml(name)}</span><span aria-hidden="true">⌄</span></button><div class="lcm-global-user-menu" id="lcm-global-user-menu" hidden><button type="button" data-lcm-action="reset-password">Cambiar contraseña</button><button type="button" data-lcm-action="signout">Cerrar sesión</button></div></div>`; };
+const renderWorkspace = () => { if (document.body.dataset.directModule === 'visor_sigest') return; const active = moduleForPath(location.pathname); const home = $('#lcm-home-workspace'); const workspace = $('#lcm-app-workspace'); const frame = $('#lcm-app-frame'); const loading = $('#lcm-app-loading'); const error = $('#lcm-app-error'); if (!home || !workspace || !frame) return; if (!active) { home.hidden = false; workspace.hidden = true; frame.hidden = true; renderHome(); return; } home.hidden = true; workspace.hidden = false; error.hidden = true; loading.hidden = false; frame.hidden = true; frame.title = active.nombre || 'Aplicación La Cablera'; frame.onload = () => { loading.hidden = true; frame.hidden = false; }; frame.onerror = () => { loading.hidden = true; error.hidden = false; }; frame.src = active.ruta; state.activeRoute = active.ruta; };
+const navigate = (route) => { if (route === '/apps/visor_sigest/' || route === '/apps/visor_sigest') { location.href = '/apps/visor_sigest/'; return; } if (route === location.pathname) { renderSidebar(); renderHeader(); renderWorkspace(); return; } history.pushState({}, '', route); renderSidebar(); renderHeader(); renderWorkspace(); closeMobileSidebar(); };
+const closeMobileSidebar = () => { document.body.classList.remove('lcm-mobile-sidebar-open', 'lcm-scroll-locked'); const b = $('#lcm-global-backdrop'); if (b) b.hidden = true; };
+const toggleSidebar = () => { if (matchMedia('(max-width: 900px)').matches) { document.body.classList.add('lcm-mobile-sidebar-open', 'lcm-scroll-locked'); $('#lcm-global-backdrop').hidden = false; return; } const collapsed = !document.body.classList.contains('lcm-sidebar-collapsed'); document.body.classList.toggle('lcm-sidebar-collapsed', collapsed); localStorage.setItem(SIDEBAR_KEY, collapsed ? '1' : '0'); };
+const initShellEvents = () => { document.addEventListener('click', async (e) => { const link = e.target.closest('.lcm-global-nav-link'); if (link && link.dataset.route) { e.preventDefault(); navigate(link.dataset.route); return; } const action = e.target.closest('[data-lcm-action]')?.dataset.lcmAction; if (action === 'toggle-sidebar') toggleSidebar(); if (action === 'toggle-user-menu') { const menu = $('#lcm-global-user-menu'); const b = e.target.closest('[data-lcm-action]'); const open = Boolean(menu?.hidden); if (menu) menu.hidden = !open; b?.setAttribute('aria-expanded', open ? 'true' : 'false'); } if (action === 'retry-auth') location.reload(); if (action === 'retry-app') renderWorkspace(); if (action === 'reset-password') { try { await sendPasswordResetEmail(state.auth, state.user?.email || ''); showStatus('Correo enviado', 'Revisá tu correo y la carpeta de spam para cambiar la contraseña.'); setTimeout(hideStatus, 3000); } catch (err) { showStatus('No se pudo enviar el correo', firebaseErrorMessage(err)); setTimeout(hideStatus, 3500); } } if (action === 'signout') { clearCorporateState(); await signOut(state.auth); location.href = loginUrl(); } }); document.addEventListener('click', (e) => { if (!e.target.closest('.lcm-global-user-menu, .lcm-global-user-btn')) { const menu = $('#lcm-global-user-menu'); if (menu) menu.hidden = true; } }); $('#lcm-global-backdrop')?.addEventListener('click', closeMobileSidebar); window.addEventListener('popstate', () => { renderSidebar(); renderHeader(); renderWorkspace(); }); };
+const showDenied = () => { const w = $('#lcm-app-workspace'); if (w) { w.hidden = false; w.innerHTML = '<div class="lcm-app-error"><h2>No tenés acceso a este módulo.</h2><p>Tu usuario está autenticado, pero La Cablera no autoriza esta ruta.</p><a href="/">Volver al inicio</a></div>'; } $('#lcm-home-workspace').hidden = true; hideStatus(); };
+const initProtectedPage = async () => { if (document.body.dataset.lcmAuthInitialized === '1') return; document.body.dataset.lcmAuthInitialized = '1'; const serverRendered = document.body.dataset.serverAuthenticated === '1'; setAuthState(AUTH_STATE.BOOTSTRAPPING); if (!serverRendered) showStatus('Cargando sesión', 'Estamos validando tu acceso corporativo.'); if (localStorage.getItem(SIDEBAR_KEY) === '1') document.body.classList.add('lcm-sidebar-collapsed'); initShellEvents(); try { await loadConfig(); onAuthStateChanged(state.auth, async (user, profile) => { if (!user) { clearCorporateState(); location.href = loginUrl(); return; } state.user = user; try { setAuthState(AUTH_STATE.AUTHENTICATED_LOADING_PROFILE); if (!serverRendered) showStatus('Validando permisos', 'Consultando el perfil corporativo.'); state.profile = profile || (await fetchAuthMe()); const required = moduleForPath(location.pathname)?.codigo; if (!canView(required)) { setAuthState(AUTH_STATE.DENIED); showDenied(); return; } renderSidebar(); renderHeader(); renderWorkspace(); setAuthState(AUTH_STATE.AUTHORIZED); hideStatus(); document.documentElement.classList.remove('lcm-auth-booting'); } catch (err) { if (serverRendered && err?.status !== 401) { setAuthState(AUTH_STATE.ERROR); document.documentElement.classList.remove('lcm-auth-booting'); return; } setAuthState(AUTH_STATE.ERROR); showStatus('No pudimos validar tu sesión', 'No pudimos validar tu sesión en este momento. Intentá nuevamente.'); document.documentElement.classList.remove('lcm-auth-booting'); } }); } catch (err) { if (!serverRendered) showStatus('No pudimos conectar', 'No pudimos cargar la configuración de autenticación. Intentá nuevamente.'); document.documentElement.classList.remove('lcm-auth-booting'); } };
+const initLoginPage = async () => {
+  const form = $('#lcm-login-form'); const alert = $('#lcm-login-alert'); const status = $('#lcm-login-status');
+  const message = (text, error = false) => { if (alert) { alert.hidden = !text; alert.textContent = text || ''; alert.classList.toggle('lcm-login-success', Boolean(text) && !error); alert.classList.toggle('lcm-login-alert--error', Boolean(text) && error); } };
+  try { await loadConfig(); } catch { message('No pudimos cargar la configuración de acceso. Intentá nuevamente.', true); return; }
+  onAuthStateChanged(state.auth, async (user) => { if (!user) { status?.setAttribute('hidden', ''); form?.removeAttribute('hidden'); document.documentElement.classList.remove('lcm-auth-booting'); return; } state.user = user; location.href = requestedReturnPath(); });
+  form?.addEventListener('submit', async (e) => { e.preventDefault(); message(''); const button = form.querySelector('button[type="submit"]'); if (button?.disabled) return; if (button) button.disabled = true; form.dispatchEvent(new CustomEvent('lcm-login-started')); const data = new FormData(form); try { await signInWithEmailAndPassword(state.auth, String(data.get('email') || ''), String(data.get('password') || '')); location.href = requestedReturnPath(); } catch (err) { message(firebaseErrorMessage(err), true); } finally { if (button) button.disabled = false; form.dispatchEvent(new CustomEvent('lcm-login-finished')); } });
+  $('#lcm-reset-password')?.addEventListener('click', async () => { const email = String(new FormData(form).get('email') || '').trim(); if (!email) { message('Ingresá tu correo para enviar el restablecimiento.', true); return; } try { await sendPasswordResetEmail(state.auth, email); message('Te enviamos un correo para restablecer la contraseña. Revisá también la carpeta de spam.'); } catch (err) { message(firebaseErrorMessage(err), true); } });
+};
+if (document.body.classList.contains('lcm-login-page') && $('#lcm-login-form')) void initLoginPage();
+else if (document.body.classList.contains('lcm-page--with-nav')) void initProtectedPage();
