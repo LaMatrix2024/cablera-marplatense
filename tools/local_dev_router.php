@@ -5,8 +5,49 @@ declare(strict_types=1);
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $root = dirname(__DIR__);
 
+// El servidor integrado no procesa las protecciones de Apache.
+$path = rawurldecode($path);
+if (str_contains($path, '\\') || str_contains($path, "\0")
+    || preg_match('#(?:^|/)\.{1,2}(?:/|$)|(?:^|/)\.[^/]+#', $path)
+    || preg_match('#^/(?:config|logs|tmp|storage|scripts|tools|database|docs|tests|shared)(?:/|$)#i', $path)
+    || preg_match('#\.(?:env|log|sql|ps1|bat|md|bak|ini|txt|pid)$#i', $path)) {
+    http_response_code(404);
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode(['ok' => false, 'error' => ['code' => 'not_found', 'message' => 'Recurso no disponible.']], JSON_UNESCAPED_UNICODE);
+    return true;
+}
+
+// Las apps nuevas viven en /apps; las PWA existentes conservan su ubicación.
+if (str_starts_with($path, '/apps/') && !is_file($root . $path) && !is_dir($root . $path)) {
+    $legacy = realpath($root . '/public' . $path);
+    $base = realpath($root . '/public/apps');
+    if ($legacy !== false && $base !== false && str_starts_with($legacy, $base . DIRECTORY_SEPARATOR)) {
+        if (is_dir($legacy)) {
+            foreach (['index.php', 'index.html'] as $index) {
+                if (is_file($legacy . '/' . $index)) { $legacy .= '/' . $index; break; }
+            }
+        }
+        if (is_file($legacy)) {
+            $extension = strtolower(pathinfo($legacy, PATHINFO_EXTENSION));
+            if ($extension === 'php') { require $legacy; return true; }
+            $types = ['html' => 'text/html; charset=UTF-8', 'css' => 'text/css; charset=UTF-8',
+                'js' => 'application/javascript; charset=UTF-8', 'json' => 'application/json; charset=UTF-8',
+                'png' => 'image/png', 'ico' => 'image/x-icon', 'svg' => 'image/svg+xml'];
+            header('Content-Type: ' . ($types[$extension] ?? 'application/octet-stream'));
+            readfile($legacy);
+            return true;
+        }
+    }
+}
+$path = rtrim($path, '/') ?: '/';
+
 $routes = [
+    '/api/v1/health' => '/api/v1/health/index.php',
+    '/api/v1/health/' => '/api/v1/health/index.php',
+    '/api/v1/auth/login' => '/api/v1/auth/login.php',
+    '/api/v1/auth/logout' => '/api/v1/auth/logout.php',
     '/api/v1/auth/me' => '/api/v1/auth/me.php',
+    '/api/v1/auth/session' => '/api/v1/auth/session.php',
     '/api/v1/auth/config' => '/api/v1/auth/config.php',
     '/api/v1/auth/invitation' => '/api/v1/auth/invitation.php',
     '/api/v1/auth/invitation/accept' => '/api/v1/auth/invitation/accept.php',

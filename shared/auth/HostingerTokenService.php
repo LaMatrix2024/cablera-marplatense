@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/HttpError.php';
 require_once __DIR__ . '/CorporateInvitationService.php';
 
-final class HostingerTokenService
+final class CentralHostingerTokenService
 {
     private const TTL_HOURS = 8;
     public function __construct(private PDO $pdo) {}

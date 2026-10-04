@@ -1,4 +1,5 @@
 config/env.php
+config/cacert.pem
 logs/*
 tmp/*
 *.log

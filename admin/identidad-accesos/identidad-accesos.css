@@ -594,6 +594,12 @@ body.ia-scroll-locked {
     overflow: hidden;
 }
 
+.ia-catalog-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.ia-module-form { display: grid; gap: 9px; padding: 16px; border: 1px solid var(--ia-border); border-radius: 12px; background: #fff; }
+.ia-module-form label { display: grid; gap: 5px; color: var(--ia-muted); font-size: 12px; font-weight: 700; }
+.ia-module-form input:not([type="checkbox"]) { width: 100%; border: 1px solid var(--ia-border); border-radius: 8px; padding: 8px 9px; font: inherit; color: var(--ia-text); }
+.ia-module-form .ia-checkbox { display: flex; grid-template-columns: auto 1fr; align-items: center; gap: 7px; }
+
 .ia-table {
     width: 100%;
     border-collapse: collapse;

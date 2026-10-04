@@ -500,8 +500,31 @@ const loadCatalogs = async () => {
   const catalogs = await api("/admin/catalogs");
   state.catalogs = {
     applications: catalogs.applications || [],
-    roles: catalogs.roles || []
+    roles: catalogs.roles || [],
+    modules: catalogs.modules || []
   };
+};
+
+const renderModules = async () => {
+  $("#ia-view-placeholder").innerHTML = skeleton("Cargando catálogo...");
+  const data = await api("/admin/modules");
+  const modules = data.modules || [];
+  $("#ia-view-placeholder").innerHTML = `
+    <div class="ia-page-title"><div><h2>Catálogo de módulos</h2><p>Rutas, grupos y presentación del menú corporativo.</p></div></div>
+    <section class="ia-card ia-table-card"><div class="ia-catalog-grid">
+      ${modules.map((module) => `<form class="ia-module-form" data-module-id="${escapeHtml(module.id)}">
+        <strong>${escapeHtml(module.aplicacion_codigo)} / ${escapeHtml(module.codigo)}</strong>
+        <label>Nombre<input name="nombre" value="${escapeHtml(module.nombre)}" required></label>
+        <label>Descripción<input name="descripcion" value="${escapeHtml(module.descripcion || "")}"></label>
+        <label>Ruta<input name="ruta" value="${escapeHtml(module.ruta || "")}" required></label>
+        <label>Grupo<input name="grupo" value="${escapeHtml(module.grupo || "GESTION")}" required></label>
+        <label>Ícono<input name="icono" value="${escapeHtml(module.icono || "apps")}" required></label>
+        <label>Color<input name="color" value="${escapeHtml(module.color || "")}" placeholder="#1769aa"></label>
+        <label>Orden<input name="orden" type="number" min="0" value="${escapeHtml(module.orden || 0)}" required></label>
+        <label class="ia-checkbox"><input name="activo" type="checkbox" ${Number(module.activo) === 1 ? "checked" : ""}> Activo</label>
+        <button class="ia-btn ia-btn--primary" type="submit">Guardar</button>
+      </form>`).join("") || `<p class="ia-muted">No hay módulos registrados.</p>`}
+    </div></section>`;
 };
 
 const renderUsers = async (filters = {}) => {
@@ -658,6 +681,7 @@ const renderView = async () => {
   try {
     if (state.view === "dashboard") await renderDashboard();
     else if (state.view === "users") await renderUsers();
+    else if (state.view === "modules") await renderModules();
     else renderPlaceholder(NAV_ITEMS.find((item) => item.id === state.view));
   } catch (error) {
     const target = state.view === "users" ? $("#ia-view-users") : $("#ia-view-dashboard");
@@ -797,6 +821,25 @@ document.addEventListener("submit", async (event) => {
         rol: String(form.get("rol") || "")
       });
       closeUserFilters();
+      return;
+    }
+    if (event.target.matches(".ia-module-form")) {
+      const form = new FormData(event.target);
+      const id = event.target.dataset.moduleId;
+      await api(`/admin/modules/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          nombre: String(form.get("nombre") || "").trim(),
+          descripcion: String(form.get("descripcion") || "").trim(),
+          ruta: String(form.get("ruta") || "").trim(),
+          grupo: String(form.get("grupo") || "GESTION").trim(),
+          icono: String(form.get("icono") || "apps").trim(),
+          color: String(form.get("color") || "").trim(),
+          orden: Number(form.get("orden") || 0),
+          activo: form.get("activo") === "on"
+        })
+      });
+      setAlert("Catálogo actualizado.");
     }
   } catch (error) {
     setAlert(firebaseErrorMessage(error), true);

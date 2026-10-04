@@ -42,10 +42,11 @@ final class FirebaseTokenVerifier
             throw new HttpError(401, 'Token Firebase invalido.', 'invalid_firebase_header');
         }
 
-        $certificates = $this->certificates();
         $kid = (string)$header['kid'];
+        $certificates = $this->certificates($kid);
         if (!isset($certificates[$kid])) {
-            throw new HttpError(401, 'Certificado Firebase no encontrado.', 'firebase_cert_not_found');
+            $this->logCertificateEvent('kid_not_found_after_refresh', $kid, null, null);
+            throw new HttpError(401, 'No pudimos validar tu sesión en este momento. Intentá nuevamente.', 'firebase_cert_not_found');
         }
 
         $signed = $parts[0] . '.' . $parts[1];
@@ -88,37 +89,106 @@ final class FirebaseTokenVerifier
         return $decoded;
     }
 
-    private function certificates(): array
+    private function certificates(?string $requiredKid = null): array
     {
         $cache = $this->cachedCertificates();
-        if ($cache !== null) {
+        if ($cache !== null && ($requiredKid === null || isset($cache[$requiredKid]))) {
             return $cache;
         }
 
         $staleCache = $this->cachedCertificates(true);
-        $headers = [];
-        $context = stream_context_create([
-            'http' => [
-                'timeout' => 6,
-                'ignore_errors' => true,
-            ],
-        ]);
-        $raw = @file_get_contents(self::CERT_URL, false, $context);
-        if (isset($http_response_header) && is_array($http_response_header)) {
-            $headers = $http_response_header;
-        }
-        $decoded = is_string($raw) ? json_decode($raw, true) : null;
-        if (!is_array($decoded)) {
-            if ($staleCache !== null) {
+        [$decoded, $headers, $status, $error] = $this->downloadCertificates();
+        if ($decoded === null) {
+            if ($staleCache !== null && ($requiredKid === null || isset($staleCache[$requiredKid]))) {
+                $this->logCertificateEvent('stale_cache_used', $requiredKid, $status, $error);
                 return $staleCache;
             }
 
-            throw new HttpError(401, 'No se pudieron obtener certificados Firebase.', 'firebase_certs_unavailable');
+            $this->logCertificateEvent('download_failed', $requiredKid, $status, $error);
+            throw new HttpError(401, 'No pudimos validar tu sesión en este momento. Intentá nuevamente.', 'firebase_certs_unavailable');
         }
 
         $this->storeCertificates($decoded, $headers);
+        $this->logCertificateEvent('certificates_refreshed', $requiredKid, $status, null);
 
         return $decoded;
+    }
+
+    private function downloadCertificates(): array
+    {
+        $curl = curl_init(self::CERT_URL);
+        if ($curl === false) return [null, [], 0, 'curl_init_failed'];
+        $ca = (string)(ini_get('curl.cainfo') ?: ini_get('openssl.cafile'));
+        if ($ca !== '' && is_file($ca)) curl_setopt($curl, CURLOPT_CAINFO, $ca);
+        curl_setopt_array($curl, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HEADER => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_CONNECTTIMEOUT => 6,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_HTTPHEADER => ['Accept: application/json'],
+        ]);
+        $response = curl_exec($curl);
+        $status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $headerSize = (int)curl_getinfo($curl, CURLINFO_HEADER_SIZE);
+        $error = curl_error($curl) ?: null;
+        $headers = [];
+        $contentType = (string)curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
+        curl_close($curl);
+        $raw = is_string($response) ? substr($response, $headerSize) : false;
+        if (is_string($response) && $headerSize > 0) {
+            $headers = preg_split("/\r\n|\n|\r/", substr($response, 0, $headerSize), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        }
+        $decoded = is_string($raw) && $status >= 200 && $status < 300 ? json_decode($raw, true) : null;
+        if ($decoded === null && $error !== null && stripos($error, 'certificate') !== false && PHP_OS_FAMILY === 'Windows') {
+            [$fallbackRaw, $fallbackHeaders, $fallbackStatus, $fallbackError] = $this->downloadWithWindowsCurl();
+            if ($fallbackRaw !== null) {
+                $raw = $fallbackRaw;
+                $headers = $fallbackHeaders;
+                $status = $fallbackStatus;
+                $error = null;
+                $decoded = $status >= 200 && $status < 300 ? json_decode($raw, true) : null;
+                $this->logCertificateEvent('windows_trusted_curl_fallback', null, $status, null);
+            } else {
+                $error = $fallbackError ?: $error;
+            }
+        }
+        if (!is_array($decoded) || $decoded === []) $decoded = null;
+        if ($decoded !== null) {
+            foreach ($decoded as $kid => $certificate) {
+                if (!is_string($kid) || !is_string($certificate) || !str_contains($certificate, 'BEGIN CERTIFICATE')) {
+                    $decoded = null;
+                    break;
+                }
+            }
+        }
+        $headers[] = 'content-type: ' . $contentType;
+        return [$decoded, $headers, $status, $error];
+    }
+
+    private function downloadWithWindowsCurl(): array
+    {
+        $curlPath = getenv('SystemRoot') . '\\System32\\curl.exe';
+        if (!is_file($curlPath)) return [null, [], 0, 'trusted_curl_not_found'];
+        $dir = sys_get_temp_dir();
+        $bodyPath = tempnam($dir, 'firebase-cert-body-');
+        $headerPath = tempnam($dir, 'firebase-cert-header-');
+        if ($bodyPath === false || $headerPath === false) return [null, [], 0, 'temp_file_failed'];
+        $command = [$curlPath, '--fail', '--silent', '--show-error', '--location', '--max-time', '10', '--proto', '=https', '--tlsv1.2', '--dump-header', $headerPath, '--output', $bodyPath, self::CERT_URL];
+        $pipes = [];
+        $process = @proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        if (!is_resource($process)) { @unlink($bodyPath); @unlink($headerPath); return [null, [], 0, 'trusted_curl_start_failed']; }
+        $stderr = stream_get_contents($pipes[2]);
+        foreach ($pipes as $pipe) fclose($pipe);
+        $exitCode = proc_close($process);
+        $raw = $exitCode === 0 ? @file_get_contents($bodyPath) : false;
+        $headers = @file($headerPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+        @unlink($bodyPath); @unlink($headerPath);
+        $status = 0;
+        foreach (array_reverse($headers) as $line) if (preg_match('/^HTTP\/\S+\s+(\d{3})/', $line, $m)) { $status = (int)$m[1]; break; }
+        return [is_string($raw) ? $raw : null, $headers, $status, $exitCode === 0 ? null : trim((string)$stderr)];
     }
 
     private function cachedCertificates(bool $allowExpired = false): ?array
@@ -155,10 +225,28 @@ final class FirebaseTokenVerifier
             @mkdir($dir, 0775, true);
         }
 
-        @file_put_contents($this->cachePath(), json_encode([
+        $payload = json_encode([
             'expires_at' => time() + $maxAge,
             'certificates' => $certificates,
-        ], JSON_UNESCAPED_SLASHES));
+        ], JSON_UNESCAPED_SLASHES);
+        $temporary = $this->cachePath() . '.tmp';
+        if (is_string($payload) && @file_put_contents($temporary, $payload, LOCK_EX) !== false) {
+            @rename($temporary, $this->cachePath());
+        }
+    }
+
+    private function logCertificateEvent(string $event, ?string $kid, ?int $status, ?string $error): void
+    {
+        $dir = dirname(__DIR__, 2) . '/logs';
+        if (!is_dir($dir)) @mkdir($dir, 0775, true);
+        $line = json_encode([
+            'time' => date(DATE_ATOM),
+            'event' => $event,
+            'kid' => $kid,
+            'http_status' => $status,
+            'error' => $error,
+        ], JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        @file_put_contents($dir . '/firebase-token.log', $line, FILE_APPEND | LOCK_EX);
     }
 
     private function cachePath(): string

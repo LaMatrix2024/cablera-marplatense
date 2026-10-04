@@ -46,7 +46,7 @@ final class IdentityAdminService
                  ORDER BY a.nombre, r.nombre'
             )->fetchAll(),
             'modules' => $this->pdo->query(
-                'SELECT m.id, m.aplicacion_id, m.codigo, m.nombre, m.activo, a.codigo AS aplicacion_codigo
+                'SELECT m.id, m.aplicacion_id, m.codigo, m.nombre, m.descripcion, m.ruta, m.icono, m.color, m.grupo, m.orden, m.activo, a.codigo AS aplicacion_codigo
                  FROM modulos m
                  INNER JOIN aplicaciones a ON a.id = m.aplicacion_id
                  ORDER BY a.nombre, m.orden, m.nombre'
@@ -369,14 +369,18 @@ final class IdentityAdminService
         $applicationId = $this->applicationId($payload['aplicacion_id'] ?? null);
         $codigo = $this->code($payload['codigo'] ?? '');
         $stmt = $this->pdo->prepare(
-            'INSERT INTO modulos (aplicacion_id, codigo, nombre, descripcion, orden, activo)
-             VALUES (:aplicacion_id, :codigo, :nombre, :descripcion, :orden, :activo)'
+            'INSERT INTO modulos (aplicacion_id, codigo, nombre, descripcion, ruta, icono, color, grupo, orden, activo)
+             VALUES (:aplicacion_id, :codigo, :nombre, :descripcion, :ruta, :icono, :color, :grupo, :orden, :activo)'
         );
         $stmt->execute([
             'aplicacion_id' => $applicationId,
             'codigo' => $codigo,
             'nombre' => trim((string)($payload['nombre'] ?? $codigo)),
             'descripcion' => $this->nullableString($payload['descripcion'] ?? null),
+            'ruta' => $this->nullableString($payload['ruta'] ?? null),
+            'icono' => trim((string)($payload['icono'] ?? 'apps')) ?: 'apps',
+            'color' => $this->nullableString($payload['color'] ?? null),
+            'grupo' => trim((string)($payload['grupo'] ?? 'GESTION')) ?: 'GESTION',
             'orden' => (int)($payload['orden'] ?? 0),
             'activo' => $this->boolInt($payload['activo'] ?? true),
         ]);
@@ -388,7 +392,19 @@ final class IdentityAdminService
 
     public function updateModule(int $id, array $payload): array
     {
-        return $this->updateCatalog('modulos', 'modulo', $id, $payload, ['nombre', 'descripcion', 'orden', 'activo']);
+        if (array_key_exists('ruta', $payload)) {
+            $ruta = trim((string)$payload['ruta']);
+            if ($ruta === '' || !str_starts_with($ruta, '/') || str_contains($ruta, '://')) {
+                throw new HttpError(422, 'La ruta del módulo debe ser interna y comenzar con /.', 'invalid_module_route');
+            }
+            $payload['ruta'] = $ruta;
+        }
+        foreach (['nombre', 'grupo', 'icono'] as $required) {
+            if (array_key_exists($required, $payload) && trim((string)$payload[$required]) === '') {
+                throw new HttpError(422, 'El catálogo contiene campos incompletos.', 'invalid_module_catalog');
+            }
+        }
+        return $this->updateCatalog('modulos', 'modulo', $id, $payload, ['nombre', 'descripcion', 'ruta', 'icono', 'color', 'grupo', 'orden', 'activo']);
     }
 
     public function listRoles(array $filters): array

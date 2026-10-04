@@ -11,6 +11,8 @@ api_handle(function (): void {
     if (lcm_auth_local_proxy_request()) {
         try {
             $central = (new RemoteCentralAuthClient())->login($email, $password);
+        } catch (HttpError $error) {
+            throw $error;
         } catch (RuntimeException $error) {
             throw new HttpError(503, 'La autenticación central está temporalmente inaccesible.', 'CENTRAL_UNAVAILABLE');
         }
