@@ -1,0 +1,10 @@
+{
+  "id": "visor_sigest",
+  "nombre": "Visor SIGEST",
+  "descripcion": "Consulta y seguimiento de obras SIGEST",
+  "grupo": "obras",
+  "icono": "clipboard",
+  "orden": 20,
+  "activo": false,
+  "entry": "index.php"
+}
