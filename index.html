@@ -1,65 +1,36 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>La Cablera Marplatense</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/branding/favicon-32.png">
-  <link rel="icon" type="image/png" sizes="48x48" href="assets/branding/favicon-48.png">
-  <link rel="icon" type="image/png" sizes="96x96" href="assets/branding/favicon-96.png">
-  <link rel="apple-touch-icon" sizes="192x192" href="assets/branding/favicon-192.png">
-  <link rel="stylesheet" href="assets/css/lcm-erp.css">
-  <link rel="stylesheet" href="assets/css/lcm-ui.css">
-  <style>
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      height: 100%;
-      overflow: hidden;
-      background: var(--lcm-bg);
-    }
-  </style>
+  <script>document.documentElement.classList.add('lcm-auth-booting');</script>
+  <title>Inicio | La Cablera Marplatense</title>
+  <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/css/brand.css">
+  <link rel="stylesheet" href="/assets/css/atlantica.css?v=7">
+  <link rel="stylesheet" href="/assets/css/global-shell.css?v=ux-20261002-1">
 </head>
-<body>
-  <div class="lcm-shell">
-    <header class="lcm-header">
-      <div class="lcm-header-left">
-        <button class="lcm-icon-button" id="lcmMenuButton" type="button" aria-label="Abrir menú">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
-        </button>
-        <a class="lcm-brand" id="lcmBrandHome" href="homepage.php" target="lcmFrame" aria-label="Inicio La Cablera Marplatense">
-          <img class="lcm-brand-logo" src="assets/branding/logo-horizontal.png" alt="La Cablera Marplatense">
-        </a>
-        <div class="lcm-page-context">
-          <strong id="lcmPageTitle">Inicio</strong>
-          <span id="lcmPageSubtitle">Panel general</span>
-        </div>
+<body class="lcm-page--with-nav">
+  <div class="lcm-global-backdrop" id="lcm-global-backdrop" hidden></div>
+  <div class="lcm-shell-layout">
+    <aside class="lcm-global-sidebar" id="lcm-global-sidebar" aria-label="Navegación principal"></aside>
+    <main class="lcm-main">
+      <header class="lcm-global-header" id="lcm-global-header"></header>
+      <div class="lcm-content">
+        <div class="lcm-global-status" id="lcm-global-status"><section class="lcm-global-status-card"><h2>Cargando sesión</h2><p>Estamos validando tu acceso corporativo.</p></section></div>
+        <section id="lcm-home-workspace" class="lcm-workspace lcm-home-workspace" aria-live="polite">
+          <div class="lcm-home-hero"><p class="lcm-eyebrow">La Cablera Marplatense</p><h1 id="lcm-home-greeting">Hola</h1><p>Elegí una herramienta para comenzar a trabajar.</p></div>
+          <label class="lcm-home-search"><span class="sr-only">Buscar aplicaciones</span><span aria-hidden="true">⌕</span><input id="lcm-home-search-input" type="search" placeholder="Buscar aplicaciones…" autocomplete="off"></label>
+          <div id="lcm-home-apps" class="lcm-app-grid"></div>
+        </section>
+        <section id="lcm-app-workspace" class="lcm-workspace lcm-app-workspace" hidden>
+          <div class="lcm-app-loading" id="lcm-app-loading" hidden><span class="lcm-spinner" aria-hidden="true"></span><span>Cargando aplicación…</span></div>
+          <div class="lcm-app-error" id="lcm-app-error" hidden><h2>No se pudo cargar la aplicación</h2><p>Intentá nuevamente o elegí otra aplicación del menú.</p><button type="button" data-lcm-action="retry-app">Reintentar</button></div>
+          <iframe id="lcm-app-frame" title="Aplicación La Cablera" loading="eager" hidden></iframe>
+        </section>
       </div>
-      <div class="lcm-header-actions">
-        <button class="lcm-icon-button" id="lcmHomeButton" type="button" aria-label="Inicio">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-5h5v5"/></svg>
-        </button>
-        <button class="lcm-icon-button" id="lcmUserButton" type="button" aria-label="Usuario">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="8" r="4"/></svg>
-        </button>
-      </div>
-    </header>
-
-    <main class="lcm-content">
-      <iframe class="lcm-frame" id="lcmFrame" name="lcmFrame" src="homepage.php" title="Inicio"></iframe>
     </main>
   </div>
-
-  <div class="lcm-menu-backdrop" id="lcmMenuBackdrop"></div>
-  <aside class="lcm-menu" id="lcmMenu" aria-label="Navegación principal" aria-hidden="true">
-    <div class="lcm-menu-head">
-      <img class="lcm-menu-logo" src="assets/branding/logo-horizontal-white.png" alt="La Cablera Marplatense">
-      <button class="lcm-menu-close" id="lcmMenuClose" type="button" aria-label="Cerrar menú">×</button>
-    </div>
-    <nav class="lcm-nav" id="lcmNav" aria-label="Módulos"></nav>
-    <div class="lcm-menu-foot">Accesos sujetos a permisos del usuario.</div>
-  </aside>
-
-  <script src="assets/js/lcm-shell.js"></script>
+  <script type="module" src="/assets/js/global-auth.js?v=ux-20261002-2"></script>
 </body>
 </html>
