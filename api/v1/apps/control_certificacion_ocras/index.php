@@ -6,6 +6,22 @@ require_once dirname(__DIR__, 4) . '/shared/auth/LocalAuthSession.php';
 require_once dirname(__DIR__, 4) . '/shared/auth/HostingerTokenService.php';
 require_once dirname(__DIR__, 4) . '/shared/auth/CorporateAccessRepository.php';
 
+/* Compatibilidad con el _common.php que todavía está instalado en Hostinger.
+ * La versión remota expone la conexión como $pdo_lacablera y aún no incluye
+ * los helpers del proxy local. En el entorno local estas funciones ya existen
+ * y no se redeclaran. */
+if (!function_exists('api_database')) {
+    function api_database(): PDO
+    {
+        global $pdo_lacablera;
+        if ($pdo_lacablera instanceof PDO) return $pdo_lacablera;
+        throw new RuntimeException('Conexión central no disponible.');
+    }
+}
+if (!function_exists('lcm_auth_local_proxy_request')) {
+    function lcm_auth_local_proxy_request(): bool { return false; }
+}
+
 const CC_REMOTE_URL = 'https://lacablera.com/api/v1/apps/control_certificacion_ocras/index.php';
 
 function cc_response(array $data, int $status = 200): never
