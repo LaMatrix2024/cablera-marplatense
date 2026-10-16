@@ -13,8 +13,8 @@ button{background:#146c79;color:white;border:0;border-radius:8px;padding:12px 18
 <button type="submit">Ingresar</button></form><p id="error" role="alert"></p></main>
 <script>
 (()=>{'use strict';const key='lacablera_central_token_v1';
-const destino=new URLSearchParams(location.search).get('volver')||'/mediciones/proyectos.html';
-function seguro(url){try{const u=new URL(url,location.origin);return u.origin===location.origin?u.pathname+u.search+u.hash:'/mediciones/proyectos.html'}catch{return '/mediciones/proyectos.html'}}
+const destino=new URLSearchParams(location.search).get('volver')||'/';
+function seguro(url){try{const u=new URL(url,location.origin);return u.origin===location.origin?u.pathname+u.search+u.hash:'/'}catch{return '/'}}
 const volver=seguro(destino);
 async function validar(token){const r=await fetch('/api/v1/central-auth/session.php',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const d=await r.json();return r.ok&&d.ok;}
 (async()=>{const token=localStorage.getItem(key);if(token){try{if(await validar(token)){location.replace(volver);return}}catch{}localStorage.removeItem(key)}})();
