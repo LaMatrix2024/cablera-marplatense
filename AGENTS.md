@@ -475,3 +475,72 @@ docs/diseno/sistema-visual-atlantica.md
 El apartado `Estándar de exportaciones Excel` es la referencia obligatoria para la cabecera institucional, tabla, filtros informados, anchos, totales, formatos numéricos, nombre del archivo y configuración de impresión.
 
 La exportación debe reflejar los filtros activos de la página y no debe exponer campos internos ni información adicional no visible para el usuario.
+
+---
+
+# Continuidad obligatoria de Codex
+
+Estas reglas son permanentes y se aplican en todas las tareas, incluidas las modificaciones pequeñas, con independencia del modelo utilizado por Codex (Astra, Sol, Terra, Luna u otro modelo futuro).
+
+## Inicio de cada sesión
+
+Después de consultar las autoridades y documentos exigidos por `AGENT.md`, y antes de analizar o modificar el proyecto, Codex debe leer:
+
+```text
+CONTINUIDAD_CODEX.md
+```
+
+Ese archivo representa el estado operativo actual del proyecto. Su contenido no reemplaza las instrucciones de `AGENTS.md`, `AGENT.md`, la arquitectura superior ni las decisiones formales del proyecto.
+
+Si el archivo todavía no existe, Codex debe crearlo en la raíz del proyecto sin sustituir otros documentos. Debe reconstruir su contenido a partir de evidencia verificable y marcar como pendiente de verificar todo aquello que no pueda confirmar.
+
+## Actualización al finalizar cada tarea
+
+Antes de emitir el informe final de cualquier tarea, Codex debe actualizar `CONTINUIDAD_CODEX.md` aunque el cambio realizado sea mínimo.
+
+La actualización debe:
+
+- registrar qué se hizo;
+- indicar qué se verificó y con qué resultado;
+- distinguir claramente tareas completadas, pendientes y no verificadas;
+- documentar errores conocidos, decisiones técnicas y próximos pasos cuando correspondan;
+- mantener una fotografía útil del estado actual, sin acumular un historial cronológico interminable;
+- actualizar únicamente las secciones afectadas y evitar reescribir el documento completo sin necesidad;
+- retirar o corregir información anterior cuando haya quedado obsoleta, conservando las decisiones históricas en sus documentos formales;
+- no incluir contraseñas, tokens, cookies, claves API, credenciales, secretos ni valores sensibles de configuración.
+
+Si una tarea fue únicamente de análisis, revisión o consulta y no cambió el estado del proyecto, se debe reemplazar la nota de última revisión por una mención breve de lo comprobado, sin duplicar información ni agregar entradas históricas redundantes.
+
+La tarea no se considera cerrada hasta haber revisado que la continuidad refleje el resultado real. No se debe presentar como completado ni verificado aquello que no se probó.
+
+## Informe externo de cierre
+
+Se conserva el mecanismo existente de informe en:
+
+```text
+C:/Users/pl023clau/Downloads/informe_codex.txt
+```
+
+Al terminar cada tarea, después de actualizar `CONTINUIDAD_CODEX.md`, Codex debe reemplazar completamente el contenido anterior de ese archivo con el informe de la tarea actual. No debe anexar el nuevo informe al anterior.
+
+El informe debe ser breve e incluir, cuando corresponda:
+
+- cambios realizados;
+- archivos principales afectados;
+- validaciones y pruebas ejecutadas con sus resultados reales;
+- pendientes, limitaciones o verificaciones no realizadas;
+- estado Git relevante;
+- confirmación de que no se incluyeron secretos.
+
+Si la tarea no cambió archivos ni estado operativo, el informe debe indicarlo expresamente. La imposibilidad de escribir el informe externo no debe ocultarse: debe registrarse como limitación en `CONTINUIDAD_CODEX.md` y comunicarse al usuario.
+
+## Reutilización en otros proyectos
+
+Este sistema es reutilizable por proyecto. Al incorporarlo en el futuro a otro repositorio:
+
+- cada proyecto debe tener su propio `CONTINUIDAD_CODEX.md` en su raíz;
+- las instrucciones deben referirse a la raíz del proyecto y no reutilizar el estado de este repositorio;
+- se debe conservar la jerarquía documental y adaptar solamente nombres o rutas que sean realmente específicos;
+- no se debe copiar información operativa, pendientes, errores ni secretos entre proyectos.
+
+La incorporación en otros proyectos debe realizarse únicamente cuando sea solicitada; estas reglas no autorizan a modificar otros repositorios por iniciativa propia.
