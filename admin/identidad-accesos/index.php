@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../shared/layout.php';
 <!doctype html>
 <html lang="es">
 <head>
-    <?php lcm_head('Identidad y Accesos', ['/admin/identidad-accesos/identidad-accesos.css?v=1']); ?>
+    <?php lcm_head('Identidad y Accesos', ['/admin/identidad-accesos/identidad-accesos.css?v=modulos-ui-2']); ?>
 </head>
 <body class="ia-page">
 <div class="ia-mobile-backdrop" id="ia-mobile-backdrop" hidden></div>
@@ -59,6 +59,6 @@ require_once __DIR__ . '/../../shared/layout.php';
     </div>
 </aside>
 
-<script type="module" src="/admin/identidad-accesos/identidad-accesos.js?v=central-auth-1"></script>
+<script type="module" src="/admin/identidad-accesos/identidad-accesos.js?v=modulos-ui-2"></script>
 </body>
 </html>
