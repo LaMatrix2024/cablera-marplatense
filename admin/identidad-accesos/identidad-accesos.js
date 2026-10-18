@@ -388,50 +388,29 @@ const donut = (title, counts, labels) => {
   `;
 };
 
+// ia-dashboard-progressive-v1: dashboard first, then optional details sequentially.
 const renderDashboard = async () => {
-  $("#ia-view-dashboard").innerHTML = skeleton("Cargando dashboard...");
-  const [dashboard, invitations, users, audit, applications, modules] = await Promise.all([
-    api("/admin/dashboard"),
-    api("/admin/invitations").catch(() => ({ invitations: [] })),
-    api("/admin/users").catch(() => ({ users: [] })),
-    api("/admin/audit").catch(() => ({ audit: [] })),
-    api("/admin/applications").catch(() => ({ applications: [] })),
-    api("/admin/modules").catch(() => ({ modules: [] }))
-  ]);
-
+  const root = $("#ia-view-dashboard");
+  root.innerHTML = skeleton("Cargando dashboard...");
+  const dashboard = await api("/admin/dashboard");
+  if (state.view !== "dashboard") return;
   const summary = dashboard.summary || {};
-  const invitationCounts = countBy(invitations.invitations || [], "estado", ["PENDIENTE", "ACEPTADA", "VENCIDA", "REVOCADA"]);
-  const userCounts = countBy(users.users || [], "estado", ["ACTIVO", "PENDIENTE", "BLOQUEADO", "BAJA"]);
-  const activeApps = (applications.applications || []).filter((app) => Number(app.activo) === 1).length || summary.aplicaciones_activas || 0;
-  const activeModules = (modules.modules || []).filter((module) => Number(module.activo) === 1).length || summary.modulos_activos || 0;
-
-  $("#ia-view-dashboard").innerHTML = `
-    <div class="ia-page-title">
-      <div>
-        <h2>Dashboard</h2>
-        <p>Resumen general del sistema</p>
-      </div>
-    </div>
+  const invitationKeys = ["PENDIENTE", "ACEPTADA", "VENCIDA", "REVOCADA"];
+  const userKeys = ["ACTIVO", "PENDIENTE", "BLOQUEADO", "BAJA"];
+  const invitationLabels = { PENDIENTE: "Pendientes", ACEPTADA: "Aceptadas", VENCIDA: "Vencidas", REVOCADA: "Revocadas" };
+  const userLabels = { ACTIVO: "Activos", PENDIENTE: "Pendientes", BLOQUEADO: "Bloqueados", BAJA: "Baja" };
+  root.innerHTML = `
+    <div class="ia-page-title"><div><h2>Dashboard</h2><p>Resumen general del sistema</p></div></div>
     <section class="ia-kpi-grid">
-      ${statCard("group", summary.usuarios_activos ?? userCounts.ACTIVO, "Usuarios activos", "Accesos habilitados")}
-      ${statCard("schedule", summary.invitaciones_pendientes ?? invitationCounts.PENDIENTE, "Invitaciones pendientes", "Esperando activacion")}
-      ${statCard("apps", activeApps, "Aplicaciones activas", "Disponibles para usuarios")}
-      ${statCard("deployed_code", activeModules, "Modulos activos", "Permisos operativos")}
+      ${statCard("group", summary.usuarios_activos ?? "â€”", "Usuarios activos", "Accesos habilitados")}
+      ${statCard("schedule", summary.invitaciones_pendientes ?? "â€”", "Invitaciones pendientes", "Esperando activacion")}
+      ${statCard("apps", summary.aplicaciones_activas ?? "â€”", "Aplicaciones activas", "Disponibles para usuarios")}
+      ${statCard("deployed_code", summary.modulos_activos ?? "â€”", "Modulos activos", "Permisos operativos")}
     </section>
     <section class="ia-dashboard-grid">
-      ${donut("Invitaciones por estado", invitationCounts, {
-        PENDIENTE: "Pendientes",
-        ACEPTADA: "Aceptadas",
-        VENCIDA: "Vencidas",
-        REVOCADA: "Revocadas"
-      })}
-      ${donut("Usuarios por estado", userCounts, {
-        ACTIVO: "Activos",
-        PENDIENTE: "Pendientes",
-        BLOQUEADO: "Bloqueados",
-        BAJA: "Baja"
-      })}
-      ${activityCard(audit.audit || [])}
+      <div id="ia-dashboard-invitations">${skeleton("Cargando invitaciones...")}</div>
+      <div id="ia-dashboard-users">${skeleton("Cargando usuarios...")}</div>
+      <div id="ia-dashboard-audit">${skeleton("Cargando actividad...")}</div>
     </section>
     <section class="ia-quick-actions" aria-label="Acciones rapidas">
       ${quickAction("person_add", "Invitar usuario", "invitations")}
@@ -440,8 +419,35 @@ const renderDashboard = async () => {
       ${quickAction("rule", "Gestionar permisos", "permissions")}
     </section>
   `;
+  // Only the current dashboard may be updated by delayed responses.
+  const update = (selector, html) => {
+    if (state.view !== "dashboard" || !root.isConnected) return;
+    const target = root.querySelector(selector);
+    if (target) target.outerHTML = html;
+  };
+  try {
+    const invitations = await api("/admin/invitations");
+    const counts = countBy(invitations.invitations || [], "estado", invitationKeys);
+    update("#ia-dashboard-invitations", donut("Invitaciones por estado", counts, invitationLabels));
+  } catch (error) {
+    update("#ia-dashboard-invitations", '<section class="ia-card"><h3>Invitaciones por estado</h3><p class="ia-muted">No se pudieron cargar las invitaciones.</p></section>');
+  }
+  if (state.view !== "dashboard") return;
+  try {
+    const users = await api("/admin/users");
+    const counts = countBy(users.users || [], "estado", userKeys);
+    update("#ia-dashboard-users", donut("Usuarios por estado", counts, userLabels));
+  } catch (error) {
+    update("#ia-dashboard-users", '<section class="ia-card"><h3>Usuarios por estado</h3><p class="ia-muted">No se pudieron cargar los usuarios.</p></section>');
+  }
+  if (state.view !== "dashboard") return;
+  try {
+    const audit = await api("/admin/audit");
+    update("#ia-dashboard-audit", activityCard(audit.audit || []));
+  } catch (error) {
+    update("#ia-dashboard-audit", '<section class="ia-card"><h3>Actividad reciente</h3><p class="ia-muted">No se pudo cargar la actividad.</p></section>');
+  }
 };
-
 const statCard = (iconName, value, label, secondary) => `
   <article class="ia-card ia-stat-card">
     <div class="ia-stat-top">
