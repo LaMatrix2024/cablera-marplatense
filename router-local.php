@@ -7,7 +7,7 @@ $path = '/' . ltrim((string)$path, '/');
 $root = __DIR__;
 $file = realpath($root . $path);
 
-if ($file !== false && is_file($file)) {
+if ($file !== false && (is_file($file) || is_dir($file))) {
     return false;
 }
 
