@@ -612,14 +612,14 @@ final class IdentityAdminService
                     um.motivo
              FROM modulos m
              INNER JOIN aplicaciones a ON a.id = m.aplicacion_id
-             LEFT JOIN usuario_aplicacion ua ON ua.aplicacion_id = a.id AND ua.usuario_id = :id
-             LEFT JOIN usuario_modulo um ON um.modulo_id = m.id AND um.usuario_id = :id
+             LEFT JOIN usuario_aplicacion ua ON ua.aplicacion_id = a.id AND ua.usuario_id = :id_app
+             LEFT JOIN usuario_modulo um ON um.modulo_id = m.id AND um.usuario_id = :id_module
              WHERE ua.usuario_id IS NOT NULL OR EXISTS (
-                SELECT 1 FROM usuario_rol ur WHERE ur.usuario_id = :id AND ur.aplicacion_id = a.id
+                SELECT 1 FROM usuario_rol ur WHERE ur.usuario_id = :id_role AND ur.aplicacion_id = a.id
              )
              ORDER BY a.nombre, m.orden, m.nombre'
         );
-        $stmt->execute(['id' => $id]);
+        $stmt->execute(['id_app' => $id, 'id_module' => $id, 'id_role' => $id]);
         $repo = new CorporateAccessRepository($this->pdo);
         $rows = [];
         foreach ($stmt->fetchAll() as $row) {
