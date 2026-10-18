@@ -13,7 +13,7 @@ lcm_central_run(function (): void {
     foreach ($modules as $module) {
         if (($module['aplicacion'] ?? '') === 'PLANTEL_MOBILE'
             && ($module['codigo'] ?? '') === 'DESMONTE_HOY'
-            && !empty($module['puede_ver'])) {
+            && !empty($module['permissions']['puede_ver'])) {
             $authorized = true;
             break;
         }
