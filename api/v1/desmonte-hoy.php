@@ -30,18 +30,18 @@ lcm_central_run(function (): void {
         (string) LAB_DB_USER,
         (string) LAB_DB_PASS
     );
-    $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
+    $ayer = (new DateTimeImmutable('today', new DateTimeZone('America/Argentina/Buenos_Aires')))->modify('-1 day')->format('Y-m-d');
     $stmt = $pdo->prepare("SELECT ROUND(COALESCE(SUM(metros), 0), 2) AS metros, COUNT(*) AS tirones
         FROM v_toolbox_tracking_tirones_kg
         WHERE fecha_alta_terreno >= :desde AND fecha_alta_terreno < :hasta
           AND TRIM(tipo_desmonte) = 'subterraneo'");
     $stmt->execute([
-        'desde' => $today . ' 00:00:00',
-        'hasta' => (new DateTimeImmutable($today, new DateTimeZone('America/Argentina/Buenos_Aires')))->modify('+1 day')->format('Y-m-d') . ' 00:00:00',
+        'desde' => $ayer . ' 00:00:00',
+        'hasta' => (new DateTimeImmutable($ayer, new DateTimeZone('America/Argentina/Buenos_Aires')))->modify('+1 day')->format('Y-m-d') . ' 00:00:00',
     ]);
     $row = $stmt->fetch() ?: [];
     lcm_central_json(['ok' => true, 'data' => [
-        'fecha' => $today, 'tipo' => 'subterraneo',
+        'fecha' => $ayer, 'tipo' => 'subterraneo',
         'metros' => (float)($row['metros'] ?? 0),
         'tirones' => (int)($row['tirones'] ?? 0),
         'criterio_fecha' => 'fecha_alta_terreno',
