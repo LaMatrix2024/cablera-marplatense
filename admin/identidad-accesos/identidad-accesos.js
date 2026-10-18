@@ -765,28 +765,41 @@ const openUser = async (id) => {
           return `<div class="ia-app-role-item"><strong>${escapeHtml(app.codigo)}</strong><span>${escapeHtml(roles.map((role) => role.codigo).join(", ") || "Sin rol")}</span></div>`;
         }).join("") || '<p class="ia-muted">Sin aplicaciones activas.</p>'}
       </div></section>
-      <section class="ia-card"><h3>Módulos y permisos efectivos</h3>${permissionMatrix(data.modules || [])}</section>`;
+      <section class="ia-card"><h3>Módulos y permisos</h3>
+        <p class="ia-muted">Autorizá o revocá la visualización por usuario. Los cambios se guardan individualmente.</p>
+        ${permissionMatrix(data.modules || [], user.id)}
+      </section>`;
   } catch (error) {
     $("#ia-drawer-title").textContent = "No se pudo abrir el usuario";
     body.innerHTML = `<section class="ia-card"><p class="ia-error-message">${escapeHtml(error?.message || "Error desconocido")}</p><p class="ia-muted">Revisá la respuesta de la API administrativa. No se modificó ningún permiso.</p><button class="ia-btn ia-btn--primary" type="button" data-action="retry-open-user" data-id="${escapeHtml(id)}">Reintentar</button></section>`;
   }
 };
-const permissionMatrix = (modules) => `
+const permissionMatrix = (modules, userId) => `
   <div class="ia-permission-table">
     <div class="ia-permission-row ia-permission-head">
-      <span>Modulo</span><span>Ver</span><span>Crear</span><span>Editar</span><span>Eliminar</span><span>Aprobar</span><span>Origen</span>
+      <span>Módulo</span><span>Ver</span><span>Crear</span><span>Editar</span><span>Eliminar</span><span>Aprobar</span><span>Origen / Acción</span>
     </div>
     ${modules.map((module) => {
       const permissions = module.effective?.permissions || {};
       const origin = module.origins?.puede_ver || "SIN_PERMISO";
+      const allowed = Boolean(permissions.puede_ver);
+      const active = Number(module.activo) === 1;
+      const app = escapeHtml(module.aplicacion_codigo);
+      const code = escapeHtml(module.codigo);
       return `
         <div class="ia-permission-row">
-          <strong>${escapeHtml(module.aplicacion_codigo)} / ${escapeHtml(module.codigo)}</strong>
+          <strong>${app} / ${code}</strong>
           ${["puede_ver", "puede_crear", "puede_editar", "puede_eliminar", "puede_aprobar"].map((permission) => permDot(permissions[permission])).join("")}
-          <span class="ia-badge">${escapeHtml(origin)}</span>
-        </div>
-      `;
-    }).join("") || `<p class="ia-muted">Sin modulos efectivos.</p>`}
+          <span><span class="ia-badge">${escapeHtml(origin)}</span>
+            <button type="button" class="ia-btn" data-action="toggle-user-module"
+              data-user-id="${Number(userId)}" data-module-id="${Number(module.id)}"
+              data-allow="${allowed ? "0" : "1"}"
+              ${!active ? "disabled" : ""}>
+              ${!active ? "Inactivo" : allowed ? "Revocar Ver" : "Autorizar Ver"}
+            </button>
+          </span>
+        </div>`;
+    }).join("") || `<p class="ia-muted">No hay módulos registrados.</p>`}
   </div>
 `;
 
@@ -814,6 +827,37 @@ document.addEventListener("click", async (event) => {
     if (action === "close-user-filters") closeUserFilters();
     if (action === "open-user") await openUser(actionTarget.dataset.id).catch((error) => setAlert(error.message, true));
     if (action === "retry-open-user") await openUser(actionTarget.dataset.id);
+    if (action === "toggle-user-module") {
+      const button = actionTarget;
+      const userId = Number(button.dataset.userId);
+      const moduleId = Number(button.dataset.moduleId);
+      const allow = Number(button.dataset.allow);
+      if (!Number.isSafeInteger(userId) || userId < 1 || !Number.isSafeInteger(moduleId) || moduleId < 1 || ![0, 1].includes(allow)) {
+        setAlert("Datos de autorización inválidos.", true);
+        return;
+      }
+      if (!window.confirm(`${allow ? "Autorizar" : "Revocar"} permiso Ver para este módulo y usuario?`)) return;
+      button.disabled = true;
+      try {
+        const current = await api(`/admin/users/${userId}`);
+        const module = (current.modules || []).find((item) => Number(item.id) === moduleId);
+        if (!module) throw new Error("El módulo ya no está disponible.");
+        const payload = { modulo_id: moduleId, puede_ver: allow };
+        for (const key of ["puede_crear", "puede_editar", "puede_eliminar", "puede_exportar", "puede_aprobar"]) {
+          payload[key] = module["ex_" + key] === null || module["ex_" + key] === undefined ? null : Number(module["ex_" + key]);
+        }
+        payload.motivo = module.motivo || null;
+        await api(`/admin/users/${userId}/modules`, {
+          method: "PUT",
+          body: JSON.stringify({ modules: [payload] })
+        });
+        await openUser(userId);
+        setAlert(allow ? "Permiso Ver autorizado." : "Permiso Ver revocado.");
+      } catch (error) {
+        button.disabled = false;
+        setAlert(error.message || "No se pudo guardar el permiso.", true);
+      }
+    }
     if (action === "export-users") setAlert("La exportacion se conectara en la siguiente iteracion visual.");
     return;
   }
