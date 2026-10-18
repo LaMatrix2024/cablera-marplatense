@@ -273,7 +273,7 @@ function cc_stage(string $state): string { return ['OBRAS AL 100'=>'cierre','PLA
 function cc_days(?string $value): ?int { if (!$value) return null; try { $date=new DateTimeImmutable(substr($value,0,19)); $tz=new DateTimeZone('America/Argentina/Buenos_Aires'); $base=new DateTimeImmutable($date->format('Y-m-d'),$tz); return max(0,(int)$base->diff(new DateTimeImmutable('today',$tz))->format('%r%a')); } catch(Throwable) { return null; } }
 function cc_money(mixed $value): float { $v=trim((string)$value); if($v==='')return 0.0; $v=preg_replace('/[^0-9,.-]/','',$v)??''; if(str_contains($v,',')&&str_contains($v,'.')){$v=str_replace('.','',$v);$v=str_replace(',','.',$v);} elseif(str_contains($v,','))$v=str_replace(',','.',$v); return is_numeric($v)?(float)$v:0.0; }
 function cc_semaphore(?int $days, string $stage): array { if($days===null)return ['label'=>'Sin fecha','class'=>'unknown']; $critical=$stage==='aprobacion'?$days>3:$days>10; return $critical?['label'=>'Crítico','class'=>'red']:(($stage==='aprobacion'?$days<=3:$days<=7)?['label'=>'En término','class'=>'green']:['label'=>'Atención','class'=>'yellow']); }
-function cc_rows(array $profile): array
+function cc_rows(array $profile, bool $includeDirectory = true): array
 {
     $pdo=cc_db(); $latest=(string)$pdo->query('SELECT MAX(fecha_importacion) FROM raw_certificacion_ocras')->fetchColumn();
     if($latest==='')return ['rows'=>[],'latest'=>''];
@@ -288,6 +288,7 @@ function cc_rows(array $profile): array
     $realAll=cc_is_all_role($profile); $actorLegacy=cc_legacy_for_email($email);
     foreach($rows as &$row){$canTransfer=!$realAll && $actorLegacy!=='' && (string)($row['responsable_usuario_id']??'')===$actorLegacy; $row['puede_transferir']=$canTransfer; $row['can_transfer_task']=$canTransfer; $row['can_assign_task']=$realAll;} unset($row);
     $responsables=[];
+    if ($includeDirectory) {
     foreach ($pdo->query("SELECT id,email,nombre,apellido FROM usuarios WHERE estado='ACTIVO' ORDER BY nombre,apellido,email") as $user) {
         $display=trim((string)$user['nombre'].' '.(string)$user['apellido']) ?: (string)$user['email'];
         $responsables[]=['id'=>(int)$user['id'],'email'=>(string)$user['email'],'nombre'=>$display];
@@ -300,6 +301,7 @@ function cc_rows(array $profile): array
             $responsables[] = ['id'=>(string)$legacyRow['usuario_nexo_id'], 'email'=>cc_email_for_legacy((string)$legacyRow['usuario_nexo_id']), 'nombre'=>$name, 'legacy_only'=>true];
             $seen[strtolower($name)] = true;
         }
+    }
     }
     return ['rows'=>$rows,'latest'=>$latest,'actor_id'=>(string)($profile['user']['id']??''),'actor_email'=>$email,'legacy_id'=>$legacy,'can_view_all'=>$canAll,'responsables'=>$responsables];
 }
@@ -329,7 +331,7 @@ if($action==='datos_mobile'){
             $limited['roles']=array_values(array_filter((array)($profile['roles']??[]),
                 static fn($role):bool => !in_array(strtolower(trim((string)(is_array($role)?($role['codigo']??$role['nombre']??''):$role))),['coordinador','administrador','superadmin'],true)));
         }
-        $data=cc_rows($limited);
+        $data=cc_rows($limited, false);
         $safe=array_map(static fn(array $r):array=>[
             'sigest'=>$r['sigest'],'stage'=>$r['stage'],'titulo'=>$r['titulo'],
             'central'=>$r['central'],'responsable_efectivo'=>$r['responsable_efectivo'],
