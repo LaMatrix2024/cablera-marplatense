@@ -12,7 +12,7 @@ lcm_central_run(function (): void {
     $authorized = !empty($profile['user']['es_superadmin']);
     foreach ($modules as $module) {
         if (($module['aplicacion'] ?? '') === 'PLANTEL_MOBILE'
-            && ($module['codigo'] ?? '') === 'DESMONTE_HOY'
+            && in_array(($module['codigo'] ?? ''), ['DESMONTE_HOY', 'ULTIMO_DESMONTE'], true)
             && !empty($module['permissions']['puede_ver'])) {
             $authorized = true;
             break;
