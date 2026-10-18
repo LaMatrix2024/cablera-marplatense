@@ -502,28 +502,65 @@ const loadCatalogs = async () => {
   };
 };
 
-const renderModules = async () => {
-  $("#ia-view-placeholder").innerHTML = skeleton("Cargando catálogo...");
-  const data = await api("/admin/modules");
-  const modules = data.modules || [];
-  $("#ia-view-placeholder").innerHTML = `
-    <div class="ia-page-title"><div><h2>Catálogo de módulos</h2><p>Rutas, grupos y presentación del menú corporativo.</p></div></div>
-    <section class="ia-card ia-table-card"><div class="ia-catalog-grid">
-      ${modules.map((module) => `<form class="ia-module-form" data-module-id="${escapeHtml(module.id)}">
-        <strong>${escapeHtml(module.aplicacion_codigo)} / ${escapeHtml(module.codigo)}</strong>
+const renderModules = async (filters = {}) => {
+  $("#ia-view-placeholder").innerHTML = skeleton("Cargando módulos...");
+  const [modulesResponse, applicationsResponse] = await Promise.all([
+    api("/admin/modules"), api("/admin/applications")
+  ]);
+  const modules = modulesResponse.modules || [];
+  const applications = applicationsResponse.applications || [];
+  const appOptions = applications.map((app) =>
+    `<option value="${escapeHtml(app.id)}" ${app.codigo === "PLANTEL_MOBILE" ? "selected" : ""}>${escapeHtml(app.nombre)} (${escapeHtml(app.codigo)})</option>`
+  ).join("");
+  const cards = modules.map((module) => `
+    <form class="ia-module-form ia-module-card" data-module-id="${escapeHtml(module.id)}">
+      <div class="ia-module-card__head">
+        <div><span class="ia-module-eyebrow">${escapeHtml(module.aplicacion_codigo)}</span>
+        <h3>${escapeHtml(module.nombre)}</h3><code>${escapeHtml(module.codigo)}</code></div>
+        <span class="ia-module-status ${Number(module.activo) === 1 ? "is-active" : ""}">${Number(module.activo) === 1 ? "Activo" : "Inactivo"}</span>
+      </div>
+      <div class="ia-module-fields">
         <label>Nombre<input name="nombre" value="${escapeHtml(module.nombre)}" required></label>
-        <label>Descripción<input name="descripcion" value="${escapeHtml(module.descripcion || "")}"></label>
         <label>Ruta<input name="ruta" value="${escapeHtml(module.ruta || "")}" required></label>
+        <label class="ia-module-wide">Descripción<input name="descripcion" value="${escapeHtml(module.descripcion || "")}"></label>
         <label>Grupo<input name="grupo" value="${escapeHtml(module.grupo || "GESTION")}" required></label>
         <label>Ícono<input name="icono" value="${escapeHtml(module.icono || "apps")}" required></label>
         <label>Color<input name="color" value="${escapeHtml(module.color || "")}" placeholder="#1769aa"></label>
-        <label>Orden<input name="orden" type="number" min="0" value="${escapeHtml(module.orden || 0)}" required></label>
-        <label class="ia-checkbox"><input name="activo" type="checkbox" ${Number(module.activo) === 1 ? "checked" : ""}> Activo</label>
-        <button class="ia-btn ia-btn--primary" type="submit">Guardar</button>
-      </form>`).join("") || `<p class="ia-muted">No hay módulos registrados.</p>`}
-    </div></section>`;
+        <label>Orden<input name="orden" type="number" min="0" value="${escapeHtml(module.orden ?? 0)}" required></label>
+      </div>
+      <div class="ia-module-card__footer">
+        <label class="ia-checkbox"><input name="activo" type="checkbox" ${Number(module.activo) === 1 ? "checked" : ""}> Módulo activo</label>
+        <button class="ia-btn ia-btn--primary" type="submit">Guardar cambios</button>
+      </div>
+    </form>`).join("");
+  $("#ia-view-placeholder").innerHTML = `
+    <div class="ia-page-title ia-module-page-title">
+      <div><h2>Catálogo de módulos</h2><p>Administrá las aplicaciones, rutas y visibilidad del menú corporativo.</p></div>
+      <button class="ia-btn ia-btn--primary" type="button" data-action="toggle-module-create">+ Nuevo módulo</button>
+    </div>
+    <section class="ia-card ia-module-create" id="ia-module-create" hidden>
+      <h3>Crear módulo</h3>
+      <p>El alta registra el módulo; los permisos se asignan después.</p>
+      <form id="ia-module-create-form">
+        <div class="ia-module-fields">
+          <label>Aplicación<select name="aplicacion_id" required>${appOptions}</select></label>
+          <label>Código<input name="codigo" placeholder="DESMONTE_HOY" pattern="[A-Za-z0-9_]+" required></label>
+          <label>Nombre<input name="nombre" placeholder="Desmontes de ayer" required></label>
+          <label>Ruta<input name="ruta" placeholder="/plantel/modulos/desmonte-hoy" pattern="/.*" required></label>
+          <label class="ia-module-wide">Descripción<input name="descripcion" placeholder="Descripción breve"></label>
+          <label>Grupo<input name="grupo" value="GESTION" required></label>
+          <label>Ícono<input name="icono" value="chart" required></label>
+          <label>Color<input name="color" value="#1769aa"></label>
+          <label>Orden<input name="orden" type="number" min="0" value="20" required></label>
+        </div>
+        <div class="ia-module-card__footer">
+          <label class="ia-checkbox"><input type="checkbox" name="activo" checked> Módulo activo</label>
+          <button class="ia-btn ia-btn--primary" type="submit">Crear módulo</button>
+        </div>
+      </form>
+    </section>
+    <section class="ia-module-list">${cards || '<p class="ia-muted">No hay módulos registrados.</p>'}</section>`;
 };
-
 const renderUsers = async (filters = {}) => {
   state.userFilters = filters;
   $("#ia-view-users").innerHTML = skeleton("Cargando usuarios...");
@@ -828,6 +865,31 @@ document.addEventListener("submit", async (event) => {
       closeUserFilters();
       return;
     }
+    if (event.target.id === "ia-module-create-form") {
+      const form = new FormData(event.target);
+      const button = event.target.querySelector('[type="submit"]');
+      button.disabled = true;
+      try {
+        await api("/admin/modules", {
+          method: "POST",
+          body: JSON.stringify({
+            aplicacion_id: Number(form.get("aplicacion_id")),
+            codigo: String(form.get("codigo") || "").trim().toUpperCase(),
+            nombre: String(form.get("nombre") || "").trim(),
+            descripcion: String(form.get("descripcion") || "").trim(),
+            ruta: String(form.get("ruta") || "").trim(),
+            grupo: String(form.get("grupo") || "GESTION").trim(),
+            icono: String(form.get("icono") || "apps").trim(),
+            color: String(form.get("color") || "").trim(),
+            orden: Number(form.get("orden") || 0),
+            activo: form.get("activo") === "on"
+          })
+        });
+        await renderModules();
+        setAlert("Módulo creado. Asigná los permisos para hacerlo visible.");
+      } finally { button.disabled = false; }
+      return;
+    }
     if (event.target.matches(".ia-module-form")) {
       const form = new FormData(event.target);
       const id = event.target.dataset.moduleId;
@@ -849,6 +911,16 @@ document.addEventListener("submit", async (event) => {
   } catch (error) {
     setAlert(authErrorMessage(error), true);
   }
+});
+
+document.addEventListener("click", (event) => {
+  const button = event.target.closest('[data-action="toggle-module-create"]');
+  if (!button) return;
+  const panel = $("#ia-module-create");
+  if (!panel) return;
+  panel.hidden = !panel.hidden;
+  button.setAttribute("aria-expanded", String(!panel.hidden));
+  if (!panel.hidden) panel.querySelector('input[name="codigo"]')?.focus();
 });
 
 $("#ia-drawer-close").addEventListener("click", closeDrawer);
