@@ -1,14 +1,11 @@
-import {
-  CABLERA_APP,
-  fetchAuthMe,
-  fetchWithTimeout,
-  firebaseErrorMessage,
-  getSharedAuth,
-  logAuthMeDiagnostic,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut
-} from "/assets/js/lcm-auth-core.js";
+const CABLERA_APP = "CABLERAMARPLATENSE";
+const fetchWithTimeout = async (url, options = {}, timeout = 15000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try { return await fetch(url, { ...options, signal: controller.signal, cache: "no-store" }); }
+  finally { clearTimeout(timer); }
+};
+const firebaseErrorMessage = (error) => error?.message || "No se pudo completar la operación.";
 
 const ADMIN_MODULE = "IDENTIDAD_ACCESOS";
 const SIDEBAR_KEY = "lcm.identity.sidebar.collapsed";
@@ -99,7 +96,7 @@ const setAlert = (message, error = false) => {
 
 const getToken = async () => {
   if (!state.user) throw new Error("Sesion no iniciada.");
-  state.idToken = await state.user.getIdToken();
+  if (!state.idToken) throw new Error("Sesion no iniciada.");
   return state.idToken;
 };
 
@@ -124,24 +121,20 @@ const api = async (path, options = {}) => {
 };
 
 const loadConfig = async () => {
-  const shared = await getSharedAuth("/api/v1/admin/config");
-  state.config = shared.config;
-  state.auth = shared.auth;
+  state.config = { apiBaseUrl: "/api/v1" };
 };
 
 const loadProfile = async () => {
-  const result = await fetchAuthMe({
-    auth: state.auth,
-    config: state.config,
-    user: state.user
+  const response = await fetchWithTimeout("/api/v1/central-auth/session.php", {
+    headers: { Authorization: `Bearer ${await getToken()}` }
   });
-  logAuthMeDiagnostic({
-    firebaseUser: state.user,
-    status: result.status,
-    body: result.body,
-    requiredModule: ADMIN_MODULE
-  });
-  state.profile = result.body;
+  const body = await response.json();
+  if (!response.ok || !body.ok || !body.data?.profile) {
+    const error = new Error(body.error?.message || "No se pudo validar la sesion.");
+    error.status = response.status;
+    throw error;
+  }
+  state.profile = body.data.profile;
   return state.profile;
 };
 
@@ -268,8 +261,7 @@ const showLogin = () => {
   state.user = null;
   state.idToken = "";
   state.profile = null;
-  window.location.href = loginUrl();
-  $("#ia-login-panel").hidden = true;
+  $("#ia-login-panel").hidden = false;
   $("#ia-denied-panel").hidden = true;
   $("#ia-admin-panel").hidden = true;
   renderHeader();
@@ -322,7 +314,7 @@ const showAuthValidationError = (error) => {
   const message = error?.message || "Revisar Network/Console.";
   showDenied(
     "No pudimos validar tu sesion",
-    `GET /api/v1/auth/me fallo con ${status}${code}. ${message}`
+    `GET /api/v1/central-auth/session.php fallo con ${status}${code}. ${message}`
   );
 };
 
@@ -778,8 +770,7 @@ document.addEventListener("click", async (event) => {
     if (action === "toggle-sidebar") toggleSidebar();
     if (action === "signout") {
       clearSessionState();
-      await signOut(state.auth);
-      window.location.href = loginUrl();
+      showLogin();
     }
     if (action === "retry-view") await renderView();
     if (action === "open-user-filters") openUserFilters();
@@ -808,8 +799,15 @@ document.addEventListener("submit", async (event) => {
   try {
     if (event.target.id === "ia-login-form") {
       const form = new FormData(event.target);
-      const credential = await signInWithEmailAndPassword(state.auth, String(form.get("email")), String(form.get("password")));
-      await handleAuthenticatedUser(credential.user);
+      const response = await fetchWithTimeout("/api/v1/central-auth/login.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: String(form.get("email")), password: String(form.get("password")) })
+      });
+      const body = await response.json();
+      if (!response.ok || !body.ok || !body.data?.token) throw new Error(body.error?.message || "Credenciales no validas.");
+      state.idToken = body.data.token;
+      await handleAuthenticatedUser(body.data.profile?.user);
       return;
     }
     if (event.target.id === "ia-user-filters") {
@@ -856,21 +854,11 @@ const boot = async () => {
   try {
     setShellState();
     await loadConfig();
-    onAuthStateChanged(state.auth, async (user) => {
-      try {
-        if (!user) {
-          window.location.href = loginUrl();
-          return;
-        }
-        await handleAuthenticatedUser(user);
-      } catch (error) {
-        setAlert(error.message, true);
-        showAuthValidationError(error);
-      }
-    });
+    document.documentElement.classList.remove("lcm-auth-booting");
+    showLogin();
   } catch (error) {
     document.documentElement.classList.remove("lcm-auth-booting");
-    $("#ia-login-panel").innerHTML = `<section class="ia-card"><h2>No pudimos iniciar el administrador.</h2><p>${escapeHtml(error.message)}</p></section>`;
+    setAlert(error.message, true);
   }
 };
 
