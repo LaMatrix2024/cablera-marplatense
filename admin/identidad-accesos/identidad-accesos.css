@@ -1151,3 +1151,27 @@ body.ia-scroll-locked {
         grid-template-columns: 1fr 1fr;
     }
 }
+
+
+/* Catálogo de módulos: diseño responsive y formularios legibles */
+.ia-module-page-title{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.ia-module-create{margin-bottom:22px;padding:24px}
+.ia-module-create[hidden]{display:none!important}
+.ia-module-create h3{margin:0 0 8px}
+.ia-module-create p{margin:0 0 18px;color:var(--ia-muted,#64748b)}
+.ia-module-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));gap:18px}
+.ia-module-card{display:flex;flex-direction:column;gap:18px;background:#fff;border:1px solid #dce5ef;border-radius:16px;padding:22px;min-width:0;box-shadow:0 4px 14px rgba(15,35,60,.04)}
+.ia-module-card__head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid #e8edf3;padding-bottom:16px}
+.ia-module-card__head h3{margin:4px 0 6px;font-size:18px;line-height:1.3}
+.ia-module-card__head code{font-size:12px;overflow-wrap:anywhere;color:#64748b}
+.ia-module-eyebrow{font-size:11px;letter-spacing:.06em;font-weight:800;color:#1769aa}
+.ia-module-status{flex:none;border-radius:99px;background:#f1f5f9;color:#64748b;padding:5px 10px;font-size:12px;font-weight:700}
+.ia-module-status.is-active{background:#e8f7ee;color:#14743d}
+.ia-module-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.ia-module-fields label{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:12px;font-weight:700;color:#46586c}
+.ia-module-fields input,.ia-module-fields select{box-sizing:border-box;display:block;width:100%;min-width:0;min-height:42px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#172b42;font:inherit;font-size:14px;font-weight:400}
+.ia-module-fields input:focus,.ia-module-fields select:focus{outline:2px solid #8cbcf2;outline-offset:1px}
+.ia-module-wide{grid-column:1/-1}
+.ia-module-card__footer{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding-top:14px;border-top:1px solid #e8edf3}
+.ia-module-card__footer .ia-checkbox{display:flex;align-items:center;gap:8px;font-size:13px}
+@media(max-width:620px){.ia-module-list{grid-template-columns:minmax(0,1fr)}.ia-module-card,.ia-module-create{padding:16px}.ia-module-fields{grid-template-columns:minmax(0,1fr)}.ia-module-wide{grid-column:auto}.ia-module-card__footer .ia-btn{width:100%}}
