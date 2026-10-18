@@ -293,3 +293,12 @@ Las siguientes herramientas administrativas quedan excluidas y deben permanecer 
 
 Este documento no contiene contraseñas, tokens, claves API ni valores de archivos de entorno. Las rutas y nombres de variables se mencionan únicamente como referencias operativas.
 
+
+## Catalogo automatico de Plantel Mobile - 18/10/2026
+
+- Manifiesto central config/plantel-mobile-modules.json. Alta automatica al entrar a administracion con permiso de edicion y al abrir Modulos, mediante POST autenticado. Se registran solo endpoints presentes; no se modifican campos ni permisos de modulos existentes. Alias ULTIMO_DESMONTE evita duplicar Desmontes.
+- Nombre e icono editables; Mis Apps consume icono, descripcion y color del perfil central. Iconos desconocidos usan el icono previo de cada modulo. Se conserva la lista de rutas frontend publicadas.
+- Respaldo local externo realizado. php -l y npm run build ejecutados correctamente por el instalador antes de guardar este registro.
+- Pendiente: desplegar archivos de Hostinger, comprobar alta automatica en base y cambio de nombre/icono en una sesion renovada. No se ejecuto SQL directo ni se asignaron permisos.
+- Pruebas preparatorias: parser PHP y sintaxis JS/TSX correctos; 13 comprobaciones de personalizacion, aliases y fallback correctas. Prueba real de sincronizacion concurrente y auditoria visual pendientes.
+- Sin secretos. El stash de Desmontes no se modifica.

@@ -324,6 +324,8 @@ const showAdmin = async () => {
   $("#ia-admin-panel").hidden = false;
   renderHeader();
   renderSidebar();
+  try { await syncDeployedModules(); }
+  catch (error) { setAlert(`No se pudo registrar el catálogo publicado: ${authErrorMessage(error)}`, true); }
   await renderView();
 };
 
@@ -493,6 +495,12 @@ const actionLabel = (action) => String(action || "")
 
 const skeleton = (message) => `<section class="ia-card ia-skeleton">${escapeHtml(message)}</section>`;
 
+const syncDeployedModules = async () => {
+  const editor = Number(state.profile?.user?.es_superadmin) === 1 || adminModule()?.permissions?.puede_editar === true;
+  if (!editor) return;
+  await api('/admin/identity.php?resource=catalogs&action=sync', { method: 'POST', body: '{}' });
+};
+
 const loadCatalogs = async () => {
   const catalogs = await api("/admin/catalogs");
   state.catalogs = {
@@ -502,8 +510,11 @@ const loadCatalogs = async () => {
   };
 };
 
+const MODULE_ICONS = ["apps", "construction", "bar_chart_4_bars", "pie_chart", "inventory_2", "payments", "task_alt", "badge", "settings", "work_history", "article", "business_center", "notifications", "account_circle", "home", "check_circle"];
+
 const renderModules = async () => {
   $("#ia-view-placeholder").innerHTML = skeleton("Cargando catálogo...");
+  await syncDeployedModules();
   const data = await api("/admin/modules");
   const modules = data.modules || [];
   $("#ia-view-placeholder").innerHTML = `
@@ -515,7 +526,7 @@ const renderModules = async () => {
         <label>Descripción<input name="descripcion" value="${escapeHtml(module.descripcion || "")}"></label>
         <label>Ruta<input name="ruta" value="${escapeHtml(module.ruta || "")}" required></label>
         <label>Grupo<input name="grupo" value="${escapeHtml(module.grupo || "GESTION")}" required></label>
-        <label>Ícono<input name="icono" value="${escapeHtml(module.icono || "apps")}" required></label>
+        <label>Ícono<select name="icono">${[...new Set([module.icono || "apps", ...MODULE_ICONS])].map(name => `<option value="${escapeHtml(name)}" ${name === (module.icono || "apps") ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}</select></label>
         <label>Color<input name="color" value="${escapeHtml(module.color || "")}" placeholder="#1769aa"></label>
         <label>Orden<input name="orden" type="number" min="0" value="${escapeHtml(module.orden || 0)}" required></label>
         <label class="ia-checkbox"><input name="activo" type="checkbox" ${Number(module.activo) === 1 ? "checked" : ""}> Activo</label>
