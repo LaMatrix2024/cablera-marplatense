@@ -512,29 +512,66 @@ const loadCatalogs = async () => {
 
 const MODULE_ICONS = ["apps", "construction", "bar_chart_4_bars", "pie_chart", "inventory_2", "payments", "task_alt", "badge", "settings", "work_history", "article", "business_center", "notifications", "account_circle", "home", "check_circle"];
 
-const renderModules = async () => {
-  $("#ia-view-placeholder").innerHTML = skeleton("Cargando catálogo...");
+const renderModules = async (filters = {}) => {
+  $("#ia-view-placeholder").innerHTML = skeleton("Cargando módulos...");
   await syncDeployedModules();
-  const data = await api("/admin/modules");
-  const modules = data.modules || [];
-  $("#ia-view-placeholder").innerHTML = `
-    <div class="ia-page-title"><div><h2>Catálogo de módulos</h2><p>Rutas, grupos y presentación del menú corporativo.</p></div></div>
-    <section class="ia-card ia-table-card"><div class="ia-catalog-grid">
-      ${modules.map((module) => `<form class="ia-module-form" data-module-id="${escapeHtml(module.id)}">
-        <strong>${escapeHtml(module.aplicacion_codigo)} / ${escapeHtml(module.codigo)}</strong>
+  const [modulesResponse, applicationsResponse] = await Promise.all([
+    api("/admin/modules"), api("/admin/applications")
+  ]);
+  const modules = modulesResponse.modules || [];
+  const applications = applicationsResponse.applications || [];
+  const appOptions = applications.map((app) =>
+    `<option value="${escapeHtml(app.id)}" ${app.codigo === "PLANTEL_MOBILE" ? "selected" : ""}>${escapeHtml(app.nombre)} (${escapeHtml(app.codigo)})</option>`
+  ).join("");
+  const cards = modules.map((module) => `
+    <form class="ia-module-form ia-module-card" data-module-id="${escapeHtml(module.id)}">
+      <div class="ia-module-card__head">
+        <div><span class="ia-module-eyebrow">${escapeHtml(module.aplicacion_codigo)}</span>
+        <h3>${escapeHtml(module.nombre)}</h3><code>${escapeHtml(module.codigo)}</code></div>
+        <span class="ia-module-status ${Number(module.activo) === 1 ? "is-active" : ""}">${Number(module.activo) === 1 ? "Activo" : "Inactivo"}</span>
+      </div>
+      <div class="ia-module-fields">
         <label>Nombre<input name="nombre" value="${escapeHtml(module.nombre)}" required></label>
-        <label>Descripción<input name="descripcion" value="${escapeHtml(module.descripcion || "")}"></label>
         <label>Ruta<input name="ruta" value="${escapeHtml(module.ruta || "")}" required></label>
+        <label class="ia-module-wide">Descripción<input name="descripcion" value="${escapeHtml(module.descripcion || "")}"></label>
         <label>Grupo<input name="grupo" value="${escapeHtml(module.grupo || "GESTION")}" required></label>
         <label>Ícono<select name="icono">${[...new Set([module.icono || "apps", ...MODULE_ICONS])].map(name => `<option value="${escapeHtml(name)}" ${name === (module.icono || "apps") ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}</select></label>
         <label>Color<input name="color" value="${escapeHtml(module.color || "")}" placeholder="#1769aa"></label>
-        <label>Orden<input name="orden" type="number" min="0" value="${escapeHtml(module.orden || 0)}" required></label>
-        <label class="ia-checkbox"><input name="activo" type="checkbox" ${Number(module.activo) === 1 ? "checked" : ""}> Activo</label>
-        <button class="ia-btn ia-btn--primary" type="submit">Guardar</button>
-      </form>`).join("") || `<p class="ia-muted">No hay módulos registrados.</p>`}
-    </div></section>`;
+        <label>Orden<input name="orden" type="number" min="0" value="${escapeHtml(module.orden ?? 0)}" required></label>
+      </div>
+      <div class="ia-module-card__footer">
+        <label class="ia-checkbox"><input name="activo" type="checkbox" ${Number(module.activo) === 1 ? "checked" : ""}> Módulo activo</label>
+        <button class="ia-btn ia-btn--primary" type="submit">Guardar cambios</button>
+      </div>
+    </form>`).join("");
+  $("#ia-view-placeholder").innerHTML = `
+    <div class="ia-page-title ia-module-page-title">
+      <div><h2>Catálogo de módulos</h2><p>Administrá las aplicaciones, rutas y visibilidad del menú corporativo.</p></div>
+      <button class="ia-btn ia-btn--primary" type="button" data-action="toggle-module-create">+ Nuevo módulo</button>
+    </div>
+    <section class="ia-card ia-module-create" id="ia-module-create" hidden>
+      <h3>Crear módulo</h3>
+      <p>El alta registra el módulo; los permisos se asignan después.</p>
+      <form id="ia-module-create-form">
+        <div class="ia-module-fields">
+          <label>Aplicación<select name="aplicacion_id" required>${appOptions}</select></label>
+          <label>Código<input name="codigo" placeholder="DESMONTE_HOY" pattern="[A-Za-z0-9_]+" required></label>
+          <label>Nombre<input name="nombre" placeholder="Desmontes de ayer" required></label>
+          <label>Ruta<input name="ruta" placeholder="/plantel/modulos/desmonte-hoy" pattern="/.*" required></label>
+          <label class="ia-module-wide">Descripción<input name="descripcion" placeholder="Descripción breve"></label>
+          <label>Grupo<input name="grupo" value="GESTION" required></label>
+          <label>Ícono<input name="icono" value="chart" required></label>
+          <label>Color<input name="color" value="#1769aa"></label>
+          <label>Orden<input name="orden" type="number" min="0" value="20" required></label>
+        </div>
+        <div class="ia-module-card__footer">
+          <label class="ia-checkbox"><input type="checkbox" name="activo" checked> Módulo activo</label>
+          <button class="ia-btn ia-btn--primary" type="submit">Crear módulo</button>
+        </div>
+      </form>
+    </section>
+    <section class="ia-module-list">${cards || '<p class="ia-muted">No hay módulos registrados.</p>'}</section>`;
 };
-
 const renderUsers = async (filters = {}) => {
   state.userFilters = filters;
   $("#ia-view-users").innerHTML = skeleton("Cargando usuarios...");
@@ -704,70 +741,76 @@ const renderView = async () => {
 };
 
 const openUser = async (id) => {
-  const data = await api(`/admin/users/${id}`);
-  const user = data.user;
-  $("#ia-drawer-title").textContent = fullName(user);
-  $("#ia-drawer-kicker").textContent = "Usuario";
-  $("#ia-drawer-body").innerHTML = `
-    <section class="ia-user-detail-head">
-      <span class="ia-user-avatar ia-user-avatar--large">${escapeHtml(initials(fullName(user)))}</span>
-      <div>
-        <h3>${escapeHtml(fullName(user))}</h3>
-        <p>${escapeHtml(user.email)}</p>
-        ${statusBadge(user.estado)}
-      </div>
-    </section>
-    <section class="ia-card">
-      <h3>Perfil</h3>
-      <dl class="ia-detail-grid">
-        <div><dt>Telefono</dt><dd>${escapeHtml(user.telefono || "-")}</dd></div>
-        <div><dt>Cargo</dt><dd>${escapeHtml(user.cargo || "-")}</dd></div>
-        <div><dt>Sector</dt><dd>${escapeHtml(user.sector || "-")}</dd></div>
-        <div><dt>Fecha alta</dt><dd>${escapeHtml(user.created_at || "-")}</dd></div>
-        <div><dt>Ultimo acceso</dt><dd>Sin registro</dd></div>
-        <div><dt>Superadmin</dt><dd>${Number(user.es_superadmin) === 1 ? "Si" : "No"}</dd></div>
-      </dl>
-    </section>
-    <section class="ia-card">
-      <h3>Aplicaciones y roles</h3>
-      <div class="ia-app-role-list">
+  const drawer = $("#ia-drawer");
+  const body = $("#ia-drawer-body");
+  $("#ia-drawer-title").textContent = "Cargando usuario...";
+  $("#ia-drawer-kicker").textContent = "Detalle de usuario";
+  body.innerHTML = '<section class="ia-card"><p class="ia-muted">Consultando datos y permisos...</p></section>';
+  drawer.hidden = false;
+  syncBodyScrollLock();
+
+  try {
+    const data = await api(`/admin/users/${encodeURIComponent(id)}`);
+    const user = data.user;
+    if (!user) throw new Error("La API no devolvió los datos del usuario.");
+    $("#ia-drawer-title").textContent = fullName(user);
+    body.innerHTML = `
+      <section class="ia-user-detail-head">
+        <span class="ia-user-avatar ia-user-avatar--large">${escapeHtml(initials(fullName(user)))}</span>
+        <div><h3>${escapeHtml(fullName(user))}</h3><p>${escapeHtml(user.email)}</p>${statusBadge(user.estado)}</div>
+      </section>
+      <section class="ia-card">
+        <h3>Perfil</h3>
+        <dl class="ia-detail-grid">
+          <div><dt>Teléfono</dt><dd>${escapeHtml(user.telefono || "-")}</dd></div>
+          <div><dt>Cargo</dt><dd>${escapeHtml(user.cargo || "-")}</dd></div>
+          <div><dt>Sector</dt><dd>${escapeHtml(user.sector || "-")}</dd></div>
+          <div><dt>Fecha alta</dt><dd>${escapeHtml(user.created_at || "-")}</dd></div>
+          <div><dt>Último acceso</dt><dd>${escapeHtml(user.ultimo_acceso || "Sin registro")}</dd></div>
+          <div><dt>Superadmin</dt><dd>${Number(user.es_superadmin) === 1 ? "Sí" : "No"}</dd></div>
+        </dl>
+      </section>
+      <section class="ia-card"><h3>Aplicaciones y roles</h3><div class="ia-app-role-list">
         ${(data.applications || []).filter((app) => Number(app.activo) === 1).map((app) => {
           const roles = (data.roles || []).filter((role) => Number(role.aplicacion_id) === Number(app.id) && Number(role.activo) === 1);
-          return `
-            <div class="ia-app-role-item">
-              <strong>${escapeHtml(app.codigo)}</strong>
-              <span>${escapeHtml(roles.map((role) => role.codigo).join(", ") || "Sin rol")}</span>
-              ${icon("chevron_right")}
-            </div>
-          `;
-        }).join("") || `<p class="ia-muted">Sin aplicaciones activas.</p>`}
-      </div>
-    </section>
-    <section class="ia-card">
-      <h3>Modulos</h3>
-      ${permissionMatrix(data.modules || [])}
-    </section>
-  `;
-  $("#ia-drawer").hidden = false;
-  syncBodyScrollLock();
+          return `<div class="ia-app-role-item"><strong>${escapeHtml(app.codigo)}</strong><span>${escapeHtml(roles.map((role) => role.codigo).join(", ") || "Sin rol")}</span></div>`;
+        }).join("") || '<p class="ia-muted">Sin aplicaciones activas.</p>'}
+      </div></section>
+      <section class="ia-card"><h3>Módulos y permisos</h3>
+        <p class="ia-muted">Autorizá o revocá la visualización por usuario. Los cambios se guardan individualmente.</p>
+        ${permissionMatrix(data.modules || [], user.id)}
+      </section>`;
+  } catch (error) {
+    $("#ia-drawer-title").textContent = "No se pudo abrir el usuario";
+    body.innerHTML = `<section class="ia-card"><p class="ia-error-message">${escapeHtml(error?.message || "Error desconocido")}</p><p class="ia-muted">Revisá la respuesta de la API administrativa. No se modificó ningún permiso.</p><button class="ia-btn ia-btn--primary" type="button" data-action="retry-open-user" data-id="${escapeHtml(id)}">Reintentar</button></section>`;
+  }
 };
-
-const permissionMatrix = (modules) => `
+const permissionMatrix = (modules, userId) => `
   <div class="ia-permission-table">
     <div class="ia-permission-row ia-permission-head">
-      <span>Modulo</span><span>Ver</span><span>Crear</span><span>Editar</span><span>Eliminar</span><span>Aprobar</span><span>Origen</span>
+      <span>Módulo</span><span>Ver</span><span>Crear</span><span>Editar</span><span>Eliminar</span><span>Aprobar</span><span>Origen / Acción</span>
     </div>
     ${modules.map((module) => {
       const permissions = module.effective?.permissions || {};
       const origin = module.origins?.puede_ver || "SIN_PERMISO";
+      const allowed = Boolean(permissions.puede_ver);
+      const active = Number(module.activo) === 1;
+      const app = escapeHtml(module.aplicacion_codigo);
+      const code = escapeHtml(module.codigo);
       return `
         <div class="ia-permission-row">
-          <strong>${escapeHtml(module.aplicacion_codigo)} / ${escapeHtml(module.codigo)}</strong>
+          <strong>${app} / ${code}</strong>
           ${["puede_ver", "puede_crear", "puede_editar", "puede_eliminar", "puede_aprobar"].map((permission) => permDot(permissions[permission])).join("")}
-          <span class="ia-badge">${escapeHtml(origin)}</span>
-        </div>
-      `;
-    }).join("") || `<p class="ia-muted">Sin modulos efectivos.</p>`}
+          <span><span class="ia-badge">${escapeHtml(origin)}</span>
+            <button type="button" class="ia-btn" data-action="toggle-user-module"
+              data-user-id="${Number(userId)}" data-module-id="${Number(module.id)}"
+              data-allow="${allowed ? "0" : "1"}"
+              ${!active ? "disabled" : ""}>
+              ${!active ? "Inactivo" : allowed ? "Revocar Ver" : "Autorizar Ver"}
+            </button>
+          </span>
+        </div>`;
+    }).join("") || `<p class="ia-muted">No hay módulos registrados.</p>`}
   </div>
 `;
 
@@ -794,6 +837,38 @@ document.addEventListener("click", async (event) => {
     if (action === "open-user-filters") openUserFilters();
     if (action === "close-user-filters") closeUserFilters();
     if (action === "open-user") await openUser(actionTarget.dataset.id).catch((error) => setAlert(error.message, true));
+    if (action === "retry-open-user") await openUser(actionTarget.dataset.id);
+    if (action === "toggle-user-module") {
+      const button = actionTarget;
+      const userId = Number(button.dataset.userId);
+      const moduleId = Number(button.dataset.moduleId);
+      const allow = Number(button.dataset.allow);
+      if (!Number.isSafeInteger(userId) || userId < 1 || !Number.isSafeInteger(moduleId) || moduleId < 1 || ![0, 1].includes(allow)) {
+        setAlert("Datos de autorización inválidos.", true);
+        return;
+      }
+      if (!window.confirm(`${allow ? "Autorizar" : "Revocar"} permiso Ver para este módulo y usuario?`)) return;
+      button.disabled = true;
+      try {
+        const current = await api(`/admin/users/${userId}`);
+        const module = (current.modules || []).find((item) => Number(item.id) === moduleId);
+        if (!module) throw new Error("El módulo ya no está disponible.");
+        const payload = { modulo_id: moduleId, puede_ver: allow };
+        for (const key of ["puede_crear", "puede_editar", "puede_eliminar", "puede_exportar", "puede_aprobar"]) {
+          payload[key] = module["ex_" + key] === null || module["ex_" + key] === undefined ? null : Number(module["ex_" + key]);
+        }
+        payload.motivo = module.motivo || null;
+        await api(`/admin/users/${userId}/modules`, {
+          method: "PUT",
+          body: JSON.stringify({ modules: [payload] })
+        });
+        await openUser(userId);
+        setAlert(allow ? "Permiso Ver autorizado." : "Permiso Ver revocado.");
+      } catch (error) {
+        button.disabled = false;
+        setAlert(error.message || "No se pudo guardar el permiso.", true);
+      }
+    }
     if (action === "export-users") setAlert("La exportacion se conectara en la siguiente iteracion visual.");
     return;
   }
@@ -839,6 +914,31 @@ document.addEventListener("submit", async (event) => {
       closeUserFilters();
       return;
     }
+    if (event.target.id === "ia-module-create-form") {
+      const form = new FormData(event.target);
+      const button = event.target.querySelector('[type="submit"]');
+      button.disabled = true;
+      try {
+        await api("/admin/modules", {
+          method: "POST",
+          body: JSON.stringify({
+            aplicacion_id: Number(form.get("aplicacion_id")),
+            codigo: String(form.get("codigo") || "").trim().toUpperCase(),
+            nombre: String(form.get("nombre") || "").trim(),
+            descripcion: String(form.get("descripcion") || "").trim(),
+            ruta: String(form.get("ruta") || "").trim(),
+            grupo: String(form.get("grupo") || "GESTION").trim(),
+            icono: String(form.get("icono") || "apps").trim(),
+            color: String(form.get("color") || "").trim(),
+            orden: Number(form.get("orden") || 0),
+            activo: form.get("activo") === "on"
+          })
+        });
+        await renderModules();
+        setAlert("Módulo creado. Asigná los permisos para hacerlo visible.");
+      } finally { button.disabled = false; }
+      return;
+    }
     if (event.target.matches(".ia-module-form")) {
       const form = new FormData(event.target);
       const id = event.target.dataset.moduleId;
@@ -862,6 +962,16 @@ document.addEventListener("submit", async (event) => {
   }
 });
 
+document.addEventListener("click", (event) => {
+  const button = event.target.closest('[data-action="toggle-module-create"]');
+  if (!button) return;
+  const panel = $("#ia-module-create");
+  if (!panel) return;
+  panel.hidden = !panel.hidden;
+  button.setAttribute("aria-expanded", String(!panel.hidden));
+  if (!panel.hidden) panel.querySelector('input[name="codigo"]')?.focus();
+});
+
 $("#ia-drawer-close").addEventListener("click", closeDrawer);
 $("#ia-mobile-backdrop").addEventListener("click", () => {
   closeMobileSidebar();
@@ -881,3 +991,4 @@ const boot = async () => {
 };
 
 void boot();
+
