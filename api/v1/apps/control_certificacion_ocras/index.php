@@ -315,6 +315,34 @@ function cc_xlsx_download(array $rows): never
 }
 
 $action=trim((string)($_GET['accion']??''));$profile=(array)$profile;
+/* Vista móvil: respuesta mínima y alcance estricto por asignación. El rol coordinador
+ * no implica acceso global en esta vista; solo administradores. */
+if($action==='datos_mobile'){
+    if(($_SERVER['REQUEST_METHOD']??'GET')!=='GET')cc_fail('method_not_allowed','Solo lectura.',405);
+    try {
+        $roles=cc_roles($profile);
+        $admin=(int)($profile['user']['es_superadmin']??0)===1
+            || in_array('superadmin',$roles,true) || in_array('administrador',$roles,true);
+        $limited=$profile;
+        if(!$admin){
+            $limited['user']['es_superadmin']=0;
+            $limited['roles']=array_values(array_filter((array)($profile['roles']??[]),
+                static fn($role):bool => !in_array(strtolower(trim((string)(is_array($role)?($role['codigo']??$role['nombre']??''):$role))),['coordinador','administrador','superadmin'],true)));
+        }
+        $data=cc_rows($limited);
+        $safe=array_map(static fn(array $r):array=>[
+            'sigest'=>$r['sigest'],'stage'=>$r['stage'],'titulo'=>$r['titulo'],
+            'central'=>$r['central'],'responsable_efectivo'=>$r['responsable_efectivo'],
+            'days'=>$r['days'],'gestionada'=>$r['gestionada'],
+            'gestion_fecha'=>$r['gestion_fecha'],'sem'=>$r['sem']
+        ],$data['rows']);
+        header('Cache-Control: no-store, private');
+        cc_response(['rows'=>$safe,'latest'=>$data['latest']]);
+    } catch(Throwable $e){
+        error_log('control_certificacion_ocras datos_mobile: '.$e->getMessage());
+        cc_fail('data_unavailable','No se pudieron cargar las obras autorizadas.',503);
+    }
+}
 if($action==='datos' && ($_SERVER['REQUEST_METHOD']??'GET')==='GET'){try{cc_response(cc_rows($profile));}catch(Throwable $e){error_log('control_certificacion_ocras datos: '.$e->getMessage());cc_fail('data_unavailable','No se pudo cargar el universo de certificación.',503);}}
 if($action==='detalle' && ($_SERVER['REQUEST_METHOD']??'GET')==='GET'){ $sigest=trim((string)($_GET['sigest']??''));$stage=trim((string)($_GET['etapa']??''));if($sigest===''||$stage==='')cc_fail('invalid_request','Solicitud de detalle no válida.',400);$data=cc_rows($profile)['rows'];foreach($data as $row)if($row['sigest']===$sigest&&$row['stage']===$stage)cc_response(['data'=>$row,'management'=>['can_manage'=>cc_can_all($profile)]]);cc_fail('not_found','No se encontró una tarea autorizada.',404); }
 if($action==='historial' && ($_SERVER['REQUEST_METHOD']??'GET')==='GET'){ $sigest=trim((string)($_GET['sigest']??''));$stage=trim((string)($_GET['etapa']??''));if($sigest===''||$stage===''||!cc_authorized_task($profile,$sigest,$stage))cc_fail('forbidden','No tenés permiso sobre esta tarea.',403);$stmt=cc_db()->prepare('SELECT tipo_evento,datos_json,created_at FROM control_certificacion_eventos WHERE sigest=:s AND etapa=:e ORDER BY id DESC LIMIT 100');$stmt->execute(['s'=>$sigest,'e'=>$stage]);$items=[];foreach($stmt as $item)$items[]=['tipo_evento'=>$item['tipo_evento'],'datos'=>json_decode((string)$item['datos_json'],true)?:[],'created_at'=>$item['created_at']];cc_response(['sigest'=>$sigest,'etapa'=>$stage,'items'=>$items]); }
