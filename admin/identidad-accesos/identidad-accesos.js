@@ -730,54 +730,47 @@ const renderView = async () => {
 };
 
 const openUser = async (id) => {
-  const data = await api(`/admin/users/${id}`);
-  const user = data.user;
-  $("#ia-drawer-title").textContent = fullName(user);
-  $("#ia-drawer-kicker").textContent = "Usuario";
-  $("#ia-drawer-body").innerHTML = `
-    <section class="ia-user-detail-head">
-      <span class="ia-user-avatar ia-user-avatar--large">${escapeHtml(initials(fullName(user)))}</span>
-      <div>
-        <h3>${escapeHtml(fullName(user))}</h3>
-        <p>${escapeHtml(user.email)}</p>
-        ${statusBadge(user.estado)}
-      </div>
-    </section>
-    <section class="ia-card">
-      <h3>Perfil</h3>
-      <dl class="ia-detail-grid">
-        <div><dt>Telefono</dt><dd>${escapeHtml(user.telefono || "-")}</dd></div>
-        <div><dt>Cargo</dt><dd>${escapeHtml(user.cargo || "-")}</dd></div>
-        <div><dt>Sector</dt><dd>${escapeHtml(user.sector || "-")}</dd></div>
-        <div><dt>Fecha alta</dt><dd>${escapeHtml(user.created_at || "-")}</dd></div>
-        <div><dt>Ultimo acceso</dt><dd>Sin registro</dd></div>
-        <div><dt>Superadmin</dt><dd>${Number(user.es_superadmin) === 1 ? "Si" : "No"}</dd></div>
-      </dl>
-    </section>
-    <section class="ia-card">
-      <h3>Aplicaciones y roles</h3>
-      <div class="ia-app-role-list">
+  const drawer = $("#ia-drawer");
+  const body = $("#ia-drawer-body");
+  $("#ia-drawer-title").textContent = "Cargando usuario...";
+  $("#ia-drawer-kicker").textContent = "Detalle de usuario";
+  body.innerHTML = '<section class="ia-card"><p class="ia-muted">Consultando datos y permisos...</p></section>';
+  drawer.hidden = false;
+  syncBodyScrollLock();
+
+  try {
+    const data = await api(`/admin/users/${encodeURIComponent(id)}`);
+    const user = data.user;
+    if (!user) throw new Error("La API no devolvió los datos del usuario.");
+    $("#ia-drawer-title").textContent = fullName(user);
+    body.innerHTML = `
+      <section class="ia-user-detail-head">
+        <span class="ia-user-avatar ia-user-avatar--large">${escapeHtml(initials(fullName(user)))}</span>
+        <div><h3>${escapeHtml(fullName(user))}</h3><p>${escapeHtml(user.email)}</p>${statusBadge(user.estado)}</div>
+      </section>
+      <section class="ia-card">
+        <h3>Perfil</h3>
+        <dl class="ia-detail-grid">
+          <div><dt>Teléfono</dt><dd>${escapeHtml(user.telefono || "-")}</dd></div>
+          <div><dt>Cargo</dt><dd>${escapeHtml(user.cargo || "-")}</dd></div>
+          <div><dt>Sector</dt><dd>${escapeHtml(user.sector || "-")}</dd></div>
+          <div><dt>Fecha alta</dt><dd>${escapeHtml(user.created_at || "-")}</dd></div>
+          <div><dt>Último acceso</dt><dd>${escapeHtml(user.ultimo_acceso || "Sin registro")}</dd></div>
+          <div><dt>Superadmin</dt><dd>${Number(user.es_superadmin) === 1 ? "Sí" : "No"}</dd></div>
+        </dl>
+      </section>
+      <section class="ia-card"><h3>Aplicaciones y roles</h3><div class="ia-app-role-list">
         ${(data.applications || []).filter((app) => Number(app.activo) === 1).map((app) => {
           const roles = (data.roles || []).filter((role) => Number(role.aplicacion_id) === Number(app.id) && Number(role.activo) === 1);
-          return `
-            <div class="ia-app-role-item">
-              <strong>${escapeHtml(app.codigo)}</strong>
-              <span>${escapeHtml(roles.map((role) => role.codigo).join(", ") || "Sin rol")}</span>
-              ${icon("chevron_right")}
-            </div>
-          `;
-        }).join("") || `<p class="ia-muted">Sin aplicaciones activas.</p>`}
-      </div>
-    </section>
-    <section class="ia-card">
-      <h3>Modulos</h3>
-      ${permissionMatrix(data.modules || [])}
-    </section>
-  `;
-  $("#ia-drawer").hidden = false;
-  syncBodyScrollLock();
+          return `<div class="ia-app-role-item"><strong>${escapeHtml(app.codigo)}</strong><span>${escapeHtml(roles.map((role) => role.codigo).join(", ") || "Sin rol")}</span></div>`;
+        }).join("") || '<p class="ia-muted">Sin aplicaciones activas.</p>'}
+      </div></section>
+      <section class="ia-card"><h3>Módulos y permisos efectivos</h3>${permissionMatrix(data.modules || [])}</section>`;
+  } catch (error) {
+    $("#ia-drawer-title").textContent = "No se pudo abrir el usuario";
+    body.innerHTML = `<section class="ia-card"><p class="ia-error-message">${escapeHtml(error?.message || "Error desconocido")}</p><p class="ia-muted">Revisá la respuesta de la API administrativa. No se modificó ningún permiso.</p><button class="ia-btn ia-btn--primary" type="button" data-action="retry-open-user" data-id="${escapeHtml(id)}">Reintentar</button></section>`;
+  }
 };
-
 const permissionMatrix = (modules) => `
   <div class="ia-permission-table">
     <div class="ia-permission-row ia-permission-head">
@@ -820,6 +813,7 @@ document.addEventListener("click", async (event) => {
     if (action === "open-user-filters") openUserFilters();
     if (action === "close-user-filters") closeUserFilters();
     if (action === "open-user") await openUser(actionTarget.dataset.id).catch((error) => setAlert(error.message, true));
+    if (action === "retry-open-user") await openUser(actionTarget.dataset.id);
     if (action === "export-users") setAlert("La exportacion se conectara en la siguiente iteracion visual.");
     return;
   }
