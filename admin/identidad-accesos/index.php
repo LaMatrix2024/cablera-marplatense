@@ -59,6 +59,6 @@ require_once __DIR__ . '/../../shared/layout.php';
     </div>
 </aside>
 
-<script type="module" src="/admin/identidad-accesos/identidad-accesos.js?v=1"></script>
+<script type="module" src="/admin/identidad-accesos/identidad-accesos.js?v=central-auth-1"></script>
 </body>
 </html>
