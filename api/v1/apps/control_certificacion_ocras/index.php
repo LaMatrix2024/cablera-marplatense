@@ -49,6 +49,17 @@ function cc_profile_access(array $profile): array
     return ['permissions' => [], 'enabled' => false];
 }
 
+function cc_mobile_access(array $profile): bool
+{
+    foreach ((array)($profile['modules'] ?? []) as $module) {
+        if (strtoupper((string)($module['aplicacion'] ?? '')) !== 'PLANTEL_MOBILE'
+            || strtoupper((string)($module['codigo'] ?? '')) !== 'CERTIFICACION_OCRAS') continue;
+        $permissions = (array)($module['permissions'] ?? []);
+        return ($module['estado'] ?? true) !== false && ($permissions['puede_ver'] ?? false) === true;
+    }
+    return false;
+}
+
 function cc_proxy(): never
 {
     $auth = new LocalAuthSession(); $snapshot = $auth->snapshot();
@@ -232,7 +243,8 @@ try {
 } catch (HttpError $error) { cc_fail($error->errorCode(), $error->getMessage(), $error->status()); }
   catch (Throwable $error) { error_log('control_certificacion_ocras auth: ' . $error->getMessage()); cc_fail('service_unavailable', 'No se pudo validar la sesión.', 503); }
 $access = cc_profile_access($profile);
-if (!$access['enabled'] || ($access['permissions']['puede_ver'] ?? false) !== true) cc_fail('module_forbidden', 'No tenés permiso para acceder a Control de certificación OCRAS.', 403);
+$mobileRead = (string)($_GET['accion'] ?? '') === 'datos_mobile' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && cc_mobile_access($profile);
+if (!$mobileRead && (!$access['enabled'] || ($access['permissions']['puede_ver'] ?? false) !== true)) cc_fail('module_forbidden', 'No tenés permiso para acceder a Control de certificación OCRAS.', 403);
 
 function cc_db(): PDO { static $pdo; if (!$pdo instanceof PDO) $pdo = api_database(); return $pdo; }
 function cc_identity_map(): array { static $map; return $map ??= require dirname(__DIR__, 4) . '/config/control_certificacion_identity_map.php'; }
@@ -273,7 +285,7 @@ function cc_stage(string $state): string { return ['OBRAS AL 100'=>'cierre','PLA
 function cc_days(?string $value): ?int { if (!$value) return null; try { $date=new DateTimeImmutable(substr($value,0,19)); $tz=new DateTimeZone('America/Argentina/Buenos_Aires'); $base=new DateTimeImmutable($date->format('Y-m-d'),$tz); return max(0,(int)$base->diff(new DateTimeImmutable('today',$tz))->format('%r%a')); } catch(Throwable) { return null; } }
 function cc_money(mixed $value): float { $v=trim((string)$value); if($v==='')return 0.0; $v=preg_replace('/[^0-9,.-]/','',$v)??''; if(str_contains($v,',')&&str_contains($v,'.')){$v=str_replace('.','',$v);$v=str_replace(',','.',$v);} elseif(str_contains($v,','))$v=str_replace(',','.',$v); return is_numeric($v)?(float)$v:0.0; }
 function cc_semaphore(?int $days, string $stage): array { if($days===null)return ['label'=>'Sin fecha','class'=>'unknown']; $critical=$stage==='aprobacion'?$days>3:$days>10; return $critical?['label'=>'Crítico','class'=>'red']:(($stage==='aprobacion'?$days<=3:$days<=7)?['label'=>'En término','class'=>'green']:['label'=>'Atención','class'=>'yellow']); }
-function cc_rows(array $profile): array
+function cc_rows(array $profile, bool $includeDirectory = true): array
 {
     $pdo=cc_db(); $latest=(string)$pdo->query('SELECT MAX(fecha_importacion) FROM raw_certificacion_ocras')->fetchColumn();
     if($latest==='')return ['rows'=>[],'latest'=>''];
@@ -288,6 +300,7 @@ function cc_rows(array $profile): array
     $realAll=cc_is_all_role($profile); $actorLegacy=cc_legacy_for_email($email);
     foreach($rows as &$row){$canTransfer=!$realAll && $actorLegacy!=='' && (string)($row['responsable_usuario_id']??'')===$actorLegacy; $row['puede_transferir']=$canTransfer; $row['can_transfer_task']=$canTransfer; $row['can_assign_task']=$realAll;} unset($row);
     $responsables=[];
+    if ($includeDirectory) {
     foreach ($pdo->query("SELECT id,email,nombre,apellido FROM usuarios WHERE estado='ACTIVO' ORDER BY nombre,apellido,email") as $user) {
         $display=trim((string)$user['nombre'].' '.(string)$user['apellido']) ?: (string)$user['email'];
         $responsables[]=['id'=>(int)$user['id'],'email'=>(string)$user['email'],'nombre'=>$display];
@@ -300,6 +313,7 @@ function cc_rows(array $profile): array
             $responsables[] = ['id'=>(string)$legacyRow['usuario_nexo_id'], 'email'=>cc_email_for_legacy((string)$legacyRow['usuario_nexo_id']), 'nombre'=>$name, 'legacy_only'=>true];
             $seen[strtolower($name)] = true;
         }
+    }
     }
     return ['rows'=>$rows,'latest'=>$latest,'actor_id'=>(string)($profile['user']['id']??''),'actor_email'=>$email,'legacy_id'=>$legacy,'can_view_all'=>$canAll,'responsables'=>$responsables];
 }
@@ -315,6 +329,34 @@ function cc_xlsx_download(array $rows): never
 }
 
 $action=trim((string)($_GET['accion']??''));$profile=(array)$profile;
+/* Vista móvil: respuesta mínima y alcance estricto por asignación. El rol coordinador
+ * no implica acceso global en esta vista; solo administradores. */
+if($action==='datos_mobile'){
+    if(($_SERVER['REQUEST_METHOD']??'GET')!=='GET')cc_fail('method_not_allowed','Solo lectura.',405);
+    try {
+        $roles=cc_roles($profile);
+        $admin=(int)($profile['user']['es_superadmin']??0)===1
+            || in_array('superadmin',$roles,true) || in_array('administrador',$roles,true);
+        $limited=$profile;
+        if(!$admin){
+            $limited['user']['es_superadmin']=0;
+            $limited['roles']=array_values(array_filter((array)($profile['roles']??[]),
+                static fn($role):bool => !in_array(strtolower(trim((string)(is_array($role)?($role['codigo']??$role['nombre']??''):$role))),['coordinador','administrador','superadmin'],true)));
+        }
+        $data=cc_rows($limited, false);
+        $safe=array_map(static fn(array $r):array=>[
+            'sigest'=>$r['sigest'],'stage'=>$r['stage'],'titulo'=>$r['titulo'],
+            'central'=>$r['central'],'responsable_efectivo'=>$r['responsable_efectivo'],
+            'days'=>$r['days'],'gestionada'=>$r['gestionada'],
+            'gestion_fecha'=>$r['gestion_fecha'],'sem'=>$r['sem']
+        ],$data['rows']);
+        header('Cache-Control: no-store, private');
+        cc_response(['rows'=>$safe,'latest'=>$data['latest']]);
+    } catch(Throwable $e){
+        error_log('control_certificacion_ocras datos_mobile: '.$e->getMessage());
+        cc_fail('data_unavailable','No se pudieron cargar las obras autorizadas.',503);
+    }
+}
 if($action==='datos' && ($_SERVER['REQUEST_METHOD']??'GET')==='GET'){try{cc_response(cc_rows($profile));}catch(Throwable $e){error_log('control_certificacion_ocras datos: '.$e->getMessage());cc_fail('data_unavailable','No se pudo cargar el universo de certificación.',503);}}
 if($action==='detalle' && ($_SERVER['REQUEST_METHOD']??'GET')==='GET'){ $sigest=trim((string)($_GET['sigest']??''));$stage=trim((string)($_GET['etapa']??''));if($sigest===''||$stage==='')cc_fail('invalid_request','Solicitud de detalle no válida.',400);$data=cc_rows($profile)['rows'];foreach($data as $row)if($row['sigest']===$sigest&&$row['stage']===$stage)cc_response(['data'=>$row,'management'=>['can_manage'=>cc_can_all($profile)]]);cc_fail('not_found','No se encontró una tarea autorizada.',404); }
 if($action==='historial' && ($_SERVER['REQUEST_METHOD']??'GET')==='GET'){ $sigest=trim((string)($_GET['sigest']??''));$stage=trim((string)($_GET['etapa']??''));if($sigest===''||$stage===''||!cc_authorized_task($profile,$sigest,$stage))cc_fail('forbidden','No tenés permiso sobre esta tarea.',403);$stmt=cc_db()->prepare('SELECT tipo_evento,datos_json,created_at FROM control_certificacion_eventos WHERE sigest=:s AND etapa=:e ORDER BY id DESC LIMIT 100');$stmt->execute(['s'=>$sigest,'e'=>$stage]);$items=[];foreach($stmt as $item)$items[]=['tipo_evento'=>$item['tipo_evento'],'datos'=>json_decode((string)$item['datos_json'],true)?:[],'created_at'=>$item['created_at']];cc_response(['sigest'=>$sigest,'etapa'=>$stage,'items'=>$items]); }
