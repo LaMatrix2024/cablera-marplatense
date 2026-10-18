@@ -49,6 +49,17 @@ function cc_profile_access(array $profile): array
     return ['permissions' => [], 'enabled' => false];
 }
 
+function cc_mobile_access(array $profile): bool
+{
+    foreach ((array)($profile['modules'] ?? []) as $module) {
+        if (strtoupper((string)($module['aplicacion'] ?? '')) !== 'PLANTEL_MOBILE'
+            || strtoupper((string)($module['codigo'] ?? '')) !== 'CERTIFICACION_OCRAS') continue;
+        $permissions = (array)($module['permissions'] ?? []);
+        return ($module['estado'] ?? true) !== false && ($permissions['puede_ver'] ?? false) === true;
+    }
+    return false;
+}
+
 function cc_proxy(): never
 {
     $auth = new LocalAuthSession(); $snapshot = $auth->snapshot();
@@ -232,7 +243,8 @@ try {
 } catch (HttpError $error) { cc_fail($error->errorCode(), $error->getMessage(), $error->status()); }
   catch (Throwable $error) { error_log('control_certificacion_ocras auth: ' . $error->getMessage()); cc_fail('service_unavailable', 'No se pudo validar la sesión.', 503); }
 $access = cc_profile_access($profile);
-if (!$access['enabled'] || ($access['permissions']['puede_ver'] ?? false) !== true) cc_fail('module_forbidden', 'No tenés permiso para acceder a Control de certificación OCRAS.', 403);
+$mobileRead = (string)($_GET['accion'] ?? '') === 'datos_mobile' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && cc_mobile_access($profile);
+if (!$mobileRead && (!$access['enabled'] || ($access['permissions']['puede_ver'] ?? false) !== true)) cc_fail('module_forbidden', 'No tenés permiso para acceder a Control de certificación OCRAS.', 403);
 
 function cc_db(): PDO { static $pdo; if (!$pdo instanceof PDO) $pdo = api_database(); return $pdo; }
 function cc_identity_map(): array { static $map; return $map ??= require dirname(__DIR__, 4) . '/config/control_certificacion_identity_map.php'; }
