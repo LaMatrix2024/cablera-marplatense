@@ -22,20 +22,13 @@ lcm_central_run(function (): void {
         throw new HttpError(403, 'No tenés autorización para Desmonte Hoy.', 'FORBIDDEN');
     }
 
-    $required = ['DB_HOSTINGER_LAB_HOST', 'DB_HOSTINGER_LAB_DATABASE', 'DB_HOSTINGER_LAB_USER', 'DB_HOSTINGER_LAB_PASSWORD'];
-    $config = [];
-    foreach ($required as $key) {
-        $config[$key] = (string)lcm_config_value($key, '');
-        if ($config[$key] === '') {
-            throw new RuntimeException('Falta configuración de la base laboratorio.');
-        }
-    }
-    $port = (string)lcm_config_value('DB_HOSTINGER_LAB_PORT', '3306');
-    $pdo = new PDO(
-        sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $config['DB_HOSTINGER_LAB_HOST'], $port, $config['DB_HOSTINGER_LAB_DATABASE']),
-        $config['DB_HOSTINGER_LAB_USER'],
-        $config['DB_HOSTINGER_LAB_PASSWORD'],
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false]
+    lcm_load_database_config();
+    $pdo = api_crear_conexion_pdo(
+        (string) LAB_DB_HOST,
+        (string) LAB_DB_PORT,
+        (string) LAB_DB_NAME,
+        (string) LAB_DB_USER,
+        (string) LAB_DB_PASS
     );
     $today = (new DateTimeImmutable('now', new DateTimeZone('America/Argentina/Buenos_Aires')))->format('Y-m-d');
     $stmt = $pdo->prepare("SELECT ROUND(COALESCE(SUM(metros), 0), 2) AS metros, COUNT(*) AS tirones
