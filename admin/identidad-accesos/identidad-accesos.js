@@ -5,11 +5,10 @@ const fetchWithTimeout = async (url, options = {}, timeout = 15000) => {
   try { return await fetch(url, { ...options, signal: controller.signal, cache: "no-store" }); }
   finally { clearTimeout(timer); }
 };
-const firebaseErrorMessage = (error) => error?.message || "No se pudo completar la operación.";
+const authErrorMessage = (error) => error?.message || "No se pudo completar la operación.";
 
 const ADMIN_MODULE = "IDENTIDAD_ACCESOS";
 const SIDEBAR_KEY = "lcm.identity.sidebar.collapsed";
-const loginUrl = () => `/login/?returnTo=${encodeURIComponent(window.location.pathname + window.location.search + window.location.hash)}`;
 
 const NAV_ITEMS = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard", section: "" },
@@ -840,7 +839,7 @@ document.addEventListener("submit", async (event) => {
       setAlert("Catálogo actualizado.");
     }
   } catch (error) {
-    setAlert(firebaseErrorMessage(error), true);
+    setAlert(authErrorMessage(error), true);
   }
 });
 
