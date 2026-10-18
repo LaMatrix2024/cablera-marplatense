@@ -1,5 +1,5 @@
 const CABLERA_APP = "CABLERAMARPLATENSE";
-const fetchWithTimeout = async (url, options = {}, timeout = 15000) => {
+const fetchWithTimeout = async (url, options = {}, timeout = 60000) => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
   try { return await fetch(url, { ...options, signal: controller.signal, cache: "no-store" }); }
