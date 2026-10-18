@@ -768,8 +768,10 @@ document.addEventListener("click", async (event) => {
     const action = actionTarget.dataset.action;
     if (action === "toggle-sidebar") toggleSidebar();
     if (action === "signout") {
+      const oldToken = state.idToken;
       clearSessionState();
       showLogin();
+      if (oldToken) await fetch('/api/v1/central-auth/logout.php', { method: 'POST', headers: { Authorization: 'Bearer ' + oldToken } });
     }
     if (action === "retry-view") await renderView();
     if (action === "open-user-filters") openUserFilters();
