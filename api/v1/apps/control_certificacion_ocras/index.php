@@ -354,7 +354,9 @@ if($action==='datos_mobile'){
         cc_response(['rows'=>$safe,'latest'=>$data['latest']]);
     } catch(Throwable $e){
         error_log('control_certificacion_ocras datos_mobile: '.$e->getMessage());
-        cc_fail('data_unavailable','No se pudieron cargar las obras autorizadas.',503);
+        $diagnostic = substr(hash('sha256', get_class($e).'|'.$e->getMessage()), 0, 12);
+        header('X-Ocras-Diagnostic: '.$diagnostic);
+        cc_fail('data_unavailable','No se pudieron cargar las obras autorizadas. Código de diagnóstico: '.$diagnostic,503);
     }
 }
 if($action==='datos' && ($_SERVER['REQUEST_METHOD']??'GET')==='GET'){try{cc_response(cc_rows($profile));}catch(Throwable $e){error_log('control_certificacion_ocras datos: '.$e->getMessage());cc_fail('data_unavailable','No se pudo cargar el universo de certificación.',503);}}
