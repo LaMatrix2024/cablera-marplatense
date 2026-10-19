@@ -243,7 +243,7 @@ try {
 } catch (HttpError $error) { cc_fail($error->errorCode(), $error->getMessage(), $error->status()); }
   catch (Throwable $error) { error_log('control_certificacion_ocras auth: ' . $error->getMessage()); cc_fail('service_unavailable', 'No se pudo validar la sesión.', 503); }
 $access = cc_profile_access($profile);
-$mobileRead = (string)($_GET['accion'] ?? '') === 'datos_mobile' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && cc_mobile_access($profile);
+$mobileRead = in_array((string)($_GET['accion'] ?? ''), ['datos_mobile','resumen_mobile','buscar_mobile'], true) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && cc_mobile_access($profile);
 if (!$mobileRead && (!$access['enabled'] || ($access['permissions']['puede_ver'] ?? false) !== true)) cc_fail('module_forbidden', 'No tenés permiso para acceder a Control de certificación OCRAS.', 403);
 
 function cc_db(): PDO { static $pdo; if ($pdo instanceof PDO) return $pdo; lcm_load_database_config(); if (!defined('LAB_DB_HOST') || !defined('LAB_DB_NAME') || !defined('LAB_DB_USER') || !defined('LAB_DB_PASS')) throw new RuntimeException('Conexión laboratorio no configurada.'); $pdo = new PDO('mysql:host='.LAB_DB_HOST.';port='.(defined('LAB_DB_PORT') ? LAB_DB_PORT : '3306').';dbname='.LAB_DB_NAME.';charset=utf8mb4', LAB_DB_USER, LAB_DB_PASS, [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES=>false]); return $pdo; }
@@ -331,6 +331,40 @@ function cc_xlsx_download(array $rows): never
 $action=trim((string)($_GET['accion']??''));$profile=(array)$profile;
 /* Vista móvil: respuesta mínima y alcance estricto por asignación. El rol coordinador
  * no implica acceso global en esta vista; solo administradores. */
+if(in_array($action,['resumen_mobile','buscar_mobile'],true)){
+    if(($_SERVER['REQUEST_METHOD']??'GET')!=='GET')cc_fail('method_not_allowed','Solo lectura.',405);
+    try {
+        $roles=cc_roles($profile);
+        $admin=(int)($profile['user']['es_superadmin']??0)===1 || in_array('superadmin',$roles,true) || in_array('administrador',$roles,true);
+        $limited=$profile;
+        if(!$admin){
+            $limited['user']['es_superadmin']=0;
+            $limited['roles']=array_values(array_filter((array)($profile['roles']??[]),
+                static fn($role):bool=>!in_array(strtolower(trim((string)(is_array($role)?($role['codigo']??$role['nombre']??''):$role))),['coordinador','administrador','superadmin'],true)));
+        }
+        $data=cc_rows($limited,false);
+        if($action==='buscar_mobile'){
+            $q=trim((string)($_GET['q']??''));
+            if(mb_strlen($q)<3)cc_fail('invalid_request','Ingresá al menos tres caracteres.',400);
+            $found=[];
+            foreach($data['rows'] as $r){
+                if(stripos((string)$r['sigest'],$q)===false && stripos((string)$r['titulo'],$q)===false && stripos((string)$r['central'],$q)===false)continue;
+                $found[]=['sigest'=>$r['sigest'],'stage'=>$r['stage'],'titulo'=>$r['titulo'],'central'=>$r['central'],'responsable_efectivo'=>$r['responsable_efectivo'],'days'=>$r['days'],'gestionada'=>$r['gestionada'],'gestion_fecha'=>$r['gestion_fecha'],'sem'=>$r['sem']];
+                if(count($found)>=15)break;
+            }
+            cc_response(['rows'=>$found,'latest'=>$data['latest']]);
+        }
+        $groups=[];$all=['total'=>0,'pendientes'=>0,'gestionadas'=>0,'criticas'=>0];
+        foreach($data['rows'] as $r){
+            $key=$r['stage'];if(!isset($groups[$key]))$groups[$key]=['total'=>0,'pendientes'=>0,'gestionadas'=>0,'criticas'=>0];
+            foreach([$key,'_all'] as $g){
+                if($g==='_all'){$all['total']++;$all[$r['gestionada']?'gestionadas':'pendientes']++;if(!$r['gestionada']&&($r['sem']['class']??'')==='red')$all['criticas']++;}
+                else{$groups[$g]['total']++;$groups[$g][$r['gestionada']?'gestionadas':'pendientes']++;if(!$r['gestionada']&&($r['sem']['class']??'')==='red')$groups[$g]['criticas']++;}
+            }
+        }
+        cc_response(['totals'=>$all,'stages'=>$groups,'latest'=>$data['latest'],'saldo_disponible'=>false]);
+    }catch(Throwable $e){error_log('control_certificacion_ocras mobile: '.$e->getMessage());cc_fail('data_unavailable','No se pudo consultar el tablero.',503);}
+}
 if($action==='datos_mobile'){
     if(($_SERVER['REQUEST_METHOD']??'GET')!=='GET')cc_fail('method_not_allowed','Solo lectura.',405);
     try {
