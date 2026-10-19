@@ -246,7 +246,7 @@ $access = cc_profile_access($profile);
 $mobileRead = (string)($_GET['accion'] ?? '') === 'datos_mobile' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && cc_mobile_access($profile);
 if (!$mobileRead && (!$access['enabled'] || ($access['permissions']['puede_ver'] ?? false) !== true)) cc_fail('module_forbidden', 'No tenés permiso para acceder a Control de certificación OCRAS.', 403);
 
-function cc_db(): PDO { static $pdo; if (!$pdo instanceof PDO) $pdo = api_database(); return $pdo; }
+function cc_db(): PDO { static $pdo; if ($pdo instanceof PDO) return $pdo; lcm_load_database_config(); if (!defined('LAB_DB_HOST') || !defined('LAB_DB_NAME') || !defined('LAB_DB_USER') || !defined('LAB_DB_PASS')) throw new RuntimeException('Conexión laboratorio no configurada.'); $pdo = new PDO('mysql:host='.LAB_DB_HOST.';port='.(defined('LAB_DB_PORT') ? LAB_DB_PORT : '3306').';dbname='.LAB_DB_NAME.';charset=utf8mb4', LAB_DB_USER, LAB_DB_PASS, [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES=>false]); return $pdo; }
 function cc_identity_map(): array { static $map; return $map ??= require dirname(__DIR__, 4) . '/config/control_certificacion_identity_map.php'; }
 function cc_legacy_for_email(string $email): string { foreach (cc_identity_map() as $legacy => $mapped) if (strcasecmp($mapped, trim($email)) === 0) return $legacy; return ''; }
 function cc_email_for_legacy(string $legacy): string { return (string)(cc_identity_map()[trim($legacy)] ?? ''); }
