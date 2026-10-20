@@ -171,6 +171,20 @@ function api_require_method(string $method): void
 
 function api_admin_user(PDO $pdo, string $permission = 'puede_crear'): array
 {
+    $header = (string)(api_authorization_header() ?? '');
+    if (preg_match('/^Bearer\\s+([a-f0-9]{64})$/i', $header, $matches)) {
+        require_once __DIR__ . '/../../shared/auth/HostingerTokenService.php';
+        $central = (new CentralHostingerTokenService($pdo))->session($matches[1]);
+        $profile = $central['profile'] ?? [];
+        foreach (($profile['modules'] ?? []) as $module) {
+            if (($module['aplicacion'] ?? '') === 'CABLERAMARPLATENSE'
+                && ($module['codigo'] ?? '') === 'IDENTIDAD_ACCESOS'
+                && ($module['permissions'][$permission] ?? false) === true) {
+                return $profile['user'];
+            }
+        }
+        throw new HttpError(403, 'Permiso insuficiente.', 'permission_denied');
+    }
     $auth = new CorporateAuth($pdo);
     $session = $auth->requireAuthenticatedUser(api_authorization_header());
     $auth->requireModulePermission($session['user'], 'IDENTIDAD_ACCESOS', $permission);

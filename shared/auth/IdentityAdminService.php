@@ -35,6 +35,56 @@ final class IdentityAdminService
         ];
     }
 
+    /** Alta de manifiestos desplegados; nunca sobrescribe personalizaciones ni permisos. */
+    public function syncModuleCatalog(): array
+    {
+        $root = dirname(__DIR__, 2);
+        $catalog = json_decode((string)file_get_contents($root . '/config/plantel-mobile-modules.json'), true, 512, JSON_THROW_ON_ERROR);
+        if (!is_array($catalog) || !array_is_list($catalog)) {
+            throw new RuntimeException('Manifiesto de módulos inválido.');
+        }
+        $created = []; $preserved = []; $notDeployed = [];
+        $this->pdo->beginTransaction();
+        try {
+            foreach ($catalog as $item) {
+                $code = $this->code($item['codigo'] ?? '');
+                $appCode = $this->code($item['aplicacion'] ?? '');
+                $backend = (string)($item['backend'] ?? '');
+                if ($backend === '' || str_contains($backend, '..') || str_starts_with($backend, '/') || !is_file($root . '/' . $backend)) {
+                    $notDeployed[] = $code;
+                    continue;
+                }
+                // Serializa sincronizaciones simultáneas sobre la misma aplicación.
+                $app = $this->pdo->prepare('SELECT id FROM aplicaciones WHERE codigo = :codigo FOR UPDATE');
+                $app->execute(['codigo' => $appCode]);
+                $appId = $app->fetchColumn();
+                if (!$appId) {
+                    throw new RuntimeException('La aplicación del manifiesto no está registrada.');
+                }
+                $existing = $this->pdo->prepare('SELECT id FROM modulos WHERE aplicacion_id = :app AND codigo = :codigo LIMIT 1');
+                $found = false;
+                foreach (array_merge([$code], $item['aliases'] ?? []) as $candidate) {
+                    $existing->execute(['app' => (int)$appId, 'codigo' => $this->code($candidate)]);
+                    if ($existing->fetchColumn()) { $found = true; break; }
+                }
+                if ($found) { $preserved[] = $code; continue; }
+                $this->createModule([
+                    'aplicacion_id' => (int)$appId, 'codigo' => $code,
+                    'nombre' => $item['nombre'], 'descripcion' => $item['descripcion'],
+                    'ruta' => $item['ruta'], 'icono' => $item['icono'],
+                    'color' => $item['color'], 'grupo' => 'TELEFONIA',
+                    'orden' => (int)$item['orden'], 'activo' => true,
+                ]);
+                $created[] = $code;
+            }
+            $this->pdo->commit();
+        } catch (Throwable $exception) {
+            $this->rollback();
+            throw $exception;
+        }
+        return ['created' => $created, 'preserved' => $preserved, 'not_deployed' => $notDeployed];
+    }
+
     public function catalogs(): array
     {
         return [
@@ -612,14 +662,14 @@ final class IdentityAdminService
                     um.motivo
              FROM modulos m
              INNER JOIN aplicaciones a ON a.id = m.aplicacion_id
-             LEFT JOIN usuario_aplicacion ua ON ua.aplicacion_id = a.id AND ua.usuario_id = :id
-             LEFT JOIN usuario_modulo um ON um.modulo_id = m.id AND um.usuario_id = :id
+             LEFT JOIN usuario_aplicacion ua ON ua.aplicacion_id = a.id AND ua.usuario_id = :usuario_app
+             LEFT JOIN usuario_modulo um ON um.modulo_id = m.id AND um.usuario_id = :usuario_modulo
              WHERE ua.usuario_id IS NOT NULL OR EXISTS (
-                SELECT 1 FROM usuario_rol ur WHERE ur.usuario_id = :id AND ur.aplicacion_id = a.id
+                SELECT 1 FROM usuario_rol ur WHERE ur.usuario_id = :usuario_rol AND ur.aplicacion_id = a.id
              )
              ORDER BY a.nombre, m.orden, m.nombre'
         );
-        $stmt->execute(['id' => $id]);
+        $stmt->execute(['usuario_app' => $id, 'usuario_modulo' => $id, 'usuario_rol' => $id]);
         $repo = new CorporateAccessRepository($this->pdo);
         $rows = [];
         foreach ($stmt->fetchAll() as $row) {

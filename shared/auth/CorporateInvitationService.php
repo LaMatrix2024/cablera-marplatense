@@ -323,16 +323,80 @@ final class CorporateInvitationService
             $moduleRows = $modules->fetchAll();
         }
 
-        $repo = new CorporateAccessRepository($this->pdo);
+        // Perfil: calcular permisos en lote, sin consultas por modulo.
         $authorizedModules = [];
-        foreach ($moduleRows as &$module) {
-            $permissions = $repo->effectivePermissions($usuarioId, $module['aplicacion'], $module['codigo']);
-            $module['permissions'] = $permissions['permissions'];
-            if ($permissions['permissions']['puede_ver'] === true) {
+        $keyOf = static fn(string $app, string $module): string => json_encode([$app, $module]);
+        $roleRowsByModule = [];
+        $exceptionsByModule = [];
+
+        if (!$isSuperadmin && CorporateAccess::isActiveUser($user) && $moduleRows !== []) {
+            $roleStmt = $this->pdo->prepare(
+                'SELECT a.codigo AS aplicacion, m.codigo AS modulo,
+                        rm.puede_ver, rm.puede_crear, rm.puede_editar,
+                        rm.puede_eliminar, rm.puede_exportar, rm.puede_aprobar
+                 FROM usuario_rol ur
+                 INNER JOIN roles r ON r.id = ur.rol_id
+                    AND r.aplicacion_id = ur.aplicacion_id AND r.activo = 1
+                 INNER JOIN rol_modulo rm ON rm.rol_id = r.id
+                    AND rm.aplicacion_id = r.aplicacion_id
+                 INNER JOIN modulos m ON m.id = rm.modulo_id
+                    AND m.aplicacion_id = ur.aplicacion_id AND m.activo = 1
+                 INNER JOIN aplicaciones a ON a.id = ur.aplicacion_id AND a.activo = 1
+                 INNER JOIN usuario_aplicacion ua ON ua.usuario_id = ur.usuario_id
+                    AND ua.aplicacion_id = ur.aplicacion_id AND ua.activo = 1
+                 WHERE ur.usuario_id = :usuario_id AND ur.activo = 1'
+            );
+            $roleStmt->execute(['usuario_id' => $usuarioId]);
+            foreach ($roleStmt->fetchAll() as $row) {
+                $key = $keyOf((string)$row['aplicacion'], (string)$row['modulo']);
+                $roleRowsByModule[$key][] = $row;
+            }
+
+            $exceptionStmt = $this->pdo->prepare(
+                'SELECT a.codigo AS aplicacion, m.codigo AS modulo,
+                        um.puede_ver, um.puede_crear, um.puede_editar,
+                        um.puede_eliminar, um.puede_exportar, um.puede_aprobar
+                 FROM usuario_modulo um
+                 INNER JOIN aplicaciones a ON a.id = um.aplicacion_id AND a.activo = 1
+                 INNER JOIN modulos m ON m.id = um.modulo_id
+                    AND m.aplicacion_id = a.id AND m.activo = 1
+                 INNER JOIN usuario_aplicacion ua ON ua.usuario_id = um.usuario_id
+                    AND ua.aplicacion_id = um.aplicacion_id AND ua.activo = 1
+                 WHERE um.usuario_id = :usuario_id'
+            );
+            $exceptionStmt->execute(['usuario_id' => $usuarioId]);
+            foreach ($exceptionStmt->fetchAll() as $row) {
+                $key = $keyOf((string)$row['aplicacion'], (string)$row['modulo']);
+                // Equivalente a LIMIT 1 en condiciones de unicidad usuario/aplicacion/modulo.
+                if (!isset($exceptionsByModule[$key])) {
+                    $exceptionsByModule[$key] = $row;
+                }
+            }
+        }
+
+        $activeApps = [];
+        foreach ($appsRows as $app) {
+            if ((int)($app['activo'] ?? 0) === 1) {
+                $activeApps[(string)$app['codigo']] = true;
+            }
+        }
+        foreach ($moduleRows as $module) {
+            $key = $keyOf((string)$module['aplicacion'], (string)$module['codigo']);
+            if (!CorporateAccess::isActiveUser($user)) {
+                $permissions = CorporateAccess::emptyPermissions();
+            } elseif ($isSuperadmin) {
+                $permissions = CorporateAccess::fullPermissions();
+            } elseif (!isset($activeApps[(string)$module['aplicacion']])) {
+                $permissions = CorporateAccess::emptyPermissions();
+            } else {
+                $permissions = CorporateAccess::combineRolePermissions($roleRowsByModule[$key] ?? []);
+                $permissions = CorporateAccess::applyUserException($permissions, $exceptionsByModule[$key] ?? null);
+            }
+            $module['permissions'] = $permissions;
+            if ($permissions['puede_ver'] === true) {
                 $authorizedModules[] = $module;
             }
         }
-        unset($module);
 
         return [
             'user' => $user,

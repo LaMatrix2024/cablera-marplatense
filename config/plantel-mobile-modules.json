@@ -1,0 +1,28 @@
+[
+  {
+    "aplicacion": "PLANTEL_MOBILE",
+    "codigo": "DESMONTE_HOY",
+    "nombre": "Desmontes de ayer",
+    "descripcion": "Metros de cable subterráneo dados de alta ayer en ToolBox.",
+    "ruta": "/plantel/modulos/desmonte-hoy",
+    "icono": "construction",
+    "color": "#c91523",
+    "orden": 10,
+    "backend": "api/v1/desmonte-hoy.php",
+    "aliases": [
+      "ULTIMO_DESMONTE"
+    ]
+  },
+  {
+    "aplicacion": "PLANTEL_MOBILE",
+    "codigo": "PRODUCCION_ABIERTA",
+    "nombre": "Producción abierta",
+    "descripcion": "Horas OCRAS y PTRS del último período sin bloquear ni cerrar.",
+    "ruta": "/plantel/modulos/produccion-abierta",
+    "icono": "bar_chart_4_bars",
+    "color": "#047857",
+    "orden": 20,
+    "backend": "api/v1/produccion-abierta.php",
+    "aliases": []
+  }
+]

@@ -20,6 +20,17 @@ Se usan dos estados:
 - **Confirmado en el repositorio:** existe evidencia directa en archivos versionados, documentación o historial Git.
 - **Pendiente de verificar:** requiere comprobar ejecución, datos, infraestructura, autenticación o producción. La sola presencia de código o SQL no confirma que esté aplicado.
 
+## Producción abierta OCRAS/PTRS — preparación 18/10/2026
+
+- API nueva `api/v1/produccion-abierta.php`: autentica token central y exige `PLANTEL_MOBILE/PRODUCCION_ABIERTA/puede_ver` (o superadmin backend). Usa configuración LAB existente, sin credenciales nuevas.
+- Consulta de sólo lectura a `raw_produccion_planta`; último período con OCRAS/PTRS, `n_bloqueo_produccion = 0` y `bloqueo_estado = ABIERTO`. Suma `n_totalhs_tasa`; no filtra por estado comercial de la obra. Una sola sentencia obtiene período y agregados por sucursal/tipo. Las cantidades son registros, no obras distintas.
+- Verificado en phpMyAdmin el 18/10/2026: período 202610, OCRAS 245 registros / 2183,9100 h; PTRS 629 / 4454,8700 h; total 874 / 6638,7800 h. La consulta exacta de la API devolvió 15 grupos por sucursal/tipo, conciliados con una consulta independiente por período/bloqueo/tipo. Septiembre tiene dos registros OCRAS abiertos (137,26 h), correctamente excluidos al elegir octubre.
+- Validación sintáctica PHP mediante php-parser en modo 8.3: correcta. No equivale a `php -l`: PHP CLI no está disponible.
+- Frontend preparado en la rama homónima de mis-apps. PWA, sesión, navegación y componentes reutilizados; sin Firebase nuevo.
+- Seed de catálogo preparado, NO ejecutado: `database/migrations/20261018_001_produccion_abierta_seed.sql`. No crea usuarios ni concede permisos.
+- Pendiente: revisar/aplicar en la PC principal, ejecutar `php -l`, build completo de frontend, auditorías funcional/UX/visual/mobile y prueba de permisos 401/403/200. Publicar API en Hostinger, registrar módulo y asignar permisos desde Identidad y Accesos, desplegar frontend en Vercel y conciliar en producción.
+- No se escribieron datos ni se desplegó código. La PC principal continúa siendo la fuente de verdad; los cambios quedan aislados para revisión. No se pudo consultar `C:\\plantel\\ARQUITECTURA_PLANTEL.md` ni escribir `C:/Users/pl023clau/Downloads/informe_codex.txt` desde este entorno. No se incluyeron secretos.
+
 ## Última actualización
 
 ### Completado
@@ -281,3 +292,13 @@ Las siguientes herramientas administrativas quedan excluidas y deben permanecer 
 ## Nota de seguridad
 
 Este documento no contiene contraseñas, tokens, claves API ni valores de archivos de entorno. Las rutas y nombres de variables se mencionan únicamente como referencias operativas.
+
+
+## Catalogo automatico de Plantel Mobile - 18/10/2026
+
+- Manifiesto central config/plantel-mobile-modules.json. Alta automatica al entrar a administracion con permiso de edicion y al abrir Modulos, mediante POST autenticado. Se registran solo endpoints presentes; no se modifican campos ni permisos de modulos existentes. Alias ULTIMO_DESMONTE evita duplicar Desmontes.
+- Nombre e icono editables; Mis Apps consume icono, descripcion y color del perfil central. Iconos desconocidos usan el icono previo de cada modulo. Se conserva la lista de rutas frontend publicadas.
+- Respaldo local externo realizado. php -l y npm run build ejecutados correctamente por el instalador antes de guardar este registro.
+- Pendiente: desplegar archivos de Hostinger, comprobar alta automatica en base y cambio de nombre/icono en una sesion renovada. No se ejecuto SQL directo ni se asignaron permisos.
+- Pruebas preparatorias: parser PHP y sintaxis JS/TSX correctos; 13 comprobaciones de personalizacion, aliases y fallback correctas. Prueba real de sincronizacion concurrente y auditoria visual pendientes.
+- Sin secretos. El stash de Desmontes no se modifica.

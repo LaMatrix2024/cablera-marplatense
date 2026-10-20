@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../../_common.php';
+require_once __DIR__ . '/../../_common.php';
 
 api_handle(function (): void {
     $pdo = api_database();
