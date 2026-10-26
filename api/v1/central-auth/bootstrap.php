@@ -29,9 +29,5 @@ function lcm_central_bearer(): string
 
 function lcm_central_database(): PDO
 {
-    $pdo = $GLOBALS['pdo'] ?? null;
-    if (!$pdo instanceof PDO) {
-        throw new RuntimeException('Conexión de base no disponible.');
-    }
-    return $pdo;
+    return api_database();
 }

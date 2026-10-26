@@ -17,6 +17,9 @@ api_handle(function (): void {
     if ($resource === 'dashboard' && $method === 'GET') {
         api_json(['ok' => true] + $service->dashboard());
     }
+    if ($resource === 'catalogs' && $method === 'POST' && $action === 'sync') {
+        api_json(['ok' => true] + $service->syncModuleCatalog());
+    }
     if ($resource === 'catalogs' && $method === 'GET') {
         api_json(['ok' => true] + $service->catalogs());
     }
