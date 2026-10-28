@@ -256,5 +256,5 @@ La API administrativa también admite el Bearer opaco de 64 caracteres emitido p
 
 `GET` exige `puede_ver`, `POST` exige `puede_crear`, y `PUT`/`PATCH` exigen `puede_editar`. El detalle de usuario usa una lista pública de campos; la auditoría descarta contraseñas/hashes/tokens. No se puede desactivar al último superadmin activo.
 
-Prueba aislada (requiere `pdo_sqlite`): `php tests/identity_admin_mobile_test.php`. Verifica 16 casos sin datos productivos. Publicar esta API antes de habilitar la interfaz móvil asociada de `mis-apps`. No se necesita migración. Despliegue real pendiente; el navegador no pudo inspeccionar Hostinger en esta tarea.
+Prueba aislada (requiere `pdo_sqlite`): `php tests/identity_admin_mobile_test.php`. Verifica 16 casos sin datos productivos. Publicar esta API antes de habilitar la interfaz móvil asociada de `mis-apps`. No se necesita migración. Desplegado el 28/10/2026 después de conciliar la versión de Hostinger. Respaldo privado de los tres PHP en `deploy_backup_admin_20261028`, fuera de `public_html`. Guardados comparados con Git; lectura autenticada desde Plantel Mobile verificada. Se conservaron la sincronización del catálogo y los parámetros PDO únicos de producción.
 
