@@ -3,15 +3,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/central-auth/bootstrap.php';
 lcm_central_run(function (): void {
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') throw new HttpError(405, 'Método no permitido.', 'METHOD_NOT_ALLOWED');
-    $session = (new CentralHostingerTokenService(lcm_central_database()))->session(lcm_central_bearer());
-    $profile = $session['profile'] ?? [];
-    $authorized = !empty($profile['user']['es_superadmin']);
-    foreach (($profile['modules'] ?? []) as $module) {
-        if (($module['aplicacion'] ?? '') === 'PLANTEL_MOBILE' && ($module['codigo'] ?? '') === 'DESMONTE_HOY' && !empty($module['permissions']['puede_ver'])) {
-            $authorized = true; break;
-        }
-    }
-    if (!$authorized) throw new HttpError(403, 'No tenés autorización para Desmontes de Hoy.', 'FORBIDDEN');
+    (new CentralHostingerTokenService(lcm_central_database()))->session(lcm_central_bearer());
+    // Lectura disponible para cualquier usuario con sesión central válida.
+    // session() valida cuenta activa, vencimiento, revocación y versión de sesión.
     lcm_load_database_config();
     $pdo = api_crear_conexion_pdo((string) LAB_DB_HOST, (string) LAB_DB_PORT, (string) LAB_DB_NAME, (string) LAB_DB_USER, (string) LAB_DB_PASS);
     $columns = $pdo->query('SHOW COLUMNS FROM v_toolbox_tracking_tirones_kg')->fetchAll(PDO::FETCH_ASSOC);
