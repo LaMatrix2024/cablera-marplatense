@@ -1,8 +1,18 @@
 # Continuidad de trabajo — La Cablera Marplatense
 
-Fecha de última revisión: 17/10/2026  
+Fecha de última revisión: 28/10/2026  
 Proyecto: `C:\plantel\cablera-marplatense`  
 Rama relevada: `main`
+
+## Revisión de Desmontes de Hoy
+
+- Decisión del usuario: DESMONTES DE HOY disponible en lectura para cualquier usuario autenticado, sin asignación individual.
+- API independiente `api/v1/desmontes-hoy-almacen.php`: conserva la validación central de sesión activa, vencimiento y revocación; elimina únicamente la exigencia del permiso de módulo.
+- Consulta subterráneos dados de alta hoy según America/Argentina/Buenos_Aires, agrupados por almacén. La API de ayer `desmonte-hoy.php` permanece sin cambios.
+- Pruebas: diff --check correcto; comparación confirma que la API anterior no cambia. PHP no está instalado en este entorno: no se ejecutó php -l ni una consulta a datos reales.
+- Producción: endpoint por almacén devuelve 404 al revisarlo. Pendiente despliegue Hostinger y validación autenticada. GitHub contiene el trabajo preparado; no se ejecutan migraciones.
+- El administrador exige login y la solicitud segura no fue aceptada. No se alteraron credenciales ni permisos administrativos.
+- La unidad Windows del informe externo no está disponible desde este entorno; no se pudo reemplazar el informe allí. Sin secretos.
 
 ## Regla de sincronización
 
