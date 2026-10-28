@@ -110,6 +110,12 @@ final class IdentityAdminService
             throw new HttpError(404, 'Usuario inexistente.', 'user_not_found');
         }
 
+        // El detalle administrativo nunca devuelve hashes ni tokens de cuenta.
+        $user = array_intersect_key($user, array_flip([
+            'id', 'email', 'nombre', 'apellido', 'telefono', 'cargo', 'sector',
+            'foto_url', 'estado', 'es_superadmin', 'created_at', 'updated_at',
+        ]));
+
         return [
             'user' => $user,
             'applications' => $this->userApplications($id),
@@ -125,6 +131,11 @@ final class IdentityAdminService
             throw new HttpError(404, 'Usuario inexistente.', 'user_not_found');
         }
         $this->assertVersion($before, $payload);
+
+        if ((int)$before['es_superadmin'] === 1
+            && array_key_exists('estado', $payload) && $payload['estado'] !== 'ACTIVO') {
+            $this->assertNotLastActiveSuperadmin($id);
+        }
 
         $fields = [];
         $params = ['id' => $id];
@@ -830,6 +841,8 @@ final class IdentityAdminService
 
     private function audit(string $action, string $entityType, ?int $entityId, mixed $before, mixed $after): void
     {
+        $before = $this->safeAuditData($before);
+        $after = $this->safeAuditData($after);
         $stmt = $this->pdo->prepare(
             'INSERT INTO identidad_auditoria (
                 usuario_actor_id, accion, entidad_tipo, entidad_id,
@@ -857,4 +870,20 @@ final class IdentityAdminService
             $this->pdo->rollBack();
         }
     }
+
+    private function safeAuditData(mixed $value): mixed
+    {
+        if (!is_array($value)) {
+            return $value;
+        }
+        foreach ($value as $key => $item) {
+            if (is_string($key) && preg_match('/password|passwd|token|secret|csrf|salt|codigo_inicial_hash/i', $key)) {
+                unset($value[$key]);
+            } else {
+                $value[$key] = $this->safeAuditData($item);
+            }
+        }
+        return $value;
+    }
 }
+

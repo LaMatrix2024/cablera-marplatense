@@ -4,6 +4,16 @@ Fecha de última revisión: 28/10/2026
 Proyecto: `C:\plantel\cablera-marplatense`  
 Rama relevada: `main`
 
+## Administración central desde Plantel Mobile — preparada, no desplegada
+
+- Se prepara soporte de sesión Bearer central en `api_admin_user`, conservando Firebase para el administrador existente y validando estado/permisos contra la base en cada operación.
+- Creación de catálogo requiere `puede_crear`; cambios requieren `puede_editar`. No hay migraciones ni nuevos usuarios, contraseñas o permisos paralelos.
+- El detalle de usuario excluye hashes/tokens. La auditoría elimina secretos. Se rechaza bloquear o dar de baja al último superadmin activo, además de quitarle esa marca.
+- Verificado: sintaxis PHP 8.3 de los tres archivos modificados y 16 pruebas con SQLite en memoria (sesión válida/revocada/vencida, versión revocada, cuenta bloqueada, falta de permiso, habilitación/bloqueo, conflictos y privacidad). Sin escrituras productivas.
+- Plantel Mobile: pantalla nativa en `mis-apps`, búsqueda, estado, habilitación por aplicación, roles y catálogo. Build y lint de cambios correctos; 8 pruebas Node correctas. No se integró a main ni se publicó en producción.
+- Pendiente: revisión visual/mobile y prueba real autenticada; conciliar archivos de Hostinger, publicar primero los tres archivos backend y después el frontend. El navegador conectado falló por timeout antes de poder inspeccionar Hostinger; no se sustituyeron archivos productivos.
+- El informe externo Windows no pudo escribirse porque esa unidad no está disponible en este entorno. Sin secretos incorporados.
+
 ## Revisión de Desmontes de Hoy
 
 - Decisión del usuario: DESMONTES DE HOY disponible en lectura para cualquier usuario autenticado, sin asignación individual.
@@ -293,3 +303,4 @@ Las siguientes herramientas administrativas quedan excluidas y deben permanecer 
 ## Nota de seguridad
 
 Este documento no contiene contraseñas, tokens, claves API ni valores de archivos de entorno. Las rutas y nombres de variables se mencionan únicamente como referencias operativas.
+

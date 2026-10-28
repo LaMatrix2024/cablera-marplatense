@@ -12,7 +12,7 @@ api_handle(function (): void {
     $input = in_array($method, ['POST', 'PUT', 'PATCH'], true) ? api_input() : [];
 
     $readOnly = $method === 'GET';
-    $service = api_admin_service(api_database(), $readOnly ? 'puede_ver' : 'puede_editar');
+    $service = api_admin_service(api_database(), $readOnly ? 'puede_ver' : ($method === 'POST' ? 'puede_crear' : 'puede_editar'));
 
     if ($resource === 'dashboard' && $method === 'GET') {
         api_json(['ok' => true] + $service->dashboard());
@@ -86,3 +86,4 @@ api_handle(function (): void {
 
     throw new HttpError(404, 'Endpoint administrativo inexistente.', 'admin_endpoint_not_found');
 });
+

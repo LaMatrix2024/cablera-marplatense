@@ -249,3 +249,12 @@ Secuencia productiva requerida:
 10. reactivar modulo desde administrador;
 11. confirmar que vuelve a aparecer.
 
+
+## Plantel Mobile — sesión central
+
+La API administrativa también admite el Bearer opaco de 64 caracteres emitido por la autenticación central. Cada solicitud verifica vencimiento, revocación, versión y estado de la cuenta mediante `CentralHostingerTokenService`, y vuelve a exigir el permiso `CABLERAMARPLATENSE / IDENTIDAD_ACCESOS` en la base. Se conserva el camino Firebase para compatibilidad. El perfil del navegador nunca concede permisos.
+
+`GET` exige `puede_ver`, `POST` exige `puede_crear`, y `PUT`/`PATCH` exigen `puede_editar`. El detalle de usuario usa una lista pública de campos; la auditoría descarta contraseñas/hashes/tokens. No se puede desactivar al último superadmin activo.
+
+Prueba aislada (requiere `pdo_sqlite`): `php tests/identity_admin_mobile_test.php`. Verifica 16 casos sin datos productivos. Publicar esta API antes de habilitar la interfaz móvil asociada de `mis-apps`. No se necesita migración. Despliegue real pendiente; el navegador no pudo inspeccionar Hostinger en esta tarea.
+

@@ -103,7 +103,7 @@ function api_apply_cors(): void
         header('Vary: Origin');
         header('Access-Control-Allow-Credentials: true');
         header('Access-Control-Allow-Headers: Authorization, Content-Type');
-        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+        header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, OPTIONS');
     }
 
     if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
@@ -172,13 +172,28 @@ function api_require_method(string $method): void
 function api_admin_user(PDO $pdo, string $permission = 'puede_crear'): array
 {
     $auth = new CorporateAuth($pdo);
-    $session = $auth->requireAuthenticatedUser(api_authorization_header());
-    $auth->requireModulePermission($session['user'], 'IDENTIDAD_ACCESOS', $permission);
+    $authorization = api_authorization_header();
+    // La sesión central se valida contra la base en cada operación. No se
+    // acepta el perfil enviado por el cliente ni se crea una identidad paralela.
+    if (preg_match('/^Bearer\s+([a-f0-9]{64})$/i', (string)$authorization, $matches)) {
+        require_once __DIR__ . '/../../shared/auth/HostingerTokenService.php';
+        $central = (new CentralHostingerTokenService($pdo))->session(strtolower($matches[1]));
+        $user = $central['profile']['user'] ?? null;
+        if (!is_array($user) || !CorporateAccess::isActiveUser($user)) {
+            throw new HttpError(403, 'Usuario corporativo inactivo.', 'inactive_user');
+        }
+    } else {
+        // Conserva la compatibilidad del administrador web existente.
+        $session = $auth->requireAuthenticatedUser($authorization);
+        $user = $session['user'];
+    }
+    $auth->requireModulePermission($user, 'IDENTIDAD_ACCESOS', $permission);
 
-    return $session['user'];
+    return $user;
 }
 
 function api_admin_service(PDO $pdo, string $permission = 'puede_editar'): IdentityAdminService
 {
     return new IdentityAdminService($pdo, api_admin_user($pdo, $permission));
 }
+
