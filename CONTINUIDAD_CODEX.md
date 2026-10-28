@@ -7,14 +7,14 @@ Rama relevada: `main`
 ## Revisión de Desmontes de Hoy
 
 - Decisión del usuario: DESMONTES DE HOY disponible en lectura para cualquier usuario autenticado, sin asignación individual.
-- API independiente `api/v1/desmontes-hoy-almacen.php`: conserva la validación central de sesión activa, vencimiento y revocación; elimina únicamente la exigencia del permiso de módulo.
-- Consulta subterráneos dados de alta hoy según America/Argentina/Buenos_Aires, agrupados por almacén. La API de ayer `desmonte-hoy.php` permanece sin cambios.
-- Pruebas: diff --check correcto; comparación confirma que la API anterior no cambia. PHP no está instalado en este entorno: no se ejecutó php -l ni una consulta a datos reales.
-- GitHub: API integrada en main mediante PR #8, merge `6b93b4df04a1124ed1bf81087e26cb4ad4b1d0c0`. No se ejecutaron migraciones.
-- Producción: endpoint por almacén sigue devolviendo 404 tras la integración. Pendiente despliegue Hostinger, cuyo panel restringe el acceso desde el navegador disponible, y validación autenticada con datos reales.
-- Plantel Mobile: PR #10 actualizado para acceso general de lectura. Vercel Preview READY en `a564eeff15ac851ea63f5b9ad839d7ca03aa8fea`; pruebas de catálogo correctas. Se observó el login en la ruta nueva sin sesión. No se publicó el frontend en producción porque su API aún no está disponible.
-- El administrador exige login y la solicitud segura no fue aceptada. No se alteraron credenciales ni permisos administrativos.
-- La unidad Windows del informe externo no está disponible desde este entorno; no se pudo reemplazar el informe allí. Sin secretos.
+- API `api/v1/desmontes-hoy-almacen.php` publicada puntualmente desde el administrador de archivos de Hostinger con el contenido de main (blob `527185aa96af9847e0fe9e8e589489c521d27e16`). No se reemplazaron archivos existentes.
+- Verificación productiva: ya no responde 404; devuelve JSON MISSING_BEARER_TOKEN sin sesión. Conserva validación de cuenta activa, vencimiento y revocación. Agrupa subterráneos dados de alta hoy por almacén, zona America/Argentina/Buenos_Aires.
+- Plantel Mobile: PR #10 integrado; producción Vercel READY, commit `ce92a5d0062a32bd3a7d0e14793419ecf9df34b4`, URL https://mis-apps-nine.vercel.app. La ruta nueva muestra el login sin sesión.
+- La API/pantalla de ayer y sus permisos permanecen sin cambios. No se comprobó una consulta autenticada ni los metros reales, la instalación PWA o auditoría mobile.
+- Bloqueo real de despliegue automático encontrado en hPanel/GIT: git pull aborta por archivos no registrados en producción que serían sobrescritos. Afecta admin de identidad, APIs y clases de autenticación, entre otros. No se borraron ni desplazaron esos archivos.
+- Próximo paso para independencia de PC: respaldar y conciliar esos archivos con GitHub y habilitar la implementación automática nativa para main. El repositorio ya está configurado en Hostinger para public_html; no se activó automatización sobre el árbol conflictivo.
+- SSH del entorno remoto: Network is unreachable; sin clave/agente local. El acceso de publicación utilizado fue la sesión local del navegador conectado.
+- La unidad Windows del informe externo no está disponible desde el entorno de ejecución. No se modificaron credenciales, configuraciones privadas ni bases de datos. Sin secretos.
 
 ## Regla de sincronización
 
