@@ -10,7 +10,9 @@ Rama relevada: `main`
 - API independiente `api/v1/desmontes-hoy-almacen.php`: conserva la validación central de sesión activa, vencimiento y revocación; elimina únicamente la exigencia del permiso de módulo.
 - Consulta subterráneos dados de alta hoy según America/Argentina/Buenos_Aires, agrupados por almacén. La API de ayer `desmonte-hoy.php` permanece sin cambios.
 - Pruebas: diff --check correcto; comparación confirma que la API anterior no cambia. PHP no está instalado en este entorno: no se ejecutó php -l ni una consulta a datos reales.
-- Producción: endpoint por almacén devuelve 404 al revisarlo. Pendiente despliegue Hostinger y validación autenticada. GitHub contiene el trabajo preparado; no se ejecutan migraciones.
+- GitHub: API integrada en main mediante PR #8, merge `6b93b4df04a1124ed1bf81087e26cb4ad4b1d0c0`. No se ejecutaron migraciones.
+- Producción: endpoint por almacén sigue devolviendo 404 tras la integración. Pendiente despliegue Hostinger, cuyo panel restringe el acceso desde el navegador disponible, y validación autenticada con datos reales.
+- Plantel Mobile: PR #10 actualizado para acceso general de lectura. Vercel Preview READY en `a564eeff15ac851ea63f5b9ad839d7ca03aa8fea`; pruebas de catálogo correctas. Se observó el login en la ruta nueva sin sesión. No se publicó el frontend en producción porque su API aún no está disponible.
 - El administrador exige login y la solicitud segura no fue aceptada. No se alteraron credenciales ni permisos administrativos.
 - La unidad Windows del informe externo no está disponible desde este entorno; no se pudo reemplazar el informe allí. Sin secretos.
 
