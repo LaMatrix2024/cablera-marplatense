@@ -12,10 +12,13 @@ api_handle(function (): void {
     $input = in_array($method, ['POST', 'PUT', 'PATCH'], true) ? api_input() : [];
 
     $readOnly = $method === 'GET';
-    $service = api_admin_service(api_database(), $readOnly ? 'puede_ver' : ($method === 'POST' ? 'puede_crear' : 'puede_editar'));
+    $service = api_admin_service(api_database(), $readOnly ? 'puede_ver' : ($method === 'POST' && $resource !== 'catalogs' ? 'puede_crear' : 'puede_editar'));
 
     if ($resource === 'dashboard' && $method === 'GET') {
         api_json(['ok' => true] + $service->dashboard());
+    }
+    if ($resource === 'catalogs' && $method === 'POST' && $action === 'sync') {
+        api_json(['ok' => true] + $service->syncModuleCatalog());
     }
     if ($resource === 'catalogs' && $method === 'GET') {
         api_json(['ok' => true] + $service->catalogs());
