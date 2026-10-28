@@ -4,6 +4,15 @@ Fecha de última revisión: 28/10/2026
 Proyecto: `C:\plantel\cablera-marplatense`  
 Rama relevada: `main`
 
+## Asignación individual de módulos desde Plantel Mobile — publicada
+
+- Frontend de `mis-apps` en main: implementación `2fd65cc013198136a17112f904eb916ad984893a` y ajuste visual `494dc691ffd19e7cfbabc7a4fb785d44f5ae5d74`. Vercel READY: `dpl_8ztjkNK6YnoBmyMAAcFbov33zWCq`, https://mis-apps-nine.vercel.app.
+- Usuarios → aplicación → Módulos permite buscar cada herramienta y elegir Heredar del rol, Permitir o Denegar; guardar o cancelar cambios. Denegar fija las seis acciones en cero; Heredar elimina las excepciones; Permitir habilita lectura y conserva las otras excepciones.
+- Utiliza la API existente PUT action=modules; no requirió modificar PHP, esquema ni credenciales. Conserva el bypass global superadmin y las políticas especiales de Matrix/Desmontes de Hoy.
+- Build y lint correctos, 12 pruebas Node y 20 comprobaciones PHP aisladas correctas. Verificados selector, cancelación, bloqueo superadmin y pantalla móvil. Se corrigió la especificidad CSS del buscador; revisión visual productiva final en 390×844 correcta.
+- No se guardaron cambios de permisos sobre usuarios reales. Falta que el administrador identifique la cuenta y guarde Denegar para Hola Mundo si desea revocar ese acceso.
+- El informe externo Windows sigue inaccesible desde este entorno; continuidad registrada en Git, sin secretos.
+
 ## Administración central desde Plantel Mobile — publicada
 
 - Backend integrado mediante PR #9, commit de integración `fd60f6a768dece3fc029d33ac6c19d916baca6d8`. Se conciliaron los tres archivos con Hostinger: se conservan `syncModuleCatalog`, su ruta y los parámetros PDO únicos presentes en producción.
