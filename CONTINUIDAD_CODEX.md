@@ -4,15 +4,17 @@ Fecha de última revisión: 28/10/2026
 Proyecto: `C:\plantel\cablera-marplatense`  
 Rama relevada: `main`
 
-## Administración central desde Plantel Mobile — preparada, no desplegada
+## Administración central desde Plantel Mobile — publicada
 
-- Se prepara soporte de sesión Bearer central en `api_admin_user`, conservando Firebase para el administrador existente y validando estado/permisos contra la base en cada operación.
-- Creación de catálogo requiere `puede_crear`; cambios requieren `puede_editar`. No hay migraciones ni nuevos usuarios, contraseñas o permisos paralelos.
-- El detalle de usuario excluye hashes/tokens. La auditoría elimina secretos. Se rechaza bloquear o dar de baja al último superadmin activo, además de quitarle esa marca.
-- Verificado: sintaxis PHP 8.3 de los tres archivos modificados y 16 pruebas con SQLite en memoria (sesión válida/revocada/vencida, versión revocada, cuenta bloqueada, falta de permiso, habilitación/bloqueo, conflictos y privacidad). Sin escrituras productivas.
-- Plantel Mobile: pantalla nativa en `mis-apps`, búsqueda, estado, habilitación por aplicación, roles y catálogo. Build y lint de cambios correctos; 8 pruebas Node correctas. No se integró a main ni se publicó en producción.
-- Pendiente: revisión visual/mobile y prueba real autenticada; conciliar archivos de Hostinger, publicar primero los tres archivos backend y después el frontend. El navegador conectado falló por timeout antes de poder inspeccionar Hostinger; no se sustituyeron archivos productivos.
-- El informe externo Windows no pudo escribirse porque esa unidad no está disponible en este entorno. Sin secretos incorporados.
+- Backend integrado mediante PR #9, commit de integración `fd60f6a768dece3fc029d33ac6c19d916baca6d8`. Se conciliaron los tres archivos con Hostinger: se conservan `syncModuleCatalog`, su ruta y los parámetros PDO únicos presentes en producción.
+- API publicada puntualmente por el administrador de archivos de Hostinger: `api/v1/_common.php`, `api/v1/admin/identity.php` y `shared/auth/IdentityAdminService.php`. Se reabrieron y compararon con el contenido Git: las tres coincidieron (normalizando saltos de línea).
+- Respaldo privado verificado por listado: carpeta `deploy_backup_admin_20261028`, junto a `public_html` y fuera de la raíz web, con las tres versiones anteriores. No se usó el pull global bloqueado por archivos no registrados.
+- Frontend integrado mediante PR #12 de `mis-apps`, commit `1d8889b772a4b262ff32385d5630af5fa8b34618`. Producción Vercel READY, despliegue `dpl_CKLiUsv68CqNDFD5eboXFNswieRg`, dominio `https://mis-apps-nine.vercel.app`.
+- Verificado con sesión real: listado y búsqueda de usuarios, detalle de la cuenta, aplicaciones y roles; listado y formulario de edición de aplicaciones; entradas desde Mis Apps. API sin Bearer exige autenticación. No se guardaron cambios sobre usuarios, roles o aplicaciones reales durante estas comprobaciones.
+- Revisión visual en 390×844 y dimensiones 430×932, 768×1024 y 1280×900: sin scroll horizontal ni scroll principal del body. Instalación PWA y guardados productivos de habilitación: no ejecutados.
+- Pruebas aisladas: 16 PHP correctas después de conciliar producción, sintaxis de los tres PHP correcta; frontend con build y lint de cambios correctos y 8 pruebas Node correctas.
+- La sesión central valida vigencia/revocación/versión/estado y permisos de backend. Detalle y auditoría excluyen secretos; se protege al último superadmin. Sin migraciones, nuevas credenciales ni permisos paralelos.
+- El informe externo Windows no pudo escribirse porque esa unidad no está disponible en este entorno. Resultado registrado aquí y en las propuestas de Git. Sin secretos incorporados.
 
 ## Revisión de Desmontes de Hoy
 
