@@ -1,17 +1,19 @@
 # Continuidad de trabajo — La Cablera Marplatense
 
-Fecha de última revisión: 28/10/2026  
+Fecha de última revisión: 29/10/2026  
 Proyecto: `C:\plantel\cablera-marplatense`  
 Rama relevada: `main`
 
 ## Asignación individual de módulos desde Plantel Mobile — publicada
 
-- Frontend de `mis-apps` en main: implementación `2fd65cc013198136a17112f904eb916ad984893a` y ajuste visual `494dc691ffd19e7cfbabc7a4fb785d44f5ae5d74`. Vercel READY: `dpl_8ztjkNK6YnoBmyMAAcFbov33zWCq`, https://mis-apps-nine.vercel.app.
-- Usuarios → aplicación → Módulos permite buscar cada herramienta y elegir Heredar del rol, Permitir o Denegar; guardar o cancelar cambios. Denegar fija las seis acciones en cero; Heredar elimina las excepciones; Permitir habilita lectura y conserva las otras excepciones.
-- Utiliza la API existente PUT action=modules; no requirió modificar PHP, esquema ni credenciales. Conserva el bypass global superadmin y las políticas especiales de Matrix/Desmontes de Hoy.
-- Build y lint correctos, 12 pruebas Node y 20 comprobaciones PHP aisladas correctas. Verificados selector, cancelación, bloqueo superadmin y pantalla móvil. Se corrigió la especificidad CSS del buscador; revisión visual productiva final en 390×844 correcta.
-- No se guardaron cambios de permisos sobre usuarios reales. Falta que el administrador identifique la cuenta y guarde Denegar para Hola Mundo si desea revocar ese acceso.
-- El informe externo Windows sigue inaccesible desde este entorno; continuidad registrada en Git, sin secretos.
+- Frontend de `mis-apps` en main: `1a659a97f7b4e60b59ecce719f7c963636ef0cd0`. Vercel producción READY: `dpl_FZfYsJpdhGwzwv1kxFpxkxSpMejp`, https://mis-apps-nine.vercel.app. Alias y commit confirmados nuevamente el 29/10/2026.
+- Usuarios → aplicación → Módulos: interruptor Habilitado/Deshabilitado por herramienta, búsqueda inmediata y Guardar cambios. Permite cambiar varios módulos; Descartar cambios recupera el estado original. Se retiró el selector técnico de tres opciones.
+- El interruptor parte del acceso efectivo del servidor, incluidos los roles. Volver al estado inicial antes de guardar no escribe excepciones. Habilitar fija lectura en 1 conservando las otras excepciones; deshabilitar bloquea las seis acciones.
+- Utiliza PUT action=modules ya publicado. Sin cambios PHP, esquema ni credenciales. Conserva superadmin y políticas especiales Matrix/Desmontes de Hoy; muestran estado sin interruptores engañosos. Superadmin no muestra Guardar cambios de módulos.
+- Verificación realizada el 28/10: build y lint correctos, 16 pruebas Node y 20 comprobaciones PHP aisladas correctas. En producción: estado efectivo de cuenta común, encendido/apagado, vuelta al estado original, edición por teclado, descarte, búsqueda, superadmin sin controles editables y revisión visual 390×844 sin desbordamiento del apartado.
+- Se observó un error transitorio al cargar el detalle tras publicar; después de recargar la lectura fue correcta. No se identificó su causa ni se modificó backend. El 29/10 la sesión existente respondió 401: requiere volver a ingresar para repetir pruebas autenticadas. No presentar esa repetición como completada.
+- No se guardaron cambios de permisos sobre usuarios reales durante las pruebas. El administrador elige la cuenta, cambia los interruptores y guarda. La instalación PWA y una escritura productiva deliberada siguen sin comprobarse.
+- El informe externo C:/Users/pl023clau/Downloads/informe_codex.txt no puede escribirse: la unidad Windows no está disponible en el entorno. Resultado y limitación registrados en Git; sin secretos.
 
 ## Administración central desde Plantel Mobile — publicada
 
